@@ -1,0 +1,90 @@
+using UnityEngine;
+
+namespace Game.Characters.Passengers
+{
+    /// <summary>
+    /// A place in the wagon a passenger can take. The transform is where the character root goes:
+    /// on the floor, facing the direction the passenger looks.
+    /// </summary>
+    public class PassengerSpot : MonoBehaviour
+    {
+        /// <summary>
+        /// Seat surface height above the spot the sitting clips are authored for. The hips sit right above the root,
+        /// so a seat is centred on the spot; a higher seat means lifting the spot by the difference.
+        /// </summary>
+        public const float SeatHeight = 0.42f;
+
+        private const int CircleSegments = 16;
+        private const float StandingRadius = 0.25f;
+
+        private static readonly Vector3 s_seatCenter = new Vector3(0f, SeatHeight, 0f);
+        private static readonly Vector3 s_seatSize = new Vector3(0.45f, 0.04f, 0.44f);
+
+        [SerializeField] private PassengerSpotKind _kind = PassengerSpotKind.Seat;
+        [Tooltip("Seats only: whether a passenger may fall asleep here.")]
+        [SerializeField] private bool _allowSleep = true;
+
+        private Passenger _occupant;
+
+        public PassengerSpotKind Kind => _kind;
+        public Passenger Occupant => _occupant;
+        public bool IsFree => _occupant == null;
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = _occupant != null ? new Color(0.9f, 0.4f, 0.2f) : new Color(0.2f, 0.8f, 0.4f);
+
+            if (_kind == PassengerSpotKind.Seat)
+            {
+                Gizmos.DrawWireCube(s_seatCenter, s_seatSize);
+            }
+            else
+            {
+                DrawCircle(StandingRadius);
+            }
+
+            Gizmos.DrawLine(Vector3.zero, Vector3.forward * 0.4f);
+            Gizmos.DrawLine(Vector3.forward * 0.4f, new Vector3(0.08f, 0f, 0.3f));
+            Gizmos.DrawLine(Vector3.forward * 0.4f, new Vector3(-0.08f, 0f, 0.3f));
+        }
+
+        public bool Allows(PassengerPose pose)
+        {
+            switch (pose)
+            {
+                case PassengerPose.Standing:
+                    return _kind == PassengerSpotKind.Standing;
+                case PassengerPose.SittingAsleep:
+                    return _kind == PassengerSpotKind.Seat && _allowSleep;
+                default:
+                    return _kind == PassengerSpotKind.Seat;
+            }
+        }
+
+        public void SetOccupant(Passenger passenger)
+        {
+            _occupant = passenger;
+        }
+
+        public void Release(Passenger passenger)
+        {
+            if (_occupant == passenger)
+            {
+                _occupant = null;
+            }
+        }
+
+        private static void DrawCircle(float radius)
+        {
+            Vector3 previous = new Vector3(radius, 0f, 0f);
+            for (int i = 1; i <= CircleSegments; i++)
+            {
+                float angle = i * Mathf.PI * 2f / CircleSegments;
+                Vector3 next = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                Gizmos.DrawLine(previous, next);
+                previous = next;
+            }
+        }
+    }
+}

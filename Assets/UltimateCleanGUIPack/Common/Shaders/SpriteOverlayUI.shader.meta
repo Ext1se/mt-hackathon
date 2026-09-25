@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: df3f3b92e6bc848529a144d7f47dd47a
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 154574
+  packageName: Ultimate Clean GUI Pack
+  packageVersion: 2.6.0
+  assetPath: Assets/UltimateCleanGUIPack/Common/Shaders/SpriteOverlayUI.shader
+  uploadId: 957070

@@ -1,0 +1,18 @@
+{
+    "name": "Game.Characters.Passengers.Editor",
+    "rootNamespace": "Game.Characters.Passengers.Editor",
+    "references": [
+        "Game.Characters.Passengers"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

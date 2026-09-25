@@ -1,0 +1,37 @@
+{
+  "scene": "Assets/VSM/Scenes/VSM_Train_Mobile.unity",
+  "route_points": 2978,
+  "route_failures": 0,
+  "maximum_active_cars": 2,
+  "preload_before_door_open": true,
+  "disable_after_fully_closed": true,
+  "cross_car_prop_parent": "C02_Details",
+  "missing_scripts": 0,
+  "missing_tooltips": 0,
+  "runtime_scripts": 13,
+  "shader_compile_errors": 0,
+  "lightmaps": 3,
+  "windows_sealed": 144,
+  "removed_old_ceiling_triangles": 34202,
+  "removed_duplicate_triangles": 1334,
+  "desktop_mouse_without_button_degrees_test": 3.15,
+  "cursor_ui_release_restore": true,
+  "portrait_test": [
+    720,
+    1280
+  ],
+  "landscape_test": [
+    1280,
+    720
+  ],
+  "audio_playing": true,
+  "stop_speed": 0,
+  "stopped_window_phase_stable": true,
+  "mop_tilt_degrees": 18,
+  "first_car_active_mesh_renderers": 115,
+  "first_car_active_triangles": 134205,
+  "apk_built": false,
+  "physical_mobile_tested": false,
+  "physical_vr_tested": false,
+  "xr_provider_configured": false
+}

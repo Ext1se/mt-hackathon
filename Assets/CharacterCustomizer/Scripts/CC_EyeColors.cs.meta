@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 200d4e7eefdc5234da82fa983da3344b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 241861
+  packageName: Character Customizer
+  packageVersion: 2.4.1
+  assetPath: Assets/CharacterCustomizer/Scripts/CC_EyeColors.cs
+  uploadId: 968072

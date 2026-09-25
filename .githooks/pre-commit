@@ -1,0 +1,33 @@
+#!/bin/sh
+# Blocks commits that contain files larger than MAX_MB (GitHub rejects files > 100 MB).
+# Files tracked by Git LFS pass: only their small pointer goes into the index.
+
+MAX_MB=92
+MAX_BYTES=$((MAX_MB * 1024 * 1024))
+
+tmp=$(mktemp) || exit 1
+trap 'rm -f "$tmp"' EXIT
+
+# "<blob sha>\t<path>" for every added or modified file in the index
+git -c core.quotePath=false diff --cached --raw --no-abbrev --no-renames --diff-filter=ACMRT \
+    | awk -F'\t' '{ split($1, f, " "); print f[4] "\t" $2 }' > "$tmp"
+
+[ -s "$tmp" ] || exit 0
+
+too_big=$(cut -f1 "$tmp" \
+    | git cat-file --batch-check='%(objectsize)' \
+    | paste - "$tmp" \
+    | awk -F'\t' -v max="$MAX_BYTES" '$1 > max { printf "  %8.1f MB  %s\n", $1 / 1048576, $3 }')
+
+[ -z "$too_big" ] && exit 0
+
+echo "" >&2
+echo "ОШИБКА: коммит отменён — есть файлы больше ${MAX_MB} МБ:" >&2
+echo "" >&2
+echo "$too_big" >&2
+echo "" >&2
+echo "Уберите их из индекса:   git restore --staged <файл>" >&2
+echo "  (новый файл / нет коммитов: git rm --cached <файл>)" >&2
+echo "или положите в Git LFS:  git lfs track \"<файл>\"" >&2
+echo "" >&2
+exit 1

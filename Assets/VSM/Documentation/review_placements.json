@@ -1,0 +1,632 @@
+[
+  {
+    "name": "USER_Extinguisher",
+    "model": "Extinguisher",
+    "position": [
+      1.4299999475479126,
+      22.200000762939453,
+      0.2199999988079071
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Toilet",
+    "model": "Toilet",
+    "position": [
+      -1.0299999713897705,
+      20.3799991607666,
+      0.019999999552965164
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WashBasin",
+    "model": "WashBasin",
+    "position": [
+      -1.2899999618530273,
+      18.989999771118164,
+      0.4000000059604645
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WaterCooler",
+    "model": "WaterCooler",
+    "position": [
+      -1.25,
+      21.899999618530273,
+      0.009999999776482582
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_CoffeeMachine",
+    "model": "CoffeeMachine",
+    "position": [
+      1.2200000286102295,
+      20.399999618530273,
+      1.0199999809265137
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Suitcase",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      3.5,
+      0.24118751287460327
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 0
+  },
+  {
+    "name": "USER_Suitcase.001",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      3.5,
+      0.8131874799728394
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 1
+  },
+  {
+    "name": "USER_Extinguisher.001",
+    "model": "Extinguisher",
+    "position": [
+      1.4299999475479126,
+      47.400001525878906,
+      0.2199999988079071
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Toilet.001",
+    "model": "Toilet",
+    "position": [
+      -1.0299999713897705,
+      45.58000183105469,
+      0.019999999552965164
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WashBasin.001",
+    "model": "WashBasin",
+    "position": [
+      -1.2899999618530273,
+      44.189998626708984,
+      0.4000000059604645
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WaterCooler.001",
+    "model": "WaterCooler",
+    "position": [
+      -1.25,
+      47.099998474121094,
+      0.009999999776482582
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_CoffeeMachine.001",
+    "model": "CoffeeMachine",
+    "position": [
+      1.2200000286102295,
+      45.599998474121094,
+      1.0199999809265137
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Suitcase.002",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      28.700000762939453,
+      0.24118751287460327
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 1
+  },
+  {
+    "name": "USER_Suitcase.003",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      28.700000762939453,
+      0.8131874799728394
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 2
+  },
+  {
+    "name": "USER_Extinguisher.002",
+    "model": "Extinguisher",
+    "position": [
+      1.4299999475479126,
+      72.5999984741211,
+      0.2199999988079071
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Toilet.002",
+    "model": "Toilet",
+    "position": [
+      -1.0299999713897705,
+      70.77999877929688,
+      0.019999999552965164
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WashBasin.002",
+    "model": "WashBasin",
+    "position": [
+      -1.2899999618530273,
+      69.38999938964844,
+      0.4000000059604645
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WaterCooler.002",
+    "model": "WaterCooler",
+    "position": [
+      -1.25,
+      72.30000305175781,
+      0.009999999776482582
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Suitcase.004",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      53.900001525878906,
+      0.24118751287460327
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 2
+  },
+  {
+    "name": "USER_Suitcase.005",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      53.900001525878906,
+      1.4031875133514404
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 4
+  },
+  {
+    "name": "USER_Extinguisher.003",
+    "model": "Extinguisher",
+    "position": [
+      1.4299999475479126,
+      97.80000305175781,
+      0.2199999988079071
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Toilet.003",
+    "model": "Toilet",
+    "position": [
+      -1.0299999713897705,
+      95.9800033569336,
+      0.019999999552965164
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WashBasin.003",
+    "model": "WashBasin",
+    "position": [
+      -1.2899999618530273,
+      94.58999633789062,
+      0.4000000059604645
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WaterCooler.003",
+    "model": "WaterCooler",
+    "position": [
+      -1.25,
+      97.5,
+      0.009999999776482582
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Suitcase.006",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      79.0999984741211,
+      0.24118751287460327
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 3
+  },
+  {
+    "name": "USER_Suitcase.007",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      79.0999984741211,
+      0.8131874799728394
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 4
+  },
+  {
+    "name": "USER_Suitcase.008",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      79.0999984741211,
+      1.4031875133514404
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 5
+  },
+  {
+    "name": "USER_Extinguisher.004",
+    "model": "Extinguisher",
+    "position": [
+      1.4299999475479126,
+      123.0,
+      0.2199999988079071
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Toilet.004",
+    "model": "Toilet",
+    "position": [
+      -1.0299999713897705,
+      121.18000030517578,
+      0.019999999552965164
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WashBasin.004",
+    "model": "WashBasin",
+    "position": [
+      -1.2899999618530273,
+      119.79000091552734,
+      0.4000000059604645
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WaterCooler.004",
+    "model": "WaterCooler",
+    "position": [
+      -1.25,
+      122.69999694824219,
+      0.009999999776482582
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Suitcase.009",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      104.30000305175781,
+      0.8131874799728394
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 5
+  },
+  {
+    "name": "USER_Suitcase.010",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      104.30000305175781,
+      1.4031875133514404
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 0
+  },
+  {
+    "name": "USER_Extinguisher.005",
+    "model": "Extinguisher",
+    "position": [
+      1.4299999475479126,
+      148.1999969482422,
+      0.2199999988079071
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Toilet.005",
+    "model": "Toilet",
+    "position": [
+      -1.0299999713897705,
+      146.3800048828125,
+      0.019999999552965164
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WashBasin.005",
+    "model": "WashBasin",
+    "position": [
+      -1.2899999618530273,
+      144.99000549316406,
+      0.4000000059604645
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_WaterCooler.005",
+    "model": "WaterCooler",
+    "position": [
+      -1.25,
+      147.89999389648438,
+      0.009999999776482582
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_CoffeeMachine.002",
+    "model": "CoffeeMachine",
+    "position": [
+      1.2200000286102295,
+      146.39999389648438,
+      1.0199999809265137
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      -1.5707963705062866
+    ],
+    "color": null
+  },
+  {
+    "name": "USER_Suitcase.011",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      129.5,
+      0.24118751287460327
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 5
+  },
+  {
+    "name": "USER_Suitcase.012",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      129.5,
+      0.8131874799728394
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 0
+  },
+  {
+    "name": "USER_Suitcase.013",
+    "model": "Suitcase",
+    "position": [
+      1.2200000286102295,
+      129.5,
+      1.4031875133514404
+    ],
+    "rotation": [
+      1.5707963705062866,
+      0.0,
+      0.0
+    ],
+    "color": 1
+  },
+  {
+    "name": "USER_TicketTerminal.001",
+    "model": "TicketTerminal",
+    "position": [
+      -0.8500000238418579,
+      130.14999389648438,
+      1.0499999523162842
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      1.5707963705062866
+    ],
+    "color": null
+  }
+]

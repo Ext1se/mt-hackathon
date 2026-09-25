@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c1336ac2fb956140846a605b12f4377, type: 3}
+  m_Name: PassengerAnimationSet_Default
+  m_EditorClassIdentifier: Game.Characters.Passengers::Game.Characters.Passengers.PassengerAnimationSet
+  _standing:
+  - {fileID: -203655887218126122, guid: 2e8b4085bfa480449ab0b38ff186b5cf, type: 3}
+  - {fileID: -203655887218126122, guid: c4f8f232bce8f4b4988953b7d05946e5, type: 3}
+  - {fileID: -203655887218126122, guid: c0f0091260d7d6f4fb455bf1bd6d1aa3, type: 3}
+  - {fileID: -203655887218126122, guid: dad8c8464c851f041bbe5314b55c035f, type: 3}
+  - {fileID: -203655887218126122, guid: 398d6456df886614184f9d68d85404dd, type: 3}
+  - {fileID: -203655887218126122, guid: 393e07e2364e3af4ba646ab80b8e1804, type: 3}
+  - {fileID: -203655887218126122, guid: f6d841693dd939e4880c5dc12780621c, type: 3}
+  - {fileID: -203655887218126122, guid: 43da293daa168f842a729edb00774804, type: 3}
+  - {fileID: -203655887218126122, guid: 7ad25910965bd2d4c86ba4e951b62f1f, type: 3}
+  _sitting:
+  - {fileID: -203655887218126122, guid: ecb8930cdcc012349ab045d67f38d293, type: 3}
+  - {fileID: -203655887218126122, guid: 6c301f50f19d9b24cb40cc86beb07406, type: 3}
+  - {fileID: -203655887218126122, guid: ab25822ca40db2e4e9d45d68783839ed, type: 3}
+  - {fileID: -203655887218126122, guid: 13dc982c60ce26944bb4a0d297848fb7, type: 3}
+  - {fileID: -203655887218126122, guid: e41a571550d1a2948b0f248f4bde3129, type: 3}
+  - {fileID: -203655887218126122, guid: d5ad43057b885814396efe4dfd1bf17c, type: 3}
+  - {fileID: -203655887218126122, guid: 2389f516e9dd37d45b5d32845520de37, type: 3}
+  _sittingAsleep:
+  - {fileID: -203655887218126122, guid: ab25822ca40db2e4e9d45d68783839ed, type: 3}
+  - {fileID: -203655887218126122, guid: ecb8930cdcc012349ab045d67f38d293, type: 3}
+  - {fileID: -203655887218126122, guid: 6c301f50f19d9b24cb40cc86beb07406, type: 3}
+  _switchInterval: {x: 8, y: 20}
+  _crossFadeTime: 0.4
+  _speedRange: {x: 0.9, y: 1.1}

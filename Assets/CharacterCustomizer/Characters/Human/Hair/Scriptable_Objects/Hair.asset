@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08d2c2d7830608c47b7968c3e9e9a239, type: 3}
+  m_Name: Hair
+  m_EditorClassIdentifier: 
+  Hairstyles:
+  - Name: Hair_Default
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 62856fea1fbe5384f889ddc41811250c, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Buzzcut_01
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 5399457164d81c346bf590a857e73806, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Bob_01
+    Mesh: {fileID: 777357861984462864, guid: 69e9c6867cf50844698e27f9bea9798a, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 5c8d4d8d9035ab14aba6ba7b61b54ebd, type: 3}
+    AddCopyPoseScript: 1
+    Icon: {fileID: 0}
+  - Name: Ponytail_01
+    Mesh: {fileID: 3714990649775654116, guid: bfe63c2deec5a6242a6a60f869e35ff3, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 38ae89013cc806043832d42c1a464ac8, type: 3}
+    AddCopyPoseScript: 1
+    Icon: {fileID: 0}
+  - Name: SidePart_01
+    Mesh: {fileID: 4417518200652683686, guid: 6943afac464920e4b9e8d1f39e857cef, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 70bb9e725f93c3842b0e4652ad08c057, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: SidePart_02
+    Mesh: {fileID: 4270089423710983461, guid: 4e3b3b9c3e6c9264b86dbf46075a5da1, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 16d14802721c381419b410e4c67f9132, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Bob_02
+    Mesh: {fileID: 5108906838793585395, guid: 868c92388e16a9649851de220fb2f4f4, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 5c8d4d8d9035ab14aba6ba7b61b54ebd, type: 3}
+    AddCopyPoseScript: 1
+    Icon: {fileID: 0}
+  - Name: Short_01
+    Mesh: {fileID: 2541454839080436276, guid: 0f22d0c4ccd56aa4799d63d1a7733924, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 5c8d4d8d9035ab14aba6ba7b61b54ebd, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Long_01_M
+    Mesh: {fileID: 2679966602367900153, guid: 6ba0ac655830bfd4b8d1e96f4bacce70, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 3e780002544f03549abc92c2eddc9dcc, type: 3}
+    AddCopyPoseScript: 1
+    Icon: {fileID: 0}
+  - Name: Long_01_F
+    Mesh: {fileID: 833251169038755448, guid: bee13e977a4ef8b46a4754594cee4034, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 4971626cc0aeb4a4ab46233a29d97d2c, type: 3}
+    AddCopyPoseScript: 1
+    Icon: {fileID: 0}
+  - Name: Afro_Short_01
+    Mesh: {fileID: 2364460256478727911, guid: c03698486ea2afd4f9fee5570577479c, type: 3}
+    ShadowMap: {fileID: 2800000, guid: f458d48853ccd6c47923c67c0ab96b4f, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Afro_Short_02
+    Mesh: {fileID: 2591272775888668003, guid: 07a26f47948b4d74392d24cf57b9c859, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 87d385aaf4815e441bcf61fa7b53e101, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Afro_Curl_01
+    Mesh: {fileID: 6259606880849017730, guid: 44d349cc773589c4fad0762ce3f30e23, type: 3}
+    ShadowMap: {fileID: 2800000, guid: 49e5b54b9cf582648b25ea3ff51d5db1, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  SkinShadowMapProperty:
+    propertyName: _Hair_Shadow_Map
+    stringValue: 
+    floatValue: 0
+    colorValue: {r: 0, g: 0, b: 0, a: 1}
+    materialIndex: 0
+    meshTag: Head
+  HairTintProperty:
+    propertyName: _Hair_Tint
+    stringValue: 
+    floatValue: 0
+    colorValue: {r: 0, g: 0, b: 0, a: 1}
+    materialIndex: -1
+    meshTag: 
+  RandomizerDefaultChance: -1

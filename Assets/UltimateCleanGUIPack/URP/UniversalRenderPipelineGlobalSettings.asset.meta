@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 41739e9c169a945a49eee6182cf3cc4a
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 154574
+  packageName: Ultimate Clean GUI Pack
+  packageVersion: 2.6.0
+  assetPath: Assets/UltimateCleanGUIPack/URP/UniversalRenderPipelineGlobalSettings.asset
+  uploadId: 957070

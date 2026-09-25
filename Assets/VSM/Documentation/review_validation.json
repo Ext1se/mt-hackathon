@@ -1,0 +1,21 @@
+{
+  "geometry_source": "VSM_Interiors_Reviewed.blend",
+  "new_models": 5,
+  "new_placements": 42,
+  "lying_suitcases": 14,
+  "suitcase_colors": 6,
+  "route_points": 2978,
+  "route_blocked_points": 0,
+  "max_active_cars": 2,
+  "wc_door_sweep_samples": 186,
+  "wc_wall_collider_intersections": 0,
+  "door_audio_runtime_playing": true,
+  "unity_console_errors": 0,
+  "missing_scripts": 0,
+  "lightmaps": 2,
+  "package_exported": false,
+  "hardware_mobile_vr_tested": false,
+  "rounded_windows": true,
+  "wooden_window_sills": 0,
+  "lower_window_trim_min_seat_clearance_m": 0.084
+}

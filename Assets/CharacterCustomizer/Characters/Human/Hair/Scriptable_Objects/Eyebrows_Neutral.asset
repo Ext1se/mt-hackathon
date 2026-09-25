@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08d2c2d7830608c47b7968c3e9e9a239, type: 3}
+  m_Name: Eyebrows_Neutral
+  m_EditorClassIdentifier: 
+  Hairstyles:
+  - Name: Eyebrows_Default
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 1270350247c551c459dd9a3499de08a6, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_01
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 51b0e85a8694a0344bcf9e159b7ee2d8, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_02
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: ac3cb3d9ba9a78847b4347c322fda081, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_03
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: e94ea8280761dc64f895ff5b0dc74811, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_04
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 65fb04f35149768439ea70a020737d5a, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_05
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: e2da4ac7ae0593d4aac7b6f47223cdf2, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_06
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: d0e170bd99571884da2054de5e6ea3e8, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_07
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 91a9c7cb4e00def46a09864eb09f8f97, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  - Name: Eyebrows_08
+    Mesh: {fileID: 0}
+    ShadowMap: {fileID: 2800000, guid: 6bb8e675552ea8a45b5e7a4c63cf876c, type: 3}
+    AddCopyPoseScript: 0
+    Icon: {fileID: 0}
+  SkinShadowMapProperty:
+    propertyName: _Eyebrow_Shadow_Map
+    stringValue: 
+    floatValue: 0
+    colorValue: {r: 0, g: 0, b: 0, a: 1}
+    materialIndex: 0
+    meshTag: Head
+  HairTintProperty:
+    propertyName: _Eyebrow_Tint
+    stringValue: 
+    floatValue: 0
+    colorValue: {r: 0, g: 0, b: 0, a: 1}
+    materialIndex: 0
+    meshTag: 
+  RandomizerDefaultChance: -1

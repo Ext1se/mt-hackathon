@@ -1,0 +1,620 @@
+{
+  "items": [
+    {
+      "name": "PROP_Radio",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Radio/Radio_Base.png",
+      "normalTex": "Assets/VSM/Props/Radio/Radio_Normal.png",
+      "metalTex": "Assets/VSM/Props/Radio/Radio_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_ServiceTrolley",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/ServiceTrolley/ServiceTrolley_Base.png",
+      "normalTex": "Assets/VSM/Props/ServiceTrolley/ServiceTrolley_Normal.png",
+      "metalTex": "Assets/VSM/Props/ServiceTrolley/ServiceTrolley_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_PetCarrier",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/PetCarrier/PetCarrier_Base.png",
+      "normalTex": "Assets/VSM/Props/PetCarrier/PetCarrier_Normal.png",
+      "metalTex": "Assets/VSM/Props/PetCarrier/PetCarrier_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Mop",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Mop/Mop_Base.png",
+      "normalTex": "Assets/VSM/Props/Mop/Mop_Normal.png",
+      "metalTex": "Assets/VSM/Props/Mop/Mop_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_BlanketStack",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/BlanketStack/BlanketStack_Base.png",
+      "normalTex": "Assets/VSM/Props/BlanketStack/BlanketStack_Normal.png",
+      "metalTex": "Assets/VSM/Props/BlanketStack/BlanketStack_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Suitcase",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Suitcase/Suitcase_Base.png",
+      "normalTex": "Assets/VSM/Props/Suitcase/Suitcase_Normal.png",
+      "metalTex": "Assets/VSM/Props/Suitcase/Suitcase_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_DuffelBag",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/DuffelBag/DuffelBag_Base.png",
+      "normalTex": "Assets/VSM/Props/DuffelBag/DuffelBag_Normal.png",
+      "metalTex": "Assets/VSM/Props/DuffelBag/DuffelBag_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Microwave",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Microwave/Microwave_Base.png",
+      "normalTex": "Assets/VSM/Props/Microwave/Microwave_Normal.png",
+      "metalTex": "Assets/VSM/Props/Microwave/Microwave_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Magazine",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Magazine/Magazine_Base.png",
+      "normalTex": "Assets/VSM/Props/Magazine/Magazine_Normal.png",
+      "metalTex": "Assets/VSM/Props/Magazine/Magazine_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Laptop",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Laptop/Laptop_Base.png",
+      "normalTex": "Assets/VSM/Props/Laptop/Laptop_Normal.png",
+      "metalTex": "Assets/VSM/Props/Laptop/Laptop_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Wheelchair",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Wheelchair/Wheelchair_Base.png",
+      "normalTex": "Assets/VSM/Props/Wheelchair/Wheelchair_Normal.png",
+      "metalTex": "Assets/VSM/Props/Wheelchair/Wheelchair_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Blanket",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Blanket/Blanket_Base.png",
+      "normalTex": "Assets/VSM/Props/Blanket/Blanket_Normal.png",
+      "metalTex": "Assets/VSM/Props/Blanket/Blanket_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Phone",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Phone/Phone_Base.png",
+      "normalTex": "Assets/VSM/Props/Phone/Phone_Normal.png",
+      "metalTex": "Assets/VSM/Props/Phone/Phone_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_TicketTerminal",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/TicketTerminal/TicketTerminal_Base.png",
+      "normalTex": "Assets/VSM/Props/TicketTerminal/TicketTerminal_Normal.png",
+      "metalTex": "Assets/VSM/Props/TicketTerminal/TicketTerminal_MetalSmooth.png"
+    },
+    {
+      "name": "PROP_Bicycle",
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Props/Bicycle/Bicycle_Base.png",
+      "normalTex": "Assets/VSM/Props/Bicycle/Bicycle_Normal.png",
+      "metalTex": "Assets/VSM/Props/Bicycle/Bicycle_MetalSmooth.png"
+    },
+    {
+      "name": "EXPORT_Material",
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.5,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_Material.001",
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Train/Textures/Image_0.jpg",
+      "normalTex": "Assets/VSM/Train/Textures/Image_2.jpg",
+      "metalTex": "Assets/VSM/Train/Textures/Material.001_MetalSmooth.png"
+    },
+    {
+      "name": "EXPORT_Material.002",
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Train/Textures/Image_0.001.jpg",
+      "normalTex": "Assets/VSM/Train/Textures/Image_2.001.jpg",
+      "metalTex": "Assets/VSM/Train/Textures/Material.002_MetalSmooth.png"
+    },
+    {
+      "name": "EXPORT_Material.003",
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Train/Textures/Image_0.002.jpg",
+      "normalTex": "Assets/VSM/Train/Textures/Image_2.002.jpg",
+      "metalTex": "Assets/VSM/Train/Textures/Material.003_MetalSmooth.png"
+    },
+    {
+      "name": "EXPORT_Material.004",
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Train/Textures/texture_0.png",
+      "normalTex": "Assets/VSM/Train/Textures/normal.png",
+      "metalTex": "Assets/VSM/Train/Textures/Material.004_MetalSmooth.png"
+    },
+    {
+      "name": "EXPORT_Material.005",
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 1,
+      "smoothness": 1,
+      "baseTex": "Assets/VSM/Train/Textures/Image_0.003.jpg",
+      "normalTex": "Assets/VSM/Train/Textures/Image_2.003.jpg",
+      "metalTex": "Assets/VSM/Train/Textures/Material.005_MetalSmooth.png"
+    },
+    {
+      "name": "EXPORT_VSM_blue",
+      "color": [
+        0.07500000298023224,
+        0.23000000417232513,
+        0.36000001430511475,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3500000238418579,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_bronze",
+      "color": [
+        0.4300000071525574,
+        0.2800000011920929,
+        0.11999999731779099,
+        1.0
+      ],
+      "metallic": 0.6499999761581421,
+      "smoothness": 0.699999988079071,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_carpet",
+      "color": [
+        0.07999999821186066,
+        0.10000000149011612,
+        0.10999999940395355,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.050000011920928955,
+      "baseTex": "Assets/VSM/Train/Textures/Carpet_256.png.png",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_ceiling",
+      "color": [
+        0.8199999928474426,
+        0.800000011920929,
+        0.7400000095367432,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3500000238418579,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_coffee",
+      "color": [
+        0.054999999701976776,
+        0.023000000044703484,
+        0.00800000037997961,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.7800000011920929,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_dark",
+      "color": [
+        0.024000000208616257,
+        0.03500000014901161,
+        0.041999999433755875,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3500000238418579,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_glass",
+      "color": [
+        0.23999999463558197,
+        0.3799999952316284,
+        0.4399999976158142,
+        1.0
+      ],
+      "metallic": 0.44999998807907104,
+      "smoothness": 0.8199999928474426,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_ivory",
+      "color": [
+        0.6800000071525574,
+        0.6399999856948853,
+        0.550000011920929,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.5200000107288361,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_light",
+      "color": [
+        1.0,
+        0.7900000214576721,
+        0.46000000834465027,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.7199999988079071,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_metal",
+      "color": [
+        0.3799999952316284,
+        0.4300000071525574,
+        0.46000000834465027,
+        1.0
+      ],
+      "metallic": 0.800000011920929,
+      "smoothness": 0.7199999988079071,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_oak",
+      "color": [
+        0.5,
+        0.30000001192092896,
+        0.11999999731779099,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.5,
+      "baseTex": "Assets/VSM/Train/Textures/Oak_512.png.png",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_paper",
+      "color": [
+        0.800000011920929,
+        0.7699999809265137,
+        0.6700000166893005,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.19999998807907104,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_red",
+      "color": [
+        0.44999998807907104,
+        0.06499999761581421,
+        0.03999999910593033,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.44999998807907104,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_rubber",
+      "color": [
+        0.02199999988079071,
+        0.02500000037252903,
+        0.028999999165534973,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.050000011920928955,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_seatcap",
+      "color": [
+        0.03500000014901161,
+        0.03999999910593033,
+        0.03799999877810478,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.30000001192092896,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_seatcap.001",
+      "color": [
+        0.03500000014901161,
+        0.03999999910593033,
+        0.03799999877810478,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.30000001192092896,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_signs",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.44999998807907104,
+      "baseTex": "Assets/VSM/Train/Textures/VSM_Signage_V2.png.001.png",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_teal",
+      "color": [
+        0.02500000037252903,
+        0.15000000596046448,
+        0.17000000178813934,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3500000238418579,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_white",
+      "color": [
+        0.9100000262260437,
+        0.8999999761581421,
+        0.8299999833106995,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.7400000095367432,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_window",
+      "color": [
+        0.44999998807907104,
+        0.6000000238418579,
+        0.6700000166893005,
+        1.0
+      ],
+      "metallic": 0.15000000596046448,
+      "smoothness": 0.8400000035762787,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_woodedge",
+      "color": [
+        0.3199999928474426,
+        0.20499999821186066,
+        0.10999999940395355,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3999999761581421,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_woodedge.001",
+      "color": [
+        0.3199999928474426,
+        0.20499999821186066,
+        0.10999999940395355,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3999999761581421,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    },
+    {
+      "name": "EXPORT_VSM_yellow",
+      "color": [
+        0.9200000166893005,
+        0.5799999833106995,
+        0.09000000357627869,
+        1.0
+      ],
+      "metallic": 0.0,
+      "smoothness": 0.3999999761581421,
+      "baseTex": "",
+      "normalTex": "",
+      "metalTex": ""
+    }
+  ]
+}

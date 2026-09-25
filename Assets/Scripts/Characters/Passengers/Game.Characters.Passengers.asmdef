@@ -1,0 +1,16 @@
+{
+    "name": "Game.Characters.Passengers",
+    "rootNamespace": "Game.Characters.Passengers",
+    "references": [
+        "Game.Characters.Face"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

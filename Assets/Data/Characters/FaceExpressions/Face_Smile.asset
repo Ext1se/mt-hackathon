@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38b4b0af56418c2469e3e295d94de6a6, type: 3}
+  m_Name: Face_Smile
+  m_EditorClassIdentifier: Game.Characters.Face::Game.Characters.Face.FaceExpression
+  _weights:
+  - _parameter: 22
+    _weight: 1
+  - _parameter: 23
+    _weight: 1
+  - _parameter: 46
+    _weight: 0.6
+  - _parameter: 47
+    _weight: 0.6
+  - _parameter: 5
+    _weight: 0.4
+  - _parameter: 12
+    _weight: 0.4
+  - _parameter: 26
+    _weight: 0.3
+  - _parameter: 27
+    _weight: 0.3
+  - _parameter: 38
+    _weight: 0.1
+  - _parameter: 39
+    _weight: 0.1
+  - _parameter: 17
+    _weight: 0.05
+  _fadeTime: -1

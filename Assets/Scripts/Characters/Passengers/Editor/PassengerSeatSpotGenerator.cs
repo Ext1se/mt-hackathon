@@ -69,6 +69,20 @@ namespace Game.Characters.Passengers.Editor
 
             Vector3 forward = depthAxis * forwardSign;
             Quaternion rotation = Quaternion.LookRotation(forward, Vector3.up);
+
+            // Multi-seat blocks get a PassengerSeatBlock parent, so the spawner fills them by pattern and never seats
+            // two adults side by side.
+            Transform spotParent = parent;
+            if (seatCount > 1)
+            {
+                GameObject blockObject = new GameObject($"Block_{block.name}");
+                Undo.RegisterCreatedObjectUndo(blockObject, "Create Seat Spots");
+                blockObject.transform.SetParent(parent, false);
+                blockObject.transform.SetPositionAndRotation(bounds.center - Vector3.up * bounds.extents.y, rotation);
+                blockObject.AddComponent<PassengerSeatBlock>();
+                spotParent = blockObject.transform;
+            }
+
             for (int i = 0; i < seatCount; i++)
             {
                 Vector3 seatCenter = rowStart + rowAxis * (seatPitch * (i + 0.5f));
@@ -78,7 +92,7 @@ namespace Game.Characters.Passengers.Editor
 
                 GameObject spotObject = new GameObject($"Seat_{block.name}_{i}");
                 Undo.RegisterCreatedObjectUndo(spotObject, "Create Seat Spots");
-                spotObject.transform.SetParent(parent, false);
+                spotObject.transform.SetParent(spotParent, false);
                 spotObject.transform.SetPositionAndRotation(position, rotation);
                 spotObject.AddComponent<PassengerSpot>();
             }

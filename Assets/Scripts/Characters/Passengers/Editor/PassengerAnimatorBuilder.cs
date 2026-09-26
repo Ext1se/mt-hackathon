@@ -7,14 +7,16 @@ namespace Game.Characters.Passengers.Editor
 {
     /// <summary>
     /// Builds the passenger Animator Controller from the CharacterCustomizer face controller:
-    /// one base-layer state per clip in the body clip folder, a head-only sleep layer, and the untouched face layers.
+    /// one base-layer state per clip in the Mixamo and Seats folders, a head-only sleep layer, and the untouched face layers.
     /// Run it again after adding clips to the folder.
     /// </summary>
     public static class PassengerAnimatorBuilder
     {
         private const string FaceControllerPath = "Assets/CharacterCustomizer/Characters/Human/Animations/CC_Face_Animator.controller";
         private const string OutputFolder = "Assets/Animations/Passengers";
-        private const string BodyClipFolder = OutputFolder + "/Mixamo";
+        private const string MixamoClipFolder = OutputFolder + "/Mixamo";
+        // Copies of Mixamo clips fitted to particular seat models, one subfolder per seat.
+        private const string SeatClipFolder = OutputFolder + "/Seats";
         private const string ControllerPath = OutputFolder + "/Passenger_Animator.controller";
         private const string SleepMaskPath = OutputFolder + "/Passenger_SleepHead.mask";
         private const string SleepClipPath = OutputFolder + "/Head_Asleep.anim";
@@ -61,7 +63,13 @@ namespace Game.Characters.Passengers.Editor
         private static List<AnimationClip> LoadBodyClips()
         {
             List<AnimationClip> clips = new List<AnimationClip>();
-            foreach (string guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { BodyClipFolder }))
+            List<string> folders = new List<string> { MixamoClipFolder };
+            if (AssetDatabase.IsValidFolder(SeatClipFolder))
+            {
+                folders.Add(SeatClipFolder);
+            }
+
+            foreach (string guid in AssetDatabase.FindAssets("t:AnimationClip", folders.ToArray()))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(path))

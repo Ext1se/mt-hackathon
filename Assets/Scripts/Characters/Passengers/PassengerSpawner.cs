@@ -6,6 +6,8 @@ namespace Game.Characters.Passengers
 {
     /// <summary>
     /// Fills the <see cref="PassengerSpot"/>s under this object with random passengers on start.
+    /// Spots inside a <see cref="PassengerSeatBlock"/> are filled by the block's pattern: the block is taken with the seat
+    /// occupancy chance, then the block decides which of its seats get a passenger. Other spots are filled one by one.
     /// </summary>
     public class PassengerSpawner : MonoBehaviour
     {
@@ -37,6 +39,8 @@ namespace Game.Characters.Passengers
         [SerializeField] private GameObject _visibilitySource;
 
         private readonly List<PassengerSpot> _spots = new List<PassengerSpot>();
+        private readonly List<PassengerSpot> _chosenSpots = new List<PassengerSpot>();
+        private readonly List<PassengerSeatBlock> _blocks = new List<PassengerSeatBlock>();
         private readonly List<Passenger> _passengers = new List<Passenger>();
         private bool _isAppearanceReady;
 
@@ -84,23 +88,21 @@ namespace Game.Characters.Passengers
                 return;
             }
 
-            GetComponentsInChildren(_spots);
-            Shuffle(_spots);
+            ChooseSpots();
 
             Transform parent = _passengersRoot != null ? _passengersRoot : transform;
             // New characters must stay active until built; LateUpdate hides them again if the wagon is culled.
             parent.gameObject.SetActive(true);
             _isAppearanceReady = !_randomizeAppearance;
-            for (int i = 0; i < _spots.Count; i++)
+            for (int i = 0; i < _chosenSpots.Count; i++)
             {
-                PassengerSpot spot = _spots[i];
-                bool isSeat = spot.Kind == PassengerSpotKind.Seat;
-                float occupancy = isSeat ? _seatOccupancy : _standingOccupancy;
-                if (!spot.IsFree || Random.value >= occupancy)
+                PassengerSpot spot = _chosenSpots[i];
+                if (!spot.IsFree)
                 {
                     continue;
                 }
 
+                bool isSeat = spot.Kind == PassengerSpotKind.Seat;
                 PassengerPose pose = PassengerPose.Standing;
                 if (isSeat)
                 {
@@ -161,6 +163,39 @@ namespace Game.Characters.Passengers
 
             // With LoadAsync off both calls finish synchronously, so the crowd is complete now.
             _isAppearanceReady = true;
+        }
+
+        private void ChooseSpots()
+        {
+            _chosenSpots.Clear();
+
+            GetComponentsInChildren(_blocks);
+            for (int i = 0; i < _blocks.Count; i++)
+            {
+                if (Random.value < _seatOccupancy)
+                {
+                    _blocks[i].ChooseSpots(_chosenSpots);
+                }
+            }
+
+            GetComponentsInChildren(_spots);
+            for (int i = 0; i < _spots.Count; i++)
+            {
+                PassengerSpot spot = _spots[i];
+                if (spot.GetComponentInParent<PassengerSeatBlock>() != null)
+                {
+                    continue;
+                }
+
+                float occupancy = spot.Kind == PassengerSpotKind.Seat ? _seatOccupancy : _standingOccupancy;
+                if (Random.value < occupancy)
+                {
+                    _chosenSpots.Add(spot);
+                }
+            }
+
+            // Random order spreads prefabs and poses evenly instead of by hierarchy.
+            Shuffle(_chosenSpots);
         }
 
         private static void Shuffle(List<PassengerSpot> spots)

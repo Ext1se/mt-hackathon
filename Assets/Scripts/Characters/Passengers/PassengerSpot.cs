@@ -23,10 +23,13 @@ namespace Game.Characters.Passengers
         [SerializeField] private PassengerSpotKind _kind = PassengerSpotKind.Seat;
         [Tooltip("Seats only: whether a passenger may fall asleep here.")]
         [SerializeField] private bool _allowSleep = true;
+        [Tooltip("Optional: clips fitted to this seat model. Overrides the passenger's own animation set while seated here.")]
+        [SerializeField] private PassengerAnimationSet _animationSet;
 
         private Passenger _occupant;
 
         public PassengerSpotKind Kind => _kind;
+        public PassengerAnimationSet AnimationSet => _animationSet;
         public Passenger Occupant => _occupant;
         public bool IsFree => _occupant == null;
 

@@ -34,6 +34,10 @@ namespace Game.Characters.Passengers
         public PassengerPose Pose => _pose;
         public PassengerSpot Spot => _spot;
 
+        // Seat-specific clips fitted to the seat model take priority over the passenger's generic ones.
+        private PassengerAnimationSet ActiveSet =>
+            _spot != null && _spot.AnimationSet != null ? _spot.AnimationSet : _animationSet;
+
         private void Awake()
         {
             if (_animator == null)
@@ -84,7 +88,7 @@ namespace Game.Characters.Passengers
             if (Time.time >= _nextSwitchTime)
             {
                 AnimationClip next = PickClip(_currentClip == null || !_currentClip.isLooping);
-                PlayClip(next, _animationSet.CrossFadeTime, 0f);
+                PlayClip(next, ActiveSet.CrossFadeTime, 0f);
             }
         }
 
@@ -118,7 +122,7 @@ namespace Game.Characters.Passengers
 
         public void SetPose(PassengerPose pose)
         {
-            if (_animationSet == null)
+            if (ActiveSet == null)
             {
                 Debug.LogWarning($"{nameof(Passenger)} on '{name}' has no animation set.", this);
                 return;
@@ -130,7 +134,7 @@ namespace Game.Characters.Passengers
             _hasPose = true;
 
             // The first pose starts at a random point of the clip so neighbours are not in sync.
-            float fadeTime = isFirstPose ? 0f : _animationSet.CrossFadeTime;
+            float fadeTime = isFirstPose ? 0f : ActiveSet.CrossFadeTime;
             PlayClip(PickClip(true), fadeTime, isFirstPose ? Random.value : 0f);
 
             bool isAsleep = pose == PassengerPose.SittingAsleep;
@@ -155,7 +159,7 @@ namespace Game.Characters.Passengers
 
         private AnimationClip PickClip(bool loopingOnly)
         {
-            AnimationClip[] clips = _animationSet.GetClips(_pose);
+            AnimationClip[] clips = ActiveSet.GetClips(_pose);
 
             int candidates = 0;
             for (int i = 0; i < clips.Length; i++)
@@ -219,12 +223,12 @@ namespace Game.Characters.Passengers
             float speed = Mathf.Max(_animator.speed, 0.01f);
             if (clip.isLooping)
             {
-                Vector2 interval = _animationSet.SwitchInterval;
+                Vector2 interval = ActiveSet.SwitchInterval;
                 _nextSwitchTime = Time.time + Random.Range(interval.x, interval.y);
             }
             else
             {
-                _nextSwitchTime = Time.time + Mathf.Max(0.1f, clip.length / speed - _animationSet.CrossFadeTime);
+                _nextSwitchTime = Time.time + Mathf.Max(0.1f, clip.length / speed - ActiveSet.CrossFadeTime);
             }
         }
     }

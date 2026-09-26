@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c1336ac2fb956140846a605b12f4377, type: 3}
+  m_Name: PassengerAnimationSet_Business
+  m_EditorClassIdentifier: Game.Characters.Passengers::Game.Characters.Passengers.PassengerAnimationSet
+  _standing: []
+  _sitting:
+  - {fileID: 7400000, guid: 396677008647110478839940add30fc2, type: 2}
+  - {fileID: 7400000, guid: 78adf0e58d24be140a1ea9001217e271, type: 2}
+  _sittingAsleep:
+  - {fileID: 7400000, guid: 396677008647110478839940add30fc2, type: 2}
+  _switchInterval: {x: 8, y: 20}
+  _crossFadeTime: 0.4
+  _speedRange: {x: 0.9, y: 1.1}

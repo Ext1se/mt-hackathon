@@ -87,19 +87,8 @@ namespace Game.Scenarios.Editor
             subtitle.text = (string)menu["subtitle"];
             ScenarioSceneBuilder.Place(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -176f), new Vector2(1400f, 36f));
 
-            GameObject cards = new GameObject("Cards", typeof(RectTransform));
-            cards.transform.SetParent(background, false);
-            RectTransform cardsRect = (RectTransform)cards.transform;
-            cardsRect.anchorMin = new Vector2(0f, 1f);
-            cardsRect.anchorMax = new Vector2(1f, 1f);
-            cardsRect.pivot = new Vector2(0.5f, 1f);
-            cardsRect.offsetMin = new Vector2(100f, -960f);
-            cardsRect.offsetMax = new Vector2(-100f, -240f);
-            VerticalLayoutGroup group = cards.AddComponent<VerticalLayoutGroup>();
-            group.spacing = 20f;
-            group.childControlHeight = true;
-            group.childControlWidth = true;
-            group.childForceExpandHeight = false;
+            // A scrolling list: with one card per story variant the list is longer than a phone screen.
+            RectTransform cardsRect = ScenarioSceneBuilder.CreateScrollList("Cards", background, new Vector2(100f, 40f), new Vector2(-100f, -240f), 16f);
 
             foreach (JObject entry in menu["entries"])
             {
@@ -113,16 +102,16 @@ namespace Game.Scenarios.Editor
             string sceneName = isAvailable ? Path.GetFileNameWithoutExtension((string)entry["scene"]) : string.Empty;
             RectTransform card = ScenarioSceneBuilder.CreatePanel("Card_" + (string)entry["id"], parent, isAvailable ? CardColor : CardDisabledColor);
             LayoutElement layout = card.gameObject.AddComponent<LayoutElement>();
-            layout.minHeight = 170f;
-            layout.preferredHeight = 170f;
+            layout.minHeight = 176f;
+            layout.preferredHeight = 176f;
 
             Color textColor = isAvailable ? Color.white : DisabledText;
-            TMP_Text title = ScenarioSceneBuilder.CreateText("Title", card, 32f, FontStyles.Bold, textColor, TextAlignmentOptions.TopLeft);
+            TMP_Text title = ScenarioSceneBuilder.CreateText("Title", card, 26f, FontStyles.Bold, textColor, TextAlignmentOptions.TopLeft);
             title.text = (string)entry["title"];
-            PlaceTopStretch(title.rectTransform, 28f, 270f, 20f, 40f);
-            TMP_Text summary = ScenarioSceneBuilder.CreateText("Summary", card, 22f, FontStyles.Normal, isAvailable ? MutedText : DisabledText, TextAlignmentOptions.TopLeft);
+            PlaceTopStretch(title.rectTransform, 28f, 270f, 18f, 36f);
+            TMP_Text summary = ScenarioSceneBuilder.CreateText("Summary", card, 20f, FontStyles.Normal, isAvailable ? MutedText : DisabledText, TextAlignmentOptions.TopLeft);
             summary.text = (string)entry["summary"];
-            PlaceTopStretch(summary.rectTransform, 28f, 270f, 66f, 96f);
+            PlaceTopStretch(summary.rectTransform, 28f, 270f, 58f, 110f);
 
             Button start = ScenarioSceneBuilder.CreateButton("StartButton", card, isAvailable ? startLabel : soonLabel,
                 isAvailable ? AccentColor : CardDisabledColor);
@@ -137,6 +126,7 @@ namespace Game.Scenarios.Editor
             SerializedObject componentObject = new SerializedObject(component);
             componentObject.FindProperty("_startButton").objectReferenceValue = start;
             componentObject.FindProperty("_sceneName").stringValue = sceneName;
+            componentObject.FindProperty("_forcedVariant").stringValue = (string)entry["variant"] ?? string.Empty;
             componentObject.ApplyModifiedPropertiesWithoutUndo();
         }
 

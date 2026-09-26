@@ -11,9 +11,11 @@ using UnityEditor.Events;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
 using VSM.Player;
+using VSM.Presentation;
 
 namespace Game.Scenarios.Editor
 {
@@ -28,8 +30,10 @@ namespace Game.Scenarios.Editor
         private const string PrefabsFolder = "Assets/Prefabs/Scenarios";
         private const string StringsPath = DataFolder + "/Ui/ScenarioUiStrings.json";
         private const string LabelsPath = DataFolder + "/ScenarioLabels.asset";
-        private const string FontSourcePath = "Assets/CharacterCustomizer/UI/Fonts/Roboto/Roboto-Regular.ttf";
-        private const string FontAssetPath = DataFolder + "/Roboto-Regular Dynamic SDF.asset";
+        private const string FontSourcePath = "Assets/Fonts/MoscowSans/MoscowSans-Regular.ttf";
+        private const string FontAssetPath = DataFolder + "/MoscowSans-Regular Dynamic SDF.asset";
+        private const string BoldFontSourcePath = "Assets/Fonts/MoscowSans/MoscowSans-ExtraBold.otf";
+        private const string BoldFontAssetPath = DataFolder + "/MoscowSans-ExtraBold Dynamic SDF.asset";
         private const string OptionButtonPath = PrefabsFolder + "/OptionButton.prefab";
         private const string DecisionRowPath = PrefabsFolder + "/DecisionRow.prefab";
         private const string CanvasName = "ScenarioCanvas";
@@ -37,6 +41,12 @@ namespace Game.Scenarios.Editor
         private const string BuiltinSprite = "UI/Skin/UISprite.psd";
         private const string BuiltinKnob = "UI/Skin/Knob.psd";
         private const string WalkActionsPath = "Assets/VSM/Settings/Input/Walk.inputactions";
+        private const string MaterialsFolder = DataFolder + "/Materials";
+        private const string GuideTexturePath = MaterialsFolder + "/GuideChevron.asset";
+        private const string GuideMaterialPath = MaterialsFolder + "/GuideTrail.mat";
+        private const string GuideShader = "Game/Scenarios/Guide Trail";
+        private const float GuideScrollSpeed = 1.4f;
+        private const int GuideTextureSize = 64;
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
         private static readonly Color PanelColor = new Color(0.06f, 0.08f, 0.11f, 0.94f);
@@ -48,6 +58,7 @@ namespace Game.Scenarios.Editor
         private static readonly Color SafetyColor = new Color(0.35f, 0.80f, 0.45f, 1f);
         private static readonly Color MutedText = new Color(0.75f, 0.78f, 0.83f, 1f);
         private static readonly Color TrackColor = new Color(0f, 0f, 0f, 0.45f);
+        private static readonly Color GuideColor = new Color(0.98f, 0.78f, 0.22f, 1f);
 
         // Walking-mode HUD pieces that would overlap the dialogue panel.
         private static readonly string[] s_walkHudPaths =
@@ -67,6 +78,7 @@ namespace Game.Scenarios.Editor
         private const string WalkCrosshairPath = "Mobile_Controls/SafeArea/Crosshair";
 
         private static TMP_FontAsset s_font;
+        private static TMP_FontAsset s_fontBold;
         private static JObject s_strings;
 
         [MenuItem("Game/Scenarios/Build Scenario UI In Scene")]
@@ -81,6 +93,8 @@ namespace Game.Scenarios.Editor
             // Settings toggled by hand on the runner survive a rebuild.
             ScenarioRunner previous = Object.FindFirstObjectByType<ScenarioRunner>();
             bool timersEnabled = previous == null || previous.TimersEnabled;
+            DialogueView previousDialogue = Object.FindFirstObjectByType<DialogueView>();
+            string typewriter = previousDialogue != null ? EditorJsonUtility.ToJson(previousDialogue) : null;
 
             // The inspector throws if the selected object is destroyed under it.
             Selection.activeGameObject = null;
@@ -90,9 +104,11 @@ namespace Game.Scenarios.Editor
             Canvas canvas = BuildCanvas(CanvasName);
             ScenarioHud hud = BuildHud(canvas.transform);
             DialogueView dialogue = BuildDialogue(canvas.transform, optionPrefab);
+            RestoreTypewriter(dialogue, typewriter);
             HintView hint = BuildHint(canvas.transform);
             QuestTracker quest = BuildQuest(canvas.transform);
             DebriefView debrief = BuildDebrief(canvas.transform, rowPrefab);
+            CardView card = BuildCard(canvas.transform, optionPrefab);
 
             GameObject system = new GameObject(SystemName);
             Undo.RegisterCreatedObjectUndo(system, "Build scenario UI");
@@ -104,11 +120,17 @@ namespace Game.Scenarios.Editor
             runnerObject.FindProperty("_hint").objectReferenceValue = hint;
             runnerObject.FindProperty("_quest").objectReferenceValue = quest;
             runnerObject.FindProperty("_debrief").objectReferenceValue = debrief;
+            runnerObject.FindProperty("_card").objectReferenceValue = card;
+            runnerObject.FindProperty("_fader").objectReferenceValue = BuildFader(canvas.transform);
             runnerObject.FindProperty("_playerName").stringValue = Ui("playerName");
             runnerObject.FindProperty("_timersEnabled").boolValue = timersEnabled;
             runnerObject.ApplyModifiedPropertiesWithoutUndo();
             BuildBriefing(canvas.transform, runner);
             WireCursorMode(runner);
+            BuildGuide(runner, quest);
+
+            // The fade layer goes under every panel (the look reticle included), so text stays readable on black.
+            canvas.transform.Find("Fader").SetAsFirstSibling();
 
             AssetDatabase.SaveAssets();
             Selection.activeGameObject = system;
@@ -125,7 +147,8 @@ namespace Game.Scenarios.Editor
         {
             s_strings = JObject.Parse(File.ReadAllText(StringsPath));
             EnsureFolder(DataFolder);
-            s_font = EnsureFont();
+            s_font = EnsureFont(FontSourcePath, FontAssetPath);
+            s_fontBold = EnsureFont(BoldFontSourcePath, BoldFontAssetPath);
         }
 
         internal static void EnsureFolder(string path)
@@ -146,26 +169,31 @@ namespace Game.Scenarios.Editor
             }
         }
 
-        // The bundled TMP fonts have Latin glyphs only; a dynamic atlas from Roboto renders any script on demand.
-        internal static TMP_FontAsset EnsureFont()
+        // The bundled TMP fonts have Latin glyphs only; a dynamic atlas from the brand font renders any script on demand.
+        internal static TMP_FontAsset EnsureFont(string sourcePath, string assetPath)
         {
-            TMP_FontAsset existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+            TMP_FontAsset existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
             if (existing != null)
             {
                 return existing;
             }
 
-            Font source = AssetDatabase.LoadAssetAtPath<Font>(FontSourcePath);
+            Font source = AssetDatabase.LoadAssetAtPath<Font>(sourcePath);
+            if (source == null)
+            {
+                throw new FileNotFoundException($"Font source '{sourcePath}' is missing.");
+            }
+
             TMP_FontAsset font = TMP_FontAsset.CreateFontAsset(source, 64, 6, GlyphRenderMode.SDFAA, 1024, 1024,
                 AtlasPopulationMode.Dynamic, true);
-            font.name = Path.GetFileNameWithoutExtension(FontAssetPath);
-            AssetDatabase.CreateAsset(font, FontAssetPath);
+            font.name = Path.GetFileNameWithoutExtension(assetPath);
+            AssetDatabase.CreateAsset(font, assetPath);
             font.material.name = font.name + " Material";
             AssetDatabase.AddObjectToAsset(font.material, font);
             font.atlasTexture.name = font.name + " Atlas";
             AssetDatabase.AddObjectToAsset(font.atlasTexture, font);
             AssetDatabase.SaveAssets();
-            return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+            return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
         }
 
         private static ScenarioLabels EnsureLabels()
@@ -399,6 +427,7 @@ namespace Game.Scenarios.Editor
 
             RectTransform optionsContainer = CreateScrollList("Options", root, Vector2.zero, Vector2.zero, 6f);
             GameObject optionsHolder = optionsContainer.parent.parent.gameObject;
+            CanvasGroup optionsGroup = optionsHolder.AddComponent<CanvasGroup>();
             LayoutElement optionsElement = optionsHolder.AddComponent<LayoutElement>();
             ScrollListHeight optionsHeight = optionsHolder.AddComponent<ScrollListHeight>();
             SerializedObject heightObject = new SerializedObject(optionsHeight);
@@ -428,6 +457,7 @@ namespace Game.Scenarios.Editor
             dialogueObject.FindProperty("_speaker").objectReferenceValue = speaker;
             dialogueObject.FindProperty("_text").objectReferenceValue = text;
             dialogueObject.FindProperty("_optionsContainer").objectReferenceValue = optionsContainer;
+            dialogueObject.FindProperty("_optionsGroup").objectReferenceValue = optionsGroup;
             dialogueObject.FindProperty("_optionPrefab").objectReferenceValue = optionPrefab;
             dialogueObject.FindProperty("_continueButton").objectReferenceValue = continueButton;
             dialogueObject.FindProperty("_hintButton").objectReferenceValue = hintButton;
@@ -435,6 +465,28 @@ namespace Game.Scenarios.Editor
             dialogueObject.FindProperty("_hubActionsFormat").stringValue = Ui("hubActions");
             dialogueObject.ApplyModifiedPropertiesWithoutUndo();
             return dialogue;
+        }
+
+        // Typewriter settings tuned in the inspector survive a rebuild; references come from the new build.
+        private static void RestoreTypewriter(DialogueView dialogue, string previousJson)
+        {
+            if (string.IsNullOrEmpty(previousJson))
+            {
+                return;
+            }
+
+            DialogueView scratch = new GameObject("TypewriterSettings").AddComponent<DialogueView>();
+            EditorJsonUtility.FromJsonOverwrite(previousJson, scratch);
+            SerializedObject from = new SerializedObject(scratch);
+            SerializedObject to = new SerializedObject(dialogue);
+            string[] properties = { "_charactersPerSecond", "_sentencePause", "_commaPause", "_skipOnInput", "_optionsFadeSeconds" };
+            foreach (string property in properties)
+            {
+                to.CopyFromSerializedProperty(from.FindProperty(property));
+            }
+
+            to.ApplyModifiedPropertiesWithoutUndo();
+            Object.DestroyImmediate(scratch.gameObject);
         }
 
         private static void SetButtonSize(Button button, float width, float height)
@@ -483,12 +535,205 @@ namespace Game.Scenarios.Editor
             TMP_Text header = CreateText("Header", root, 20f, FontStyles.Bold, AccentColor, TextAlignmentOptions.TopLeft);
             header.text = Ui("quest");
             TMP_Text objectives = CreateText("Objectives", root, 22f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
+            objectives.richText = true;
+            TMP_Text guideHint = CreateText("GuideHint", root, 18f, FontStyles.Italic, MutedText, TextAlignmentOptions.TopLeft);
+            guideHint.text = Ui("questGuideHint");
 
             SerializedObject questObject = new SerializedObject(quest);
             questObject.FindProperty("_root").objectReferenceValue = root.gameObject;
             questObject.FindProperty("_objectives").objectReferenceValue = objectives;
+            questObject.FindProperty("_guideHint").objectReferenceValue = guideHint;
+            questObject.FindProperty("_selectedColor").colorValue = GuideColor;
             questObject.ApplyModifiedPropertiesWithoutUndo();
             return quest;
+        }
+
+        private static ScreenFader BuildFader(Transform canvas)
+        {
+            GameObject holder = CreateHolder("Fader", canvas);
+            CanvasGroup group = holder.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            Image black = holder.AddComponent<Image>();
+            black.color = Color.black;
+            black.raycastTarget = false;
+            ScreenFader fader = holder.AddComponent<ScreenFader>();
+            SerializedObject faderObject = new SerializedObject(fader);
+            faderObject.FindProperty("_group").objectReferenceValue = group;
+            faderObject.ApplyModifiedPropertiesWithoutUndo();
+            return fader;
+        }
+
+        // The trail is a line lying flat on the floor: its transform faces up and the line aligns to the transform.
+        private static void BuildGuide(ScenarioRunner runner, QuestTracker quest)
+        {
+            VSMWalkController player = Object.FindFirstObjectByType<VSMWalkController>();
+            VSMTrainMotion train = Object.FindFirstObjectByType<VSMTrainMotion>();
+            if (player == null || train == null)
+            {
+                Debug.LogWarning("No player or train in the scene: the guide trail is not built.");
+                return;
+            }
+
+            GameObject trail = new GameObject("GuideTrail");
+            trail.transform.SetParent(runner.transform, false);
+            trail.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+            LineRenderer line = trail.AddComponent<LineRenderer>();
+            line.useWorldSpace = true;
+            line.alignment = LineAlignment.TransformZ;
+            line.textureMode = LineTextureMode.Tile;
+            line.textureScale = new Vector2(2.5f, 1f);
+            line.widthMultiplier = 0.4f;
+            line.numCornerVertices = 3;
+            line.shadowCastingMode = ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            line.sharedMaterial = EnsureGuideMaterial();
+            line.positionCount = 0;
+
+            ScenarioGuide guide = runner.gameObject.AddComponent<ScenarioGuide>();
+            SerializedObject guideObject = new SerializedObject(guide);
+            guideObject.FindProperty("_runner").objectReferenceValue = runner;
+            guideObject.FindProperty("_quest").objectReferenceValue = quest;
+            guideObject.FindProperty("_actions").objectReferenceValue = AssetDatabase.LoadAssetAtPath<InputActionAsset>(WalkActionsPath);
+            guideObject.FindProperty("_player").objectReferenceValue = player.transform;
+            guideObject.FindProperty("_train").objectReferenceValue = train.transform;
+            guideObject.FindProperty("_line").objectReferenceValue = line;
+            guideObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Material EnsureGuideMaterial()
+        {
+            EnsureFolder(MaterialsFolder);
+            Texture2D chevron = EnsureGuideTexture();
+            // The trail shader tints by vertex colour (the faded ends) and scrolls the chevrons itself;
+            // the stock URP Unlit ignores vertex colour, and URP Particles Unlit ignores texture offset.
+            Shader shader = Shader.Find(GuideShader);
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(GuideMaterialPath);
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, GuideMaterialPath);
+            }
+
+            material.shader = shader;
+            material.shaderKeywords = new string[0];
+            material.renderQueue = -1;
+            material.SetColor("_BaseColor", GuideColor);
+            material.SetFloat("_ScrollSpeed", GuideScrollSpeed);
+            material.SetTexture("_BaseMap", chevron);
+            material.mainTexture = chevron;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // White chevrons pointing along +U over a faint band; tinted by the material colour.
+        private static Texture2D EnsureGuideTexture()
+        {
+            Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GuideTexturePath);
+            bool isNew = texture == null;
+            if (isNew)
+            {
+                texture = new Texture2D(GuideTextureSize, GuideTextureSize, TextureFormat.RGBA32, true);
+                texture.name = "GuideChevron";
+            }
+
+            texture.wrapModeU = TextureWrapMode.Repeat;
+            texture.wrapModeV = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Trilinear;
+            texture.anisoLevel = 8;
+            Color32[] pixels = new Color32[GuideTextureSize * GuideTextureSize];
+            for (int y = 0; y < GuideTextureSize; y++)
+            {
+                float v = (y + 0.5f) / GuideTextureSize * 2f - 1f;
+                for (int x = 0; x < GuideTextureSize; x++)
+                {
+                    float u = (x + 0.5f) / GuideTextureSize;
+                    float centre = 0.72f - 0.34f * Mathf.Abs(v);
+                    float chevron = 1f - Step(0.1f, 0.14f, Mathf.Abs(u - centre));
+                    float band = 0.2f * (1f - Step(0.8f, 1f, Mathf.Abs(v)));
+                    float edge = 1f - Step(0.85f, 1f, Mathf.Abs(v));
+                    byte alpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(Mathf.Max(chevron * edge, band)) * 255f);
+                    pixels[y * GuideTextureSize + x] = new Color32(255, 255, 255, alpha);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(true);
+            if (isNew)
+            {
+                AssetDatabase.CreateAsset(texture, GuideTexturePath);
+            }
+            else
+            {
+                EditorUtility.SetDirty(texture);
+            }
+
+            return texture;
+        }
+
+        // Shader-style smoothstep: 0 below edge0, 1 above edge1. Mathf.SmoothStep interpolates values instead.
+        private static float Step(float edge0, float edge1, float x)
+        {
+            float t = Mathf.Clamp01((x - edge0) / (edge1 - edge0));
+            return t * t * (3f - 2f * t);
+        }
+
+        // A centred panel over a dimmed screen; it grows with its sections.
+        private static CardView BuildCard(Transform canvas, OptionButton optionPrefab)
+        {
+            GameObject holder = CreateHolder("Card", canvas);
+            CardView card = holder.AddComponent<CardView>();
+
+            RectTransform root = CreatePanel("Root", holder.transform, new Color(0f, 0f, 0f, 0.55f));
+            Stretch(root, Vector2.zero, Vector2.zero);
+
+            RectTransform panel = CreatePanel("Panel", root, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.98f));
+            Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100f, 400f));
+            ContentSizeFitter fitter = panel.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            VerticalLayoutGroup layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(56, 48, 36, 36);
+            layout.spacing = 20f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandHeight = false;
+
+            Image accent = CreatePanel("Accent", panel, AccentColor).GetComponent<Image>();
+            accent.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            Place(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(8f, 0f));
+            accent.rectTransform.pivot = new Vector2(0f, 0.5f);
+
+            TMP_Text title = CreateText("Title", panel, 34f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopLeft);
+
+            GameObject section = new GameObject("Section", typeof(RectTransform));
+            section.transform.SetParent(panel, false);
+            VerticalLayoutGroup sectionLayout = section.AddComponent<VerticalLayoutGroup>();
+            sectionLayout.spacing = 6f;
+            sectionLayout.childControlWidth = true;
+            sectionLayout.childControlHeight = true;
+            sectionLayout.childForceExpandHeight = false;
+            CreateText("Heading", section.transform, 24f, FontStyles.Bold, AccentColor, TextAlignmentOptions.TopLeft);
+            TMP_Text body = CreateText("Body", section.transform, 24f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
+            body.lineSpacing = 8f;
+
+            GameObject options = new GameObject("Options", typeof(RectTransform));
+            options.transform.SetParent(panel, false);
+            VerticalLayoutGroup optionsLayout = options.AddComponent<VerticalLayoutGroup>();
+            optionsLayout.spacing = 8f;
+            optionsLayout.padding = new RectOffset(0, 0, 8, 0);
+            optionsLayout.childControlWidth = true;
+            optionsLayout.childControlHeight = true;
+            optionsLayout.childForceExpandHeight = false;
+
+            SerializedObject cardObject = new SerializedObject(card);
+            cardObject.FindProperty("_root").objectReferenceValue = root.gameObject;
+            cardObject.FindProperty("_title").objectReferenceValue = title;
+            cardObject.FindProperty("_sectionTemplate").objectReferenceValue = section;
+            cardObject.FindProperty("_optionsContainer").objectReferenceValue = options.transform;
+            cardObject.FindProperty("_optionPrefab").objectReferenceValue = optionPrefab;
+            cardObject.ApplyModifiedPropertiesWithoutUndo();
+            return card;
         }
 
         private static DebriefView BuildDebrief(Transform canvas, DecisionRow rowPrefab)
@@ -693,9 +938,10 @@ namespace Game.Scenarios.Editor
             GameObject holder = new GameObject(name, typeof(RectTransform));
             holder.transform.SetParent(parent, false);
             TextMeshProUGUI text = holder.AddComponent<TextMeshProUGUI>();
-            text.font = s_font;
+            bool isBold = (style & FontStyles.Bold) != 0;
+            text.font = isBold && s_fontBold != null ? s_fontBold : s_font;
             text.fontSize = size;
-            text.fontStyle = style;
+            text.fontStyle = isBold ? style & ~FontStyles.Bold : style;
             text.color = color;
             text.alignment = alignment;
             text.enableWordWrapping = true;
@@ -741,7 +987,7 @@ namespace Game.Scenarios.Editor
         }
 
         // A vertical scroll view whose content grows with its children; returns the content transform.
-        private static RectTransform CreateScrollList(string name, Transform parent, Vector2 offsetMin, Vector2 offsetMax, float spacing)
+        internal static RectTransform CreateScrollList(string name, Transform parent, Vector2 offsetMin, Vector2 offsetMax, float spacing)
         {
             GameObject holder = new GameObject(name, typeof(RectTransform));
             holder.transform.SetParent(parent, false);

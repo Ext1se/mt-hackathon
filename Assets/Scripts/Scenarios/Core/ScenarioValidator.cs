@@ -67,6 +67,25 @@ namespace Game.Scenarios.Core
                 ValidateConditions(hint.Conditions, $"{where}, hint", errors);
             }
 
+            if (node.Card != null)
+            {
+                ValidateCard(node, where, errors);
+            }
+
+            for (int i = 0; i < node.Look.Count; i++)
+            {
+                LookStepData step = node.Look[i];
+                if (string.IsNullOrEmpty(step.Target) || (!step.Hold && step.Seconds <= 0f))
+                {
+                    errors.Add($"{where}: a look step needs a target and positive seconds.");
+                }
+
+                if (step.Hold && i < node.Look.Count - 1)
+                {
+                    errors.Add($"{where}: only the last look step may hold.");
+                }
+            }
+
             HashSet<string> optionIds = new HashSet<string>();
             foreach (OptionData option in node.Options)
             {
@@ -208,6 +227,27 @@ namespace Game.Scenarios.Core
 
                 CheckTarget(rule.Node, nodes, where, errors);
                 ValidateConditions(rule.Conditions, where, errors);
+            }
+        }
+
+        private static void ValidateCard(NodeData node, string where, List<string> errors)
+        {
+            if (node.Kind != NodeKinds.Choice)
+            {
+                errors.Add($"{where}: a card belongs on a choice node.");
+            }
+
+            if (node.Card.Sections.Count == 0 || node.Options.Count == 0)
+            {
+                errors.Add($"{where}: a card needs sections and at least one option to close it.");
+            }
+
+            foreach (CardSectionData section in node.Card.Sections)
+            {
+                if (string.IsNullOrEmpty(section.Title) || (string.IsNullOrEmpty(section.Text) && section.Items.Count == 0))
+                {
+                    errors.Add($"{where}: a card section needs a title and a text or items.");
+                }
             }
         }
 

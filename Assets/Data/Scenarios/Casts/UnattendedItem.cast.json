@@ -1,16 +1,17 @@
 {
   "scenario": "Assets/Data/Scenarios/UnattendedItem.json",
-  "forcedVariant": "",
-  "startHint": "Подойдите к пассажирке 3Г (вагон с рюкзаком, третий ряд слева) и нажмите действие.",
+  "forcedVariant": "A",
+  "startHint": "Подойдите к пассажирке 3Г (вагон с сумкой, третий ряд слева) и нажмите действие.",
+  "headLook": { "enabled": true, "maxYaw": 70, "maxPitchUp": 20, "maxPitchDown": 30, "releaseMargin": 30, "maxDistance": 3, "neckShare": 0.35 },
   "groups": [
     { "name": "Car7_C03", "visibilitySource": "C03_ROOT" },
     { "name": "Car8_C04", "visibilitySource": "C04_ROOT" }
   ],
   "actors": [
-    { "id": "passenger_3G", "name": "Пассажирка 3Г", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_3.001_1", "starter": true, "target": "passenger_3G" },
-    { "id": "passenger_4V", "name": "Пассажир 4В", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_4.001_0", "target": "passenger_4V" },
-    { "id": "passenger_8A", "name": "Пассажир 8А", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_8_0" },
-    { "id": "passenger_5B", "name": "Пассажирка 5Б", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_5_0", "target": "passenger_5B" },
+    { "id": "passenger_3G", "name": "Пассажирка 3Г", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_3.001_1", "starter": true, "target": "passenger_3G", "stand": [ 0.05, 0, -57.75 ], "emotionIntensity": 0.6 },
+    { "id": "passenger_4V", "name": "Пассажир 4В", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_4.001_0", "target": "passenger_4V", "stand": [ 0.05, 0, -58.65 ] },
+    { "id": "passenger_2B", "name": "Пассажир 2Б", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_2_0" },
+    { "id": "passenger_5B", "name": "Пассажирка 5Б", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_5_0", "target": "passenger_5B", "stand": [ -0.05, 0, -59.6 ], "holdClip": "Sit_ImpatientWaiting" },
     { "id": "passenger_1A", "name": "Пассажирка 1А", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_1.001_1" },
     { "id": "passenger_3V", "name": "Пассажир 3В", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_6_0", "variant": "A", "target": "candidate_owner", "props": [ "cap", "scarf", "thermos" ] },
     { "id": "friend_1", "name": "", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_5_0" },
@@ -32,5 +33,76 @@
     { "id": "door_car8", "group": "Car7_C03", "target": "door_car8", "position": [ -0.65, 1.45, -71.57 ], "size": [ 0.35, 0.35, 0.08 ], "marker": [ 0, 0.45, 0 ] },
     { "id": "door_car6", "group": "Car7_C03", "target": "door_car6", "position": [ 0.75, 1.45, -53.2 ], "size": [ 0.35, 0.35, 0.08 ], "marker": [ 0, 0.45, 0 ] }
   ],
-  "lockedProps": [ "DuffelBag" ]
+  "lockedProps": [ "DuffelBag" ],
+  "marks": [
+    { "id": "Mark_C03_BagAisle", "group": "Car7_C03", "position": [ 0, 0, -56.3 ], "yaw": 129, "kind": "Standing" },
+    { "id": "Mark_C03_2BAtBag", "group": "Car7_C03", "position": [ 0, 0, -57.0 ], "yaw": 95, "kind": "Standing" },
+    { "id": "Mark_C03_Panic1", "group": "Car7_C03", "position": [ 0, 0, -55.3 ], "yaw": 149, "kind": "Standing" },
+    { "id": "Mark_C03_Panic2", "group": "Car7_C03", "position": [ 0, 0, -59.5 ], "yaw": 26, "kind": "Standing" },
+    { "id": "Mark_C03_Panic3", "group": "Car7_C03", "position": [ 0.85, 0, -51.9 ], "yaw": 190, "kind": "Standing" }
+  ],
+  "zones": [
+    { "id": "Zone_C03_Row1", "group": "Car7_C03", "position": [ 0, 0, -55.25 ], "signal": "flag.left_bag" },
+    { "id": "Zone_C03_Row5", "group": "Car7_C03", "position": [ 0, 0, -58.97 ], "signal": "flag.left_bag" }
+  ],
+  "states": [
+    {
+      "id": "curious_up",
+      "when": [ { "key": "visited.V4" } ],
+      "actions": [
+        { "type": "move", "actor": "passenger_2B", "to": "Mark_C03_2BAtBag", "pose": "Standing", "clip": "Stand_Idle" }
+      ]
+    },
+    {
+      "id": "curious_down",
+      "when": [ { "key": "flag.curious_done" } ],
+      "actions": [
+        { "type": "move", "actor": "passenger_2B", "to": "Seat_C03_SEAT_comfort_2_0", "pose": "Sitting", "clip": "" }
+      ]
+    },
+    {
+      "id": "zone",
+      "when": [ { "key": "flag.zone" } ],
+      "actions": [
+        { "type": "move", "actor": "passenger_5B", "to": "Seat_C03_SEAT_comfort_7_1", "pose": "Sitting" },
+        { "type": "move", "occupant": "Seat_C03_SEAT_comfort_4_0", "to": "Seat_C03_SEAT_comfort_6_1", "pose": "Sitting" }
+      ]
+    },
+    {
+      "id": "panic",
+      "when": [ { "key": "var.panic", "op": "ge", "value": 2 } ],
+      "actions": [
+        { "type": "move", "occupant": "Seat_C03_SEAT_comfort_2.001_0", "to": "Mark_C03_Panic1", "pose": "Standing" },
+        { "type": "move", "occupant": "Seat_C03_SEAT_comfort_6_0", "to": "Mark_C03_Panic2", "pose": "Standing" },
+        { "type": "move", "occupant": "Seat_C03_SEAT_comfort_4_0", "to": "Mark_C03_Panic3", "pose": "Standing" }
+      ]
+    },
+    {
+      "id": "evacuated",
+      "when": [ { "key": "flag.evacuated" } ],
+      "actions": [
+        { "type": "hide", "crowd": "Passengers_C03", "actors": [ "passenger_4V", "passenger_2B", "passenger_5B", "passenger_1A" ] }
+      ]
+    },
+    {
+      "id": "owner_away_D",
+      "when": [ { "key": "variant.D" } ],
+      "fade": false,
+      "actions": [
+        { "type": "hide", "actors": [ "passenger_1A" ] }
+      ]
+    },
+    {
+      "id": "owner_back_D",
+      "when": [
+        { "key": "variant.D", "group": 0 },
+        { "key": "flag.owner_found", "group": 0 },
+        { "key": "visited.V6D", "group": 1 }
+      ],
+      "actions": [
+        { "type": "show", "actors": [ "passenger_1A" ] },
+        { "type": "move", "actor": "passenger_1A", "to": "Mark_C03_BagAisle", "pose": "Standing" }
+      ]
+    }
+  ]
 }

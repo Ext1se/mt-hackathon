@@ -24,6 +24,8 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("onEnter")] private List<EffectData> _onEnter = new List<EffectData>();
         [JsonProperty("feedback")] private string _feedback = string.Empty;
         [JsonProperty("hints")] private List<HintData> _hints = new List<HintData>();
+        [JsonProperty("look")] private List<LookStepData> _look = new List<LookStepData>();
+        [JsonProperty("card")] private CardData _card;
 
         public string Id => _id;
         public string Kind => _kind;
@@ -53,5 +55,11 @@ namespace Game.Scenarios.Core.Data
         public string Feedback => _feedback;
 
         public IReadOnlyList<HintData> Hints => _hints;
+
+        /// <summary>Camera look sequence played on entry; afterwards the view returns to the speaker.</summary>
+        public IReadOnlyList<LookStepData> Look => _look;
+
+        /// <summary>Optional info panel shown instead of the dialogue; null for an ordinary node.</summary>
+        public CardData Card => _card;
     }
 }

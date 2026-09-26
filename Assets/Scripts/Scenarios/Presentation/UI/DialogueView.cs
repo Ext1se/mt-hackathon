@@ -3,17 +3,25 @@ using System.Collections.Generic;
 using Game.Scenarios.Core;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Game.Scenarios.Presentation.UI
 {
-    /// <summary>Bottom dialogue panel: speaker, line, answer buttons, hub counter, hint and continue buttons.</summary>
+    /// <summary>
+    /// Bottom dialogue panel: speaker, line, answer buttons, hub counter, hint and continue buttons. The line is typed
+    /// out character by character; answers and the continue button unlock once it is complete. A click, Space or Enter
+    /// while typing shows the whole line at once.
+    /// </summary>
     public sealed class DialogueView : MonoBehaviour
     {
         [SerializeField] private GameObject _root;
         [SerializeField] private TMP_Text _speaker;
         [SerializeField] private TMP_Text _text;
         [SerializeField] private RectTransform _optionsContainer;
+        [Tooltip("On the options list: hidden and locked while the line is being typed, so the panel keeps its size.")]
+        [SerializeField] private CanvasGroup _optionsGroup;
         [SerializeField] private OptionButton _optionPrefab;
         [SerializeField] private Button _continueButton;
         [SerializeField] private Button _hintButton;
@@ -21,17 +29,52 @@ namespace Game.Scenarios.Presentation.UI
         [Tooltip("Format of the remaining hub actions; {0} is the number. The words live here, not in code.")]
         [SerializeField] private string _hubActionsFormat = "{0}";
 
+        [Header("Typewriter")]
+        [Tooltip("Characters per second; 0 shows the line at once.")]
+        [SerializeField, Range(0f, 200f)] private float _charactersPerSecond = 45f;
+        [Tooltip("Extra pause after . ! ? and an ellipsis, in seconds.")]
+        [SerializeField, Range(0f, 1f)] private float _sentencePause = 0.25f;
+        [Tooltip("Extra pause after , ; : and a dash, in seconds.")]
+        [SerializeField, Range(0f, 0.5f)] private float _commaPause = 0.08f;
+        [Tooltip("A click, Space or Enter while typing shows the whole line.")]
+        [SerializeField] private bool _skipOnInput = true;
+        [Tooltip("Fade-in of the answers after the line is typed, in seconds.")]
+        [SerializeField, Range(0f, 1f)] private float _optionsFadeSeconds = 0.2f;
+
         private readonly List<OptionButton> _buttons = new List<OptionButton>();
+        private int _visibleCharacters;
+        private int _totalCharacters;
+        private float _nextCharacterIn;
+        private bool _isTyping;
+        private bool _isResponse;
 
         public event Action<string> OptionChosen;
         public event Action ContinueRequested;
         public event Action HintRequested;
+
+        /// <summary>Raised when the whole line is on screen and the answers are unlocked.</summary>
+        public event Action TextRevealed;
+
+        public bool IsTyping => _isTyping;
 
         private void Awake()
         {
             _continueButton.onClick.AddListener(OnContinueClicked);
             _hintButton.onClick.AddListener(OnHintClicked);
             _root.SetActive(false);
+        }
+
+        private void Update()
+        {
+            if (_isTyping)
+            {
+                UpdateTyping();
+            }
+            else if (_optionsGroup != null && _optionsGroup.alpha < 1f)
+            {
+                float step = _optionsFadeSeconds > 0f ? Time.unscaledDeltaTime / _optionsFadeSeconds : 1f;
+                _optionsGroup.alpha = Mathf.MoveTowards(_optionsGroup.alpha, 1f, step);
+            }
         }
 
         private void OnDestroy()
@@ -43,8 +86,8 @@ namespace Game.Scenarios.Presentation.UI
         public void ShowNode(string speaker, NodeView view)
         {
             _root.SetActive(true);
+            _isResponse = false;
             _speaker.text = speaker;
-            _text.text = view.Text;
             _continueButton.gameObject.SetActive(false);
             _hintButton.gameObject.SetActive(view.Node.Hints.Count > 0);
             _hubActions.gameObject.SetActive(view.IsHub);
@@ -54,22 +97,134 @@ namespace Game.Scenarios.Presentation.UI
             }
 
             ShowOptions(view.Options);
+            StartTyping(view.Text);
         }
 
         public void ShowResponse(string speaker, string text)
         {
             _root.SetActive(true);
+            _isResponse = true;
             _speaker.text = speaker;
-            _text.text = text;
             _hintButton.gameObject.SetActive(false);
             _hubActions.gameObject.SetActive(false);
+            _continueButton.gameObject.SetActive(false);
             ShowOptions(Array.Empty<OptionView>());
-            _continueButton.gameObject.SetActive(true);
+            StartTyping(text);
         }
 
         public void Hide()
         {
+            _isTyping = false;
             _root.SetActive(false);
+        }
+
+        private static bool IsSkipPressed()
+        {
+            Mouse mouse = Mouse.current;
+            Keyboard keyboard = Keyboard.current;
+            Touchscreen touch = Touchscreen.current;
+            return (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                || (keyboard != null && (keyboard.spaceKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame))
+                || (touch != null && touch.primaryTouch.press.wasPressedThisFrame);
+        }
+
+        // A button keeps the "selected" tint after a click until something else is selected; nothing should be.
+        private static void Deselect()
+        {
+            EventSystem current = EventSystem.current;
+            if (current != null)
+            {
+                current.SetSelectedGameObject(null);
+            }
+        }
+
+        private float PauseAfter(char character)
+        {
+            switch (character)
+            {
+                case '.':
+                case '!':
+                case '?':
+                case '…':
+                    return _sentencePause;
+                case ',':
+                case ';':
+                case ':':
+                case '—':
+                    return _commaPause;
+                default:
+                    return 0f;
+            }
+        }
+
+        private void StartTyping(string text)
+        {
+            _text.text = text;
+            _text.maxVisibleCharacters = 0;
+            _text.ForceMeshUpdate();
+            _totalCharacters = _text.textInfo.characterCount;
+            _visibleCharacters = 0;
+            _nextCharacterIn = 0f;
+            SetOptionsUnlocked(false);
+            _isTyping = true;
+            if (_charactersPerSecond <= 0f || _totalCharacters == 0)
+            {
+                Reveal();
+            }
+        }
+
+        private void UpdateTyping()
+        {
+            if (_skipOnInput && IsSkipPressed())
+            {
+                Reveal();
+                return;
+            }
+
+            // Rich-text tags (italics) are not characters here: TMP counts only what is drawn.
+            _nextCharacterIn -= Time.unscaledDeltaTime;
+            float delay = 1f / _charactersPerSecond;
+            while (_nextCharacterIn <= 0f && _visibleCharacters < _totalCharacters)
+            {
+                char character = _text.textInfo.characterInfo[_visibleCharacters].character;
+                _visibleCharacters++;
+                _nextCharacterIn += delay + PauseAfter(character);
+            }
+
+            _text.maxVisibleCharacters = _visibleCharacters;
+            if (_visibleCharacters >= _totalCharacters)
+            {
+                Reveal();
+            }
+        }
+
+        private void Reveal()
+        {
+            _isTyping = false;
+            _text.maxVisibleCharacters = int.MaxValue;
+            SetOptionsUnlocked(true);
+            if (_isResponse)
+            {
+                _continueButton.gameObject.SetActive(true);
+            }
+
+            TextRevealed?.Invoke();
+        }
+
+        // Locked answers stay in the layout (invisible), so the panel does not jump when they appear.
+        private void SetOptionsUnlocked(bool isUnlocked)
+        {
+            if (_optionsGroup == null)
+            {
+                return;
+            }
+
+            _optionsGroup.interactable = isUnlocked;
+            _optionsGroup.blocksRaycasts = isUnlocked;
+            if (!isUnlocked || _optionsFadeSeconds <= 0f)
+            {
+                _optionsGroup.alpha = isUnlocked ? 1f : 0f;
+            }
         }
 
         private void ShowOptions(IReadOnlyList<OptionView> options)
@@ -88,20 +243,25 @@ namespace Game.Scenarios.Presentation.UI
                     _buttons[i].Bind(options[i], OnOptionClicked);
                 }
             }
+
+            Deselect();
         }
 
         private void OnOptionClicked(string optionId)
         {
+            Deselect();
             OptionChosen?.Invoke(optionId);
         }
 
         private void OnContinueClicked()
         {
+            Deselect();
             ContinueRequested?.Invoke();
         }
 
         private void OnHintClicked()
         {
+            Deselect();
             HintRequested?.Invoke();
         }
     }

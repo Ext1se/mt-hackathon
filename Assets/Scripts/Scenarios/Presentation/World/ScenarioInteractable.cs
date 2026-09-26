@@ -13,8 +13,31 @@ namespace Game.Scenarios.Presentation.World
         [SerializeField] private string _targetId = string.Empty;
         [Tooltip("Optional marker shown while this object is a current objective.")]
         [SerializeField] private GameObject _marker;
+        [Tooltip("Optional: where the player is put, facing this object, before its objective is used.")]
+        [SerializeField] private Transform _standPoint;
 
         public string TargetId => _targetId;
+
+        /// <summary>Where the camera should look at this object: the middle of what is rendered, else the pivot.</summary>
+        public Vector3 FocusPoint
+        {
+            get
+            {
+                Renderer[] renderers = GetComponentsInChildren<Renderer>();
+                if (renderers.Length == 0)
+                {
+                    return transform.position;
+                }
+
+                Bounds bounds = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++)
+                {
+                    bounds.Encapsulate(renderers[i].bounds);
+                }
+
+                return bounds.center;
+            }
+        }
 
         private void Awake()
         {
@@ -39,10 +62,16 @@ namespace Game.Scenarios.Presentation.World
 
         public void Interact()
         {
-            if (_runner != null)
+            // Only an objective the player can use now moves the player there.
+            if (_runner != null && _runner.TryGetObjective(_targetId, out string _))
             {
-                _runner.Interact(_targetId);
+                _runner.Approach(_standPoint, this, InteractNow);
             }
+        }
+
+        private void InteractNow()
+        {
+            _runner.Interact(_targetId);
         }
 
         public void SetHighlighted(bool isHighlighted)

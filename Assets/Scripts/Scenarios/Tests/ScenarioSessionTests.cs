@@ -6,6 +6,21 @@ namespace Game.Scenarios.Tests
 {
     public sealed class ScenarioSessionTests
     {
+        private const string SignalJson = @"{
+  ""id"": ""signal"", ""start"": ""hub"",
+  ""nodes"": [
+    { ""id"": ""hub"", ""kind"": ""hub"", ""maxActions"": 5, ""exitNext"": ""@end"",
+      ""options"": [ { ""id"": ""open"", ""text"": ""Open menu"", ""free"": true, ""repeatable"": true, ""next"": ""menu"" },
+                   { ""id"": ""wait"", ""text"": ""Wait"", ""next"": ""@end"" } ] },
+    { ""id"": ""menu"",
+      ""options"": [ { ""id"": ""talk"", ""text"": ""Talk"", ""next"": ""menu"" },
+                   { ""id"": ""back"", ""text"": ""Back"", ""free"": true, ""repeatable"": true, ""next"": ""@hub"" } ] },
+    { ""id"": ""event"", ""options"": [ { ""id"": ""ok"", ""text"": ""Ok"", ""next"": ""@return"" } ] }
+  ],
+  ""triggers"": [ { ""id"": ""crossed"", ""hub"": ""hub"", ""conditions"": [ { ""key"": ""flag.crossed"" } ], ""node"": ""event"" } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
         [TestCase("A", "Intro A")]
         [TestCase("B", "Intro B")]
         public void Start_ForcedVariant_EntersStartNodeWithVariantText(string variant, string expectedText)
@@ -51,6 +66,20 @@ namespace Game.Scenarios.Tests
             Assert.That(session.Current.Node.Id, Is.EqualTo("hub"));
             Assert.That(session.Decisions[0].Feedback, Is.EqualTo("Well done"));
             Assert.That(session.Decisions[0].IsReference, Is.True);
+        }
+
+        [Test]
+        public void Enter_MarksNodeVisitedWithoutRecordingAnEffect()
+        {
+            ScenarioSession session = StartFixture("A");
+
+            Assert.That(session.State.Get(ScenarioKeys.VisitedPrefix + "intro"), Is.EqualTo(1));
+            Assert.That(session.State.Get(ScenarioKeys.VisitedPrefix + "hub"), Is.EqualTo(0));
+
+            session.Choose("good");
+
+            Assert.That(session.State.Get(ScenarioKeys.VisitedPrefix + "hub"), Is.EqualTo(1));
+            Assert.That(DeltaOf(session.Decisions[0].Effects, ScenarioKeys.VisitedPrefix + "hub"), Is.EqualTo(0));
         }
 
         [Test]
@@ -191,6 +220,47 @@ namespace Game.Scenarios.Tests
         }
 
         [Test]
+        public void Signal_WhileRoamingHub_FiresTriggerAndReturnsToHub()
+        {
+            ScenarioSession session = StartJson(SignalJson);
+
+            Assert.That(session.Signal("flag.crossed"), Is.True);
+            Assert.That(session.Current.Node.Id, Is.EqualTo("event"));
+
+            session.Choose("ok");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("hub"));
+        }
+
+        [Test]
+        public void Signal_InsideMenu_WaitsForTheWayBackToHub()
+        {
+            ScenarioSession session = StartJson(SignalJson);
+            session.Choose("open");
+
+            Assert.That(session.Signal("flag.crossed"), Is.False);
+            session.Choose("talk");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("menu"), "the conversation is not interrupted");
+
+            session.Choose("back");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("event"));
+        }
+
+        [Test]
+        public void Signal_DuringAnotherInterrupt_FiresOnReturnToHub()
+        {
+            ScenarioSession session = StartFixture("A");
+            session.Choose("good");
+            session.Choose("water");
+            session.Choose("ask");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("event"));
+
+            Assert.That(session.Signal("flag.crossed"), Is.False);
+            session.Choose("calm");
+
+            Assert.That(session.Current.Node.Id, Is.EqualTo("event_signal"));
+        }
+
+        [Test]
         public void Trigger_TimeoutReturnsWithoutSpendingHubTime()
         {
             ScenarioSession session = StartFixture("A");
@@ -267,6 +337,13 @@ namespace Game.Scenarios.Tests
         {
             ScenarioSession session = new ScenarioSession(ScenarioLoader.Parse(TestScenarios.ReadFixtureJson()),
                 new System.Random(0), variantId);
+            session.Start();
+            return session;
+        }
+
+        private static ScenarioSession StartJson(string json)
+        {
+            ScenarioSession session = new ScenarioSession(ScenarioLoader.Parse(json), new System.Random(0));
             session.Start();
             return session;
         }

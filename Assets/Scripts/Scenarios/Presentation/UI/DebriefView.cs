@@ -78,20 +78,48 @@ namespace Game.Scenarios.Presentation.UI
 
         private void ShowDecisions(IReadOnlyList<DecisionRecord> decisions, ScenarioLabels labels)
         {
-            while (_rows.Count < decisions.Count)
+            int shown = 0;
+            for (int i = 0; i < decisions.Count; i++)
             {
-                _rows.Add(Instantiate(_rowPrefab, _decisionsContainer));
+                if (!IsWorthShowing(decisions[i], labels))
+                {
+                    continue;
+                }
+
+                if (shown == _rows.Count)
+                {
+                    _rows.Add(Instantiate(_rowPrefab, _decisionsContainer));
+                }
+
+                _rows[shown].gameObject.SetActive(true);
+                _rows[shown].Bind(decisions[i], labels);
+                shown++;
             }
 
-            for (int i = 0; i < _rows.Count; i++)
+            for (int i = shown; i < _rows.Count; i++)
             {
-                bool isUsed = i < decisions.Count;
-                _rows[i].gameObject.SetActive(isUsed);
-                if (isUsed)
+                _rows[i].gameObject.SetActive(false);
+            }
+        }
+
+        // Navigation and dialogue glue ("Continue", "Step away", a player's question that leads on) teach nothing:
+        // a row is shown only with feedback, a visible scale change, a reference mark or a timeout.
+        private static bool IsWorthShowing(DecisionRecord record, ScenarioLabels labels)
+        {
+            if (record.IsReference || record.TimedOut || !string.IsNullOrEmpty(record.Feedback))
+            {
+                return true;
+            }
+
+            foreach (AppliedEffect effect in record.Effects)
+            {
+                if (labels.TryGetLabel(effect.Key, out string _))
                 {
-                    _rows[i].Bind(decisions[i], labels);
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private void OnCloseClicked()

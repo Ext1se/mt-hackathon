@@ -189,6 +189,22 @@ namespace Game.Scenarios.Core
             }
         }
 
+        /// <summary>
+        /// A world event, e.g. the player crossed a zone: sets <paramref name="key"/> to 1 and, while the player roams the
+        /// active hub, fires a trigger interrupt the key completes. Inside an object's menu the key waits: the interrupt
+        /// fires on the way back to the hub. Returns true when an interrupt started now.
+        /// </summary>
+        public bool Signal(string key)
+        {
+            if (!IsRunning || string.IsNullOrEmpty(key))
+            {
+                return false;
+            }
+
+            _state.Set(key, 1);
+            return IsInActiveHub && _returnStack.Count == 0 && TryFireTrigger(NextTargets.Hub);
+        }
+
         /// <summary>Shows the next hint of the current node on the player's request. Null when there is none.</summary>
         public string RequestHint()
         {
@@ -286,6 +302,12 @@ namespace Game.Scenarios.Core
                     continue;
                 }
 
+                // Inside an object's menu the conversation goes on; a hub interrupt waits for the way back to the hub.
+                if (!string.IsNullOrEmpty(trigger.Hub) && pendingNext != NextTargets.Hub && pendingNext != _activeHub.Id)
+                {
+                    continue;
+                }
+
                 if (!ConditionEvaluator.IsMet(trigger.Conditions, _state))
                 {
                     continue;
@@ -359,6 +381,12 @@ namespace Game.Scenarios.Core
                 return;
             }
 
+            // A signal that arrived during another interrupt fires on the way back to the hub.
+            if (_returnStack.Count == 0 && TryFireTrigger(NextTargets.Hub))
+            {
+                return;
+            }
+
             Enter(_activeHub, false);
         }
 
@@ -373,6 +401,11 @@ namespace Game.Scenarios.Core
         {
             _current = node;
             _nodeTimeLeft = node.TimeLimit;
+            if (isFirstEntry)
+            {
+                _state.Set(ScenarioKeys.VisitedPrefix + node.Id, 1);
+            }
+
             if (isFirstEntry && node.OnEnter.Count > 0)
             {
                 List<AppliedEffect> applied = new List<AppliedEffect>();

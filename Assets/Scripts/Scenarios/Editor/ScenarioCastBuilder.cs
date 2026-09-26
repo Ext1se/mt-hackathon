@@ -5,11 +5,14 @@ using Game.Characters.Passengers;
 using Game.Scenarios.Presentation;
 using Game.Scenarios.Presentation.UI;
 using Game.Scenarios.Presentation.World;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using VSM.Interaction;
+using VSM.Player;
+using VSM.Presentation;
 
 namespace Game.Scenarios.Editor
 {
@@ -17,6 +20,9 @@ namespace Game.Scenarios.Editor
     /// Places a scenario's cast in the open scene from a *.cast.json file: passengers on fixed seats with actor ids,
     /// emotions, world-interaction targets, placeholder props (cap, scarf, thermos) and the scenario starter.
     /// Running it again replaces the previous cast. Requires the scenario UI (ScenarioRunner) in the scene.
+    /// The cast lives under the swaying train root, so the actors move with their seats.
+    /// Optional sections: "marks" (extra standing or sitting spots) and "states" (scene changes with a fade, see
+    /// <see cref="ScenarioWorldStates"/>).
     /// </summary>
     public static class ScenarioCastBuilder
     {
@@ -66,7 +72,14 @@ namespace Game.Scenarios.Editor
 
             GameObject root = new GameObject(CastRootName);
             Undo.RegisterCreatedObjectUndo(root, "Setup scenario cast");
+            VSMTrainMotion train = Object.FindFirstObjectByType<VSMTrainMotion>();
+            if (train != null)
+            {
+                root.transform.SetParent(train.transform, false);
+            }
+
             Dictionary<string, Transform> groups = BuildGroups(cast, root.transform);
+            Dictionary<string, GameObject> actors = new Dictionary<string, GameObject>();
 
             GameObject male = AssetDatabase.LoadAssetAtPath<GameObject>(MalePrefabPath);
             GameObject female = AssetDatabase.LoadAssetAtPath<GameObject>(FemalePrefabPath);
@@ -90,6 +103,8 @@ namespace Game.Scenarios.Editor
                 }
 
                 ConfigureActor(instance, actor, runner, scenario, forcedVariant);
+                ConfigureHeadLook(instance, (JObject)cast["headLook"], (JObject)actor["headLook"]);
+                actors[(string)actor["id"]] = instance;
             }
 
             JArray objects = (JArray)cast["objects"];
@@ -126,6 +141,32 @@ namespace Game.Scenarios.Editor
                 {
                     LockProp((string)propName);
                 }
+            }
+
+            Dictionary<string, PassengerSpot> marks = new Dictionary<string, PassengerSpot>();
+            JArray markEntries = (JArray)cast["marks"];
+            if (markEntries != null)
+            {
+                foreach (JObject entry in markEntries)
+                {
+                    PassengerSpot mark = CreateMark(entry, groups);
+                    marks[mark.name] = mark;
+                }
+            }
+
+            JArray zones = (JArray)cast["zones"];
+            if (zones != null)
+            {
+                foreach (JObject entry in zones)
+                {
+                    CreateZone(entry, groups, runner);
+                }
+            }
+
+            JArray states = (JArray)cast["states"];
+            if (states != null)
+            {
+                BuildWorldStates(root, runner, states, actors, marks);
             }
 
             BriefingView briefing = Object.FindFirstObjectByType<BriefingView>();
@@ -190,6 +231,8 @@ namespace Game.Scenarios.Editor
             actorObject.FindProperty("_actorId").stringValue = (string)data["id"];
             actorObject.FindProperty("_displayName").stringValue = (string)data["name"] ?? string.Empty;
             actorObject.FindProperty("_face").objectReferenceValue = instance.GetComponent<FaceController>();
+            actorObject.FindProperty("_emotionIntensity").floatValue = (float?)data["emotionIntensity"] ?? 1f;
+            actorObject.FindProperty("_holdClip").stringValue = (string)data["holdClip"] ?? string.Empty;
             actorObject.FindProperty("_onlyInVariant").stringValue = (string)data["variant"] ?? string.Empty;
             actorObject.FindProperty("_randomizeAppearance").boolValue = passenger != null && ((bool?)data["randomize"] ?? true);
             actorObject.FindProperty("_passenger").objectReferenceValue = passenger;
@@ -253,6 +296,53 @@ namespace Game.Scenarios.Editor
                     AddProp(instance.transform, (string)prop);
                 }
             }
+
+            AddStandPoint(instance, data);
+        }
+
+        // "headLook" at the top of the cast file sets defaults for every passenger actor; an actor's own "headLook"
+        // overrides single fields, e.g. { "enabled": false } or { "maxYaw": 40 }.
+        private static void ConfigureHeadLook(GameObject instance, JObject defaults, JObject overrides)
+        {
+            Passenger passenger = instance.GetComponent<Passenger>();
+            if (passenger == null)
+            {
+                return;
+            }
+
+            JObject settings = new JObject();
+            if (defaults != null)
+            {
+                settings.Merge(defaults);
+            }
+
+            if (overrides != null)
+            {
+                settings.Merge(overrides);
+            }
+
+            PassengerHeadLook look = instance.AddComponent<PassengerHeadLook>();
+            SerializedObject lookObject = new SerializedObject(look);
+            lookObject.FindProperty("_lookAtPlayer").boolValue = (bool?)settings["enabled"] ?? false;
+            lookObject.FindProperty("_animator").objectReferenceValue = instance.GetComponent<Animator>();
+            lookObject.FindProperty("_passenger").objectReferenceValue = passenger;
+            Camera view = Camera.main;
+            lookObject.FindProperty("_target").objectReferenceValue = view != null ? view.transform : null;
+            SetFloat(lookObject, "_maxYaw", settings["maxYaw"]);
+            SetFloat(lookObject, "_maxPitchUp", settings["maxPitchUp"]);
+            SetFloat(lookObject, "_maxPitchDown", settings["maxPitchDown"]);
+            SetFloat(lookObject, "_releaseMargin", settings["releaseMargin"]);
+            SetFloat(lookObject, "_maxDistance", settings["maxDistance"]);
+            SetFloat(lookObject, "_neckShare", settings["neckShare"]);
+            lookObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetFloat(SerializedObject target, string property, JToken value)
+        {
+            if (value != null)
+            {
+                target.FindProperty(property).floatValue = (float)value;
+            }
         }
 
         // An existing scene object (a prop) that becomes a world target.
@@ -274,6 +364,7 @@ namespace Game.Scenarios.Editor
             }
 
             AddInteractable(host, runner, (string)data["target"], ReadVector(data["marker"], ObjectMarkerOffset));
+            AddStandPoint(host, data);
         }
 
         // A prop instantiated for the scenario, e.g. a ticket terminal in a wagon that has none.
@@ -303,6 +394,7 @@ namespace Game.Scenarios.Editor
             }
 
             AddInteractable(instance, runner, (string)data["target"], ReadVector(data["marker"], ObjectMarkerOffset));
+            AddStandPoint(instance, data);
         }
 
         // An invisible interaction volume: a seat to inspect, a wall panel by a door.
@@ -330,6 +422,230 @@ namespace Game.Scenarios.Editor
             BoxCollider collider = point.AddComponent<BoxCollider>();
             collider.size = ReadVector(data["size"], new Vector3(0.4f, 0.4f, 0.4f));
             AddInteractable(point, runner, (string)data["target"], ReadVector(data["marker"], ObjectMarkerOffset));
+            AddStandPoint(point, data);
+        }
+
+        // A spot for scene changes only, e.g. a place in the aisle where a passenger stands up. Reserved, so no
+        // random passenger takes it; it sits next to the group's actors, not under them, to stay out of culling.
+        private static PassengerSpot CreateMark(JObject data, Dictionary<string, Transform> groups)
+        {
+            Transform parent = groups[(string)data["group"]].parent;
+            GameObject mark = new GameObject((string)data["id"]);
+            mark.transform.SetParent(parent, false);
+            mark.transform.position = ReadVector(data["position"], Vector3.zero);
+            mark.transform.rotation = Quaternion.Euler(0f, (float?)data["yaw"] ?? 0f, 0f);
+            PassengerSpot spot = mark.AddComponent<PassengerSpot>();
+            SerializedObject spotObject = new SerializedObject(spot);
+            string kind = (string)data["kind"] ?? PassengerSpotKind.Standing.ToString();
+            spotObject.FindProperty("_kind").enumValueIndex = (int)System.Enum.Parse(typeof(PassengerSpotKind), kind);
+            spotObject.FindProperty("_reserved").boolValue = true;
+            spotObject.ApplyModifiedPropertiesWithoutUndo();
+            return spot;
+        }
+
+        // A line across the wagon that signals the scenario when the player crosses it (see ScenarioZone).
+        private static void CreateZone(JObject data, Dictionary<string, Transform> groups, ScenarioRunner runner)
+        {
+            Transform parent = groups[(string)data["group"]].parent;
+            GameObject zone = new GameObject((string)data["id"]);
+            zone.transform.SetParent(parent, false);
+            zone.transform.position = ReadVector(data["position"], Vector3.zero);
+            zone.transform.rotation = Quaternion.Euler(0f, (float?)data["yaw"] ?? 0f, 0f);
+            ScenarioZone component = zone.AddComponent<ScenarioZone>();
+            SerializedObject zoneObject = new SerializedObject(component);
+            zoneObject.FindProperty("_runner").objectReferenceValue = runner;
+            VSMWalkController player = Object.FindFirstObjectByType<VSMWalkController>();
+            zoneObject.FindProperty("_player").objectReferenceValue = player != null ? player.transform : null;
+            zoneObject.FindProperty("_signal").stringValue = (string)data["signal"] ?? string.Empty;
+            zoneObject.FindProperty("_halfWidth").floatValue = (float?)data["halfWidth"] ?? 1.8f;
+            zoneObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void BuildWorldStates(GameObject root, ScenarioRunner runner, JArray states, Dictionary<string, GameObject> actors,
+            Dictionary<string, PassengerSpot> marks)
+        {
+            ScenarioWorldStates world = root.AddComponent<ScenarioWorldStates>();
+            SerializedObject worldObject = new SerializedObject(world);
+            worldObject.FindProperty("_runner").objectReferenceValue = runner;
+            SerializedProperty stateList = worldObject.FindProperty("_states");
+            stateList.ClearArray();
+            foreach (JObject state in states)
+            {
+                string stateId = (string)state["id"];
+                stateList.InsertArrayElementAtIndex(stateList.arraySize);
+                SerializedProperty stateProperty = stateList.GetArrayElementAtIndex(stateList.arraySize - 1);
+                stateProperty.FindPropertyRelative("_id").stringValue = stateId;
+                JToken when = state["when"];
+                stateProperty.FindPropertyRelative("_conditions").stringValue = when != null ? when.ToString(Formatting.None) : "[]";
+                stateProperty.FindPropertyRelative("_fade").boolValue = (bool?)state["fade"] ?? true;
+
+                SerializedProperty actionList = stateProperty.FindPropertyRelative("_actions");
+                actionList.ClearArray();
+                foreach (JObject action in state["actions"])
+                {
+                    actionList.InsertArrayElementAtIndex(actionList.arraySize);
+                    FillWorldAction(actionList.GetArrayElementAtIndex(actionList.arraySize - 1), action, actors, marks, stateId);
+                }
+            }
+
+            worldObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void FillWorldAction(SerializedProperty property, JObject data, Dictionary<string, GameObject> actors,
+            Dictionary<string, PassengerSpot> marks, string stateId)
+        {
+            string type = (string)data["type"];
+            SerializedProperty objects = property.FindPropertyRelative("_objects");
+            objects.ClearArray();
+            switch (type)
+            {
+                case "hide":
+                case "show":
+                    property.FindPropertyRelative("_kind").enumValueIndex = (int)(type == "hide" ? WorldActionKind.Hide : WorldActionKind.Show);
+                    List<GameObject> targets = new List<GameObject>();
+                    AddActors((JArray)data["actors"], actors, targets, stateId);
+                    string crowd = (string)data["crowd"];
+                    if (!string.IsNullOrEmpty(crowd))
+                    {
+                        AddCrowd(crowd, targets, stateId);
+                    }
+
+                    foreach (GameObject target in targets)
+                    {
+                        objects.InsertArrayElementAtIndex(objects.arraySize);
+                        objects.GetArrayElementAtIndex(objects.arraySize - 1).objectReferenceValue = target;
+                    }
+
+                    break;
+                case "move":
+                    property.FindPropertyRelative("_kind").enumValueIndex = (int)WorldActionKind.Move;
+                    property.FindPropertyRelative("_passenger").objectReferenceValue = FindMovedPassenger(data, actors, stateId);
+                    property.FindPropertyRelative("_spot").objectReferenceValue = FindSpot((string)data["to"], marks, stateId);
+                    string poseName = (string)data["pose"] ?? PassengerPose.Sitting.ToString();
+                    property.FindPropertyRelative("_pose").enumValueIndex = (int)System.Enum.Parse(typeof(PassengerPose), poseName);
+                    // "clip" present replaces the held clip ("" lets the passenger vary); absent keeps the current one.
+                    JToken clip = data["clip"];
+                    property.FindPropertyRelative("_setsHeldClip").boolValue = clip != null;
+                    property.FindPropertyRelative("_heldClip").stringValue = clip != null ? (string)clip : string.Empty;
+                    break;
+                default:
+                    Debug.LogWarning($"World state '{stateId}': unknown action type '{type}'.");
+                    break;
+            }
+        }
+
+        private static void AddActors(JArray ids, Dictionary<string, GameObject> actors, List<GameObject> targets, string stateId)
+        {
+            if (ids == null)
+            {
+                return;
+            }
+
+            foreach (JToken id in ids)
+            {
+                if (actors.TryGetValue((string)id, out GameObject actor))
+                {
+                    targets.Add(actor);
+                }
+                else
+                {
+                    Debug.LogWarning($"World state '{stateId}': actor '{(string)id}' was not found.");
+                }
+            }
+        }
+
+        // Every placed passenger of a wagon's spawner, e.g. "Passengers_C03".
+        private static void AddCrowd(string spawnerName, List<GameObject> targets, string stateId)
+        {
+            GameObject spawnerObject = GameObject.Find(spawnerName);
+            PassengerSpawner spawner = spawnerObject != null ? spawnerObject.GetComponent<PassengerSpawner>() : null;
+            if (spawner == null)
+            {
+                Debug.LogWarning($"World state '{stateId}': spawner '{spawnerName}' was not found.");
+                return;
+            }
+
+            foreach (Transform child in spawner.PassengersRoot)
+            {
+                if (child.GetComponent<Passenger>() != null)
+                {
+                    targets.Add(child.gameObject);
+                }
+            }
+        }
+
+        // "actor": a scenario actor id; "occupant": the placed passenger sitting on that seat in the editor.
+        private static Passenger FindMovedPassenger(JObject data, Dictionary<string, GameObject> actors, string stateId)
+        {
+            string actorId = (string)data["actor"];
+            if (!string.IsNullOrEmpty(actorId))
+            {
+                Passenger passenger = actors.TryGetValue(actorId, out GameObject actor) ? actor.GetComponent<Passenger>() : null;
+                if (passenger == null)
+                {
+                    Debug.LogWarning($"World state '{stateId}': actor '{actorId}' is not a passenger.");
+                }
+
+                return passenger;
+            }
+
+            string seat = (string)data["occupant"];
+            foreach (PlacedPassenger placed in Object.FindObjectsByType<PlacedPassenger>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (placed.Spot != null && placed.Spot.name == seat)
+                {
+                    return placed.GetComponent<Passenger>();
+                }
+            }
+
+            Debug.LogWarning($"World state '{stateId}': nobody sits on '{seat}'.");
+            return null;
+        }
+
+        private static PassengerSpot FindSpot(string name, Dictionary<string, PassengerSpot> marks, string stateId)
+        {
+            if (marks.TryGetValue(name, out PassengerSpot mark))
+            {
+                return mark;
+            }
+
+            GameObject found = GameObject.Find(name);
+            PassengerSpot spot = found != null ? found.GetComponent<PassengerSpot>() : null;
+            if (spot == null)
+            {
+                Debug.LogWarning($"World state '{stateId}': spot '{name}' was not found.");
+            }
+
+            return spot;
+        }
+
+        // "stand": where the player is put, facing the object, before talking to it or using it. A child of the object,
+        // so it follows a passenger moved by a scene change.
+        private static void AddStandPoint(GameObject host, JObject data)
+        {
+            JToken stand = data["stand"];
+            if (stand == null)
+            {
+                return;
+            }
+
+            GameObject point = new GameObject("StandPoint");
+            point.transform.SetParent(host.transform, false);
+            point.transform.position = ReadVector(stand, host.transform.position);
+            SetStandPoint(host.GetComponent<ScenarioStarter>(), point.transform);
+            SetStandPoint(host.GetComponent<ScenarioInteractable>(), point.transform);
+        }
+
+        private static void SetStandPoint(Component component, Transform point)
+        {
+            if (component == null)
+            {
+                return;
+            }
+
+            SerializedObject componentObject = new SerializedObject(component);
+            componentObject.FindProperty("_standPoint").objectReferenceValue = point;
+            componentObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void AddInteractable(GameObject host, ScenarioRunner runner, string target, Vector3 markerOffset)

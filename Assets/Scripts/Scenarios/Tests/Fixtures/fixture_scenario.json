@@ -87,10 +87,16 @@
       "onEnter": [ { "key": "safety", "value": 5 } ],
       "feedback": "Handover done",
       "options": [ { "id": "done", "text": "Done", "next": "@end" } ]
+    },
+    {
+      "id": "event_signal",
+      "lines": [ { "text": "Someone reaches for it" } ],
+      "options": [ { "id": "stop", "text": "Stop", "next": "@return" } ]
     }
   ],
   "triggers": [
-    { "id": "after_two", "hub": "hub", "conditions": [ { "key": "hub.actions", "value": 2 } ], "node": "event" }
+    { "id": "after_two", "hub": "hub", "conditions": [ { "key": "hub.actions", "value": 2 } ], "node": "event" },
+    { "id": "on_signal", "hub": "hub", "conditions": [ { "key": "flag.crossed" } ], "node": "event_signal" }
   ],
   "endings": [
     {

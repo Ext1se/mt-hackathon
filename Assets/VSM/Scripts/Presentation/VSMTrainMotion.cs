@@ -8,6 +8,8 @@ namespace VSM.Presentation
     {
         [Tooltip("Корень пассажира или XR Origin, который переносится вместе с полом.")]
         public Transform passenger;
+        [Tooltip("Качать ли состав. Выключено: вагоны стоят неподвижно, окна без поворота пейзажа.")]
+        public bool swayEnabled;
         [Tooltip("Максимальный крен состава в градусах.")]
         public float rollDegrees = .22f;
         [Tooltip("Небольшое изменение курса в плавном повороте, в градусах.")]
@@ -28,6 +30,7 @@ namespace VSM.Presentation
         /// <summary>Перемещает состав и компенсирует перемещение опоры под пассажиром, сохраняя независимый поворот головы.</summary>
         void Update()
         {
+            if (!swayEnabled) { Rest(); return; }
             Vector3 localPassenger = passenger ? transform.InverseTransformPoint(passenger.position) : Vector3.zero;
             float t = Time.time;
             float phase = (t / Mathf.Max(20f, turnPeriod)) * Mathf.PI * 2f;
@@ -49,5 +52,12 @@ namespace VSM.Presentation
 
         /// <summary>Возвращает состав в исходное положение и сбрасывает параметр поворота окон.</summary>
         void OnDisable() { transform.SetPositionAndRotation(origin, initialRotation); Shader.SetGlobalFloat("_VSMCurve", 0); }
+
+        /// <summary>Держит состав в исходном положении, пока качка выключена; флаг можно переключать во время игры.</summary>
+        void Rest()
+        {
+            if (Curve == 0 && transform.position == origin && transform.rotation == initialRotation) return;
+            Curve = 0; transform.SetPositionAndRotation(origin, initialRotation); Shader.SetGlobalFloat("_VSMCurve", 0); Physics.SyncTransforms();
+        }
     }
 }

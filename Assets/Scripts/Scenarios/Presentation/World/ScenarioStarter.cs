@@ -7,10 +7,12 @@ namespace Game.Scenarios.Presentation.World
     {
         [SerializeField] private ScenarioRunner _runner;
         [SerializeField] private TextAsset _scenario;
-        [Tooltip("Optional: always play this variant, e.g. to show a specific branch in a demo.")]
+        [Tooltip("Variant played when the scene is opened directly; empty for the weighted random pick. A menu request overrides it.")]
         [SerializeField] private string _forcedVariant = string.Empty;
         [Tooltip("Optional: marker shown while no scenario is running, so the player knows where to start.")]
         [SerializeField] private GameObject _marker;
+        [Tooltip("Optional: where the player is put, facing this object, before the scenario starts.")]
+        [SerializeField] private Transform _standPoint;
 
         private void OnEnable()
         {
@@ -34,7 +36,16 @@ namespace Game.Scenarios.Presentation.World
         {
             if (_runner != null && _scenario != null && !_runner.IsRunning)
             {
-                _runner.StartScenario(_scenario, _forcedVariant);
+                _runner.Approach(_standPoint, this, StartScenario);
+            }
+        }
+
+        private void StartScenario()
+        {
+            if (!_runner.IsRunning)
+            {
+                string variant = ScenarioLaunch.ForcedVariant ?? _forcedVariant;
+                _runner.StartScenario(_scenario, variant);
             }
         }
 

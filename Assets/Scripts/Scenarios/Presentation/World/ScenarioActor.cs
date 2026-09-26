@@ -29,6 +29,8 @@ namespace Game.Scenarios.Presentation.World
         [Tooltip("Optional: lip sync and expressions.")]
         [SerializeField] private FaceController _face;
         [SerializeField] private List<EmotionBinding> _emotions = new List<EmotionBinding>();
+        [Tooltip("How strongly this character shows emotions: 1 is the full expression, lower is subtler.")]
+        [SerializeField, Range(0f, 1f)] private float _emotionIntensity = 1f;
         [Tooltip("Optional: the actor is hidden while a scenario plays another story variant.")]
         [SerializeField] private string _onlyInVariant = string.Empty;
         [Tooltip("Randomize body and outfit through CharacterCustomizer on start.")]
@@ -39,6 +41,8 @@ namespace Game.Scenarios.Presentation.World
         [SerializeField] private Passenger _passenger;
         [SerializeField] private PassengerSpot _seat;
         [SerializeField] private PassengerPose _pose = PassengerPose.Sitting;
+        [Tooltip("Optional: clip name prefix the passenger keeps playing (e.g. Sit_ImpatientWaiting) instead of varying.")]
+        [SerializeField] private string _holdClip = string.Empty;
 
         private Animator _animator;
 
@@ -65,6 +69,11 @@ namespace Game.Scenarios.Presentation.World
                 interaction.enabled = true;
             }
 
+            if (_passenger != null && _holdClip.Length > 0)
+            {
+                _passenger.HoldClip(_holdClip);
+            }
+
             if (_passenger != null && _seat != null)
             {
                 _passenger.TakeSpot(_seat, _pose);
@@ -84,6 +93,7 @@ namespace Game.Scenarios.Presentation.World
             }
         }
 
+        /// <summary>Lip sync for the spoken part of a line; italic parts are actions and narration, not speech.</summary>
         public void Speak(string text)
         {
             if (_face == null || string.IsNullOrEmpty(text))
@@ -91,7 +101,11 @@ namespace Game.Scenarios.Presentation.World
                 return;
             }
 
-            _face.Talk(Mathf.Clamp(text.Length * SecondsPerCharacter, MinTalkSeconds, MaxTalkSeconds));
+            int spoken = SpokenLength(text);
+            if (spoken > 0)
+            {
+                _face.Talk(Mathf.Clamp(spoken * SecondsPerCharacter, MinTalkSeconds, MaxTalkSeconds));
+            }
         }
 
         public void SetEmotion(string emotion)
@@ -111,7 +125,7 @@ namespace Game.Scenarios.Presentation.World
             {
                 if (binding.Emotion == emotion)
                 {
-                    _face.SetExpression(binding.Expression);
+                    _face.SetExpression(binding.Expression, _emotionIntensity);
                     return;
                 }
             }
@@ -157,6 +171,42 @@ namespace Game.Scenarios.Presentation.World
             }
 
             SetEmotion(string.Empty);
+        }
+
+        // Letters outside <i>...</i>; other rich-text tags are skipped too.
+        private static int SpokenLength(string text)
+        {
+            int count = 0;
+            int italicDepth = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (text[i] == '<')
+                {
+                    int close = text.IndexOf('>', i);
+                    if (close > i)
+                    {
+                        string tag = text.Substring(i + 1, close - i - 1);
+                        if (tag == "i")
+                        {
+                            italicDepth++;
+                        }
+                        else if (tag == "/i" && italicDepth > 0)
+                        {
+                            italicDepth--;
+                        }
+
+                        i = close;
+                        continue;
+                    }
+                }
+
+                if (italicDepth == 0 && char.IsLetter(text[i]))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private IEnumerator RandomizeAppearance()

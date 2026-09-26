@@ -30,6 +30,7 @@ namespace Game.Characters.Passengers
         private float _nextSwitchTime;
         private int _sleepLayer = -1;
         private float _sleepWeight;
+        private string _heldClip = string.Empty;
 
         public PassengerPose Pose => _pose;
         public PassengerSpot Spot => _spot;
@@ -39,6 +40,9 @@ namespace Game.Characters.Passengers
         public event System.Action<AnimationClip> ClipChanged;
         /// <summary>The passenger's own clips; a seat with its own set overrides them while seated there.</summary>
         public PassengerAnimationSet AnimationSet => _animationSet;
+
+        /// <summary>Name prefix of the clip the passenger keeps playing instead of varying; empty when it varies.</summary>
+        public string HeldClip => _heldClip;
 
         // Seat-specific clips fitted to the seat model take priority over the passenger's generic ones.
         private PassengerAnimationSet ActiveSet =>
@@ -126,6 +130,21 @@ namespace Game.Characters.Passengers
             SetPose(pose);
         }
 
+        /// <summary>
+        /// Keeps playing the clip of the current pose whose name starts with <paramref name="clipNamePrefix"/>
+        /// (e.g. "Sit_ImpatientWaiting" matches the seat-fitted "Sit_ImpatientWaiting_Comfort_V2") instead of switching
+        /// clips from time to time. The hold survives a change of spot; a pose without such a clip varies as usual.
+        /// Empty lets the passenger vary again.
+        /// </summary>
+        public void HoldClip(string clipNamePrefix)
+        {
+            _heldClip = clipNamePrefix ?? string.Empty;
+            if (_hasPose && ActiveSet != null)
+            {
+                PlayClip(PickClip(true), ActiveSet.CrossFadeTime, 0f);
+            }
+        }
+
         public void SetPose(PassengerPose pose)
         {
             if (ActiveSet == null)
@@ -166,6 +185,11 @@ namespace Game.Characters.Passengers
         private AnimationClip PickClip(bool loopingOnly)
         {
             AnimationClip[] clips = ActiveSet.GetClips(_pose);
+            AnimationClip held = FindHeld(clips);
+            if (held != null)
+            {
+                return held;
+            }
 
             int candidates = 0;
             for (int i = 0; i < clips.Length; i++)
@@ -192,6 +216,29 @@ namespace Game.Characters.Passengers
             }
 
             return null;
+        }
+
+        private AnimationClip FindHeld(AnimationClip[] clips)
+        {
+            if (_heldClip.Length == 0)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < clips.Length; i++)
+            {
+                if (clips[i] != null && clips[i].name.StartsWith(_heldClip, System.StringComparison.Ordinal))
+                {
+                    return clips[i];
+                }
+            }
+
+            return null;
+        }
+
+        private bool IsHeld(AnimationClip clip)
+        {
+            return _heldClip.Length > 0 && clip.name.StartsWith(_heldClip, System.StringComparison.Ordinal);
         }
 
         private bool IsCandidate(AnimationClip clip, bool loopingOnly, bool allowCurrent = false)
@@ -232,7 +279,12 @@ namespace Game.Characters.Passengers
                 ClipChanged(clip);
             }
             float speed = Mathf.Max(_animator.speed, 0.01f);
-            if (clip.isLooping)
+            if (IsHeld(clip))
+            {
+                // A held clip never switches; hold looping clips (a held one-shot stays on its last frame).
+                _nextSwitchTime = float.PositiveInfinity;
+            }
+            else if (clip.isLooping)
             {
                 Vector2 interval = ActiveSet.SwitchInterval;
                 _nextSwitchTime = Time.time + Random.Range(interval.x, interval.y);

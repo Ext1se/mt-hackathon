@@ -37,6 +37,20 @@ namespace Game.Scenarios.Tests
   ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
 }";
 
+        private const string HoldNotLastJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""nodes"": [ { ""id"": ""a"", ""look"": [ { ""target"": ""bag"", ""hold"": true }, { ""target"": ""seat"", ""seconds"": 1 } ],
+    ""options"": [ { ""id"": ""go"", ""text"": ""Go"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
+        private const string EmptyCardJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""nodes"": [ { ""id"": ""a"", ""card"": { ""title"": ""Card"", ""sections"": [ { ""title"": ""Problem"" } ] },
+    ""options"": [ { ""id"": ""go"", ""text"": ""Go"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
         [Test]
         public void Fixture_HasNoErrors()
         {
@@ -50,6 +64,8 @@ namespace Game.Scenarios.Tests
         [TestCase(ConditionalLastEndingJson, "last ending")]
         [TestCase(UnknownOperatorJson, "unknown operator")]
         [TestCase(TargetOutsideRoamJson, "roam")]
+        [TestCase(HoldNotLastJson, "only the last look step may hold")]
+        [TestCase(EmptyCardJson, "a card section needs a title and a text or items")]
         public void BrokenScenario_IsReported(string json, string expectedFragment)
         {
             List<string> errors = ScenarioValidator.Validate(ScenarioLoader.Deserialize(json));

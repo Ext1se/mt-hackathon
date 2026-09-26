@@ -10,7 +10,7 @@ namespace VSM.Player
     /// <summary>Перемещает пассажира с клавиатуры, геймпада или стика; передаёт взаимодействие отдельному компоненту.</summary>
     [MovedFrom(true, sourceNamespace: "", sourceAssembly: "Assembly-CSharp", sourceClassName: "VSMWalkController")]
     [RequireComponent(typeof(CharacterController), typeof(VSMInteractor))]
-    public sealed class VSMWalkController : MonoBehaviour, Game.Scenarios.Presentation.World.IViewFocus
+    public sealed class VSMWalkController : MonoBehaviour, Game.Scenarios.Presentation.World.IViewFocus, Game.Scenarios.Presentation.World.IPlayerPlacement
     {
         [Tooltip("Камера пассажира; в XR её поворот задаёт только отслеживание головы.")] public Camera view;
         [Tooltip("Действия Walk для движения, обзора и взаимодействия.")] public InputActionAsset actions;
@@ -48,7 +48,7 @@ namespace VSM.Player
             if (cursorMode && cursorMode.UIIsOpen) { if (hasFocus && !XRSettings.isDeviceActive) TurnToFocus(); return; }
             Vector2 v = move.ReadValue<Vector2>(); if (movePad && movePad.Value.sqrMagnitude > 0) v = movePad.Value;
             v = Vector2.ClampMagnitude(v, 1);
-            if (!XRSettings.isDeviceActive) UpdateLook();
+            if (!XRSettings.isDeviceActive && !(cursorMode && cursorMode.CursorFree)) UpdateLook();
             vertical = motor.isGrounded ? -1 : Mathf.Max(-15, vertical - 18 * Time.deltaTime);
             Vector3 forward = Vector3.ProjectOnPlane(view.transform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
@@ -81,6 +81,18 @@ namespace VSM.Player
         public void FocusOn(Vector3 point) { focusPoint = point; hasFocus = true; }
         /// <summary>Возвращает свободный обзор.</summary>
         public void ClearFocus() { hasFocus = false; }
+        /// <summary>Ставит пассажира в точку и поворачивает корпус и взгляд к указанной точке (например, к собеседнику).</summary>
+        public void PlaceAt(Vector3 feetPosition, Vector3 lookAt)
+        {
+            bool wasEnabled = motor.enabled; motor.enabled = false;
+            transform.position = feetPosition; vertical = 0;
+            Vector3 flat = lookAt - feetPosition; flat.y = 0;
+            if (flat.sqrMagnitude > .0001f) transform.rotation = Quaternion.LookRotation(flat);
+            Vector3 to = lookAt - view.transform.position;
+            pitch = Mathf.Clamp(-Mathf.Atan2(to.y, new Vector2(to.x, to.z).magnitude) * Mathf.Rad2Deg, -70, 70);
+            if (!XRSettings.isDeviceActive) view.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
+            motor.enabled = wasEnabled;
+        }
         /// <summary>Бежит ли пассажир в этом кадре.</summary>
         public bool IsRunning { get { return allowRunning && sprint != null && sprint.IsPressed(); } }
         /// <summary>Передаёт событие кнопки отдельному компоненту взаимодействия.</summary>

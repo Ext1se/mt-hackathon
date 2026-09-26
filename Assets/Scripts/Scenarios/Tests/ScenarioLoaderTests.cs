@@ -13,7 +13,7 @@ namespace Game.Scenarios.Tests
 
             Assert.That(data.Id, Is.EqualTo("fixture"));
             Assert.That(data.Start, Is.EqualTo("intro"));
-            Assert.That(data.Nodes.Count, Is.EqualTo(4));
+            Assert.That(data.Nodes.Count, Is.EqualTo(5));
             Assert.That(data.Variants.Count, Is.EqualTo(2));
 
             NodeData intro = data.Nodes[0];

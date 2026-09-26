@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.IO;
 using Game.Scenarios.Core;
 using Game.Scenarios.Core.Data;
@@ -19,6 +20,9 @@ namespace Game.Scenarios.Presentation
     {
         private const string ResultsFolder = "ScenarioResults";
 
+        // Closer than this, the player is already on the stand point and is not moved.
+        private const float StandTolerance = 0.3f;
+
         /// <summary>Target id of the radio: a HUD button instead of a scene object.</summary>
         public const string RadioTarget = "radio";
 
@@ -28,10 +32,18 @@ namespace Game.Scenarios.Presentation
         [SerializeField] private HintView _hint;
         [SerializeField] private QuestTracker _quest;
         [SerializeField] private DebriefView _debrief;
+        [Tooltip("Info panel for nodes with a card (problem, recommended actions).")]
+        [SerializeField] private CardView _card;
+        [Tooltip("Optional: black layer behind the panels for scene changes (ScenarioWorldStates).")]
+        [SerializeField] private ScreenFader _fader;
         [Tooltip("Off: decisions are never timed out (for demos and content review).")]
         [SerializeField] private bool _timersEnabled = true;
         [Tooltip("Speaker name shown above the player's own line after a choice.")]
         [SerializeField] private string _playerName = string.Empty;
+        [Header("Approach")]
+        [Tooltip("Fade to black before the player is put on an interaction's stand point.")]
+        [SerializeField, Range(0.05f, 1f)] private float _approachFadeOutSeconds = 0.25f;
+        [SerializeField, Range(0.05f, 1f)] private float _approachFadeInSeconds = 0.35f;
         [Tooltip("Raised with true while scenario UI needs the cursor. Wire to VSMCursorMode.SetUIOpen.")]
         [SerializeField] private UnityEvent<bool> _uiOpenChanged = new UnityEvent<bool>();
 
@@ -39,6 +51,11 @@ namespace Game.Scenarios.Presentation
         private readonly List<ScenarioInteractable> _targets = new List<ScenarioInteractable>();
         private IScenarioResultSink _resultSink;
         private IViewFocus _viewFocus;
+        private IPlayerPlacement _placement;
+        private ScenarioWorldStates _world;
+        private bool _isApproaching;
+        private Coroutine _lookRoutine;
+        private ScenarioActor _focusActor;
         private ScenarioSession _session;
         private NodeView _pendingNode;
         private ScenarioResult _pendingResult;
@@ -53,6 +70,13 @@ namespace Game.Scenarios.Presentation
 
         /// <summary>The scenario being played, or null.</summary>
         public ScenarioData CurrentScenario => _session != null ? _session.Data : null;
+
+        /// <summary>Story variant of the running playthrough; empty when none runs.</summary>
+        public string CurrentVariantId => _session != null ? _session.VariantId : string.Empty;
+
+        /// <summary>True while the player walks around with world objectives: no dialogue, response or scene change on screen.</summary>
+        public bool IsRoaming => _session != null && _session.IsRunning && !_isShowingResponse && _pendingNode == null
+            && _session.Current != null && _session.Current.IsRoam && (_world == null || !_world.IsTransitioning);
 
         public bool TimersEnabled
         {
@@ -73,9 +97,12 @@ namespace Game.Scenarios.Presentation
             _dialogue.OptionChosen += OnOptionChosen;
             _dialogue.ContinueRequested += OnContinueRequested;
             _dialogue.HintRequested += OnHintRequested;
+            _dialogue.TextRevealed += OnTextRevealed;
+            _card.OptionChosen += OnOptionChosen;
             _hud.RadioRequested += OnRadioRequested;
             _debrief.Closed += OnDebriefClosed;
-            _viewFocus = FindViewFocus();
+            _viewFocus = FindInScene<IViewFocus>();
+            _placement = FindInScene<IPlayerPlacement>();
         }
 
         private void Update()
@@ -92,11 +119,23 @@ namespace Game.Scenarios.Presentation
             }
         }
 
+        // The camera follows the speaker's head every frame, so a passenger who stands up or is moved stays in view.
+        private void LateUpdate()
+        {
+            if (_focusActor != null && _lookRoutine == null && _viewFocus != null && _focusActor.isActiveAndEnabled
+                && _focusActor.TryGetFocusPoint(out Vector3 point))
+            {
+                _viewFocus.FocusOn(point);
+            }
+        }
+
         private void OnDestroy()
         {
             _dialogue.OptionChosen -= OnOptionChosen;
             _dialogue.ContinueRequested -= OnContinueRequested;
             _dialogue.HintRequested -= OnHintRequested;
+            _dialogue.TextRevealed -= OnTextRevealed;
+            _card.OptionChosen -= OnOptionChosen;
             _hud.RadioRequested -= OnRadioRequested;
             _debrief.Closed -= OnDebriefClosed;
             DetachSession();
@@ -128,6 +167,7 @@ namespace Game.Scenarios.Presentation
             _session.HintShown += _hint.Show;
             _session.Ended += OnEnded;
             _hud.Show(data.Title);
+            _quest.ResetSelection();
 
             try
             {
@@ -147,13 +187,14 @@ namespace Game.Scenarios.Presentation
                 _actors[i].OnScenarioStarted(_session.VariantId);
             }
 
+            RefreshWorld();
             RunningChanged?.Invoke();
         }
 
         /// <summary>Completes the current roam objective whose target is <paramref name="targetId"/>, if any.</summary>
         public void Interact(string targetId)
         {
-            if (_session == null || !_session.IsRunning || _isShowingResponse)
+            if (_session == null || !_session.IsRunning || _isShowingResponse || _isApproaching)
             {
                 return;
             }
@@ -166,6 +207,37 @@ namespace Game.Scenarios.Presentation
                     _session.Choose(options[i].Id);
                     return;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Runs <paramref name="action"/> after putting the player on <paramref name="standPoint"/> facing
+        /// <paramref name="target"/> (an actor's head, else the object's middle), behind a short fade, so a dialogue never
+        /// starts from behind a passenger's back. Without a stand point, or when the player already stands there,
+        /// the action runs at once.
+        /// </summary>
+        public void Approach(Transform standPoint, Component target, Action action)
+        {
+            if (_isApproaching)
+            {
+                return;
+            }
+
+            if (standPoint == null || _placement == null || IsStandingAt(standPoint.position))
+            {
+                action();
+                return;
+            }
+
+            StartCoroutine(ApproachRoutine(standPoint, LookPointOf(target), action));
+        }
+
+        /// <summary>A world event such as crossing a zone; the scenario decides whether it starts an interrupt now or later.</summary>
+        public void Signal(string key)
+        {
+            if (_session != null && _session.IsRunning)
+            {
+                _session.Signal(key);
             }
         }
 
@@ -217,8 +289,22 @@ namespace Game.Scenarios.Presentation
             _targets.Remove(target);
         }
 
+        public void Register(ScenarioWorldStates world)
+        {
+            _world = world;
+        }
+
+        public void Unregister(ScenarioWorldStates world)
+        {
+            if (_world == world)
+            {
+                _world = null;
+            }
+        }
+
         private void OnNodeEntered(NodeView view)
         {
+            RefreshWorld();
             if (_isShowingResponse)
             {
                 _pendingNode = view;
@@ -235,6 +321,7 @@ namespace Game.Scenarios.Presentation
             _hud.ShowDeltas(outcome.Effects);
             _hud.ShowTimer(0f, 0f);
             _hud.SetRadioVisible(false);
+            RefreshWorld();
 
             // Every choice pauses on a response screen: the NPC's answer, or the player's own line when there is none,
             // so the next node never appears without a button press. Walking up to something is not a choice.
@@ -260,6 +347,7 @@ namespace Game.Scenarios.Presentation
             }
 
             _quest.Clear(_targets);
+            _card.Hide();
             _dialogue.ShowResponse(speakerName, text);
             SetUiOpen(true);
         }
@@ -308,6 +396,15 @@ namespace Game.Scenarios.Presentation
             Interact(RadioTarget);
         }
 
+        // The decision clock starts once the player has the whole line and the answers in front of them.
+        private void OnTextRevealed()
+        {
+            if (_session != null && _session.IsRunning && !_isShowingResponse)
+            {
+                _isClockRunning = true;
+            }
+        }
+
         private void OnHintRequested()
         {
             if (_session != null)
@@ -323,6 +420,11 @@ namespace Game.Scenarios.Presentation
             DetachSession();
             SetUiOpen(false);
             ClearFocus();
+            if (_world != null)
+            {
+                _world.ResetWorld();
+            }
+
             for (int i = 0; i < _actors.Count; i++)
             {
                 _actors[i].OnScenarioEnded();
@@ -342,6 +444,18 @@ namespace Game.Scenarios.Presentation
 
             _quest.Show(view.Options, _targets);
             _hud.SetRadioVisible(view.IsRoam && HasTarget(view.Options, RadioTarget));
+            if (view.Node.Card != null)
+            {
+                _dialogue.Hide();
+                _hint.Hide();
+                _card.Show(view.Node.Card, view.Options);
+                SetUiOpen(true);
+                ClearFocus();
+                _isClockRunning = true;
+                return;
+            }
+
+            _card.Hide();
             if (view.IsRoam)
             {
                 _dialogue.Hide();
@@ -361,15 +475,18 @@ namespace Game.Scenarios.Presentation
                 {
                     FocusOn(speaker);
                 }
+
+                PlayLook(view.Node.Look, speaker);
             }
 
-            _isClockRunning = true;
+            _isClockRunning = view.IsRoam || !_dialogue.IsTyping;
         }
 
         private void ShowDebrief(ScenarioResult result)
         {
             _isClockRunning = false;
             _dialogue.Hide();
+            _card.Hide();
             _hint.Hide();
             _quest.Clear(_targets);
             _hud.ShowTimer(0f, 0f);
@@ -413,6 +530,15 @@ namespace Game.Scenarios.Presentation
             _isClockRunning = false;
         }
 
+        // Scene changes follow the scenario state: checked after every choice and on every node entry.
+        private void RefreshWorld()
+        {
+            if (_world != null && _session != null)
+            {
+                _world.Refresh(_session.State, _fader);
+            }
+        }
+
         private ScenarioActor FindActor(string actorId)
         {
             if (string.IsNullOrEmpty(actorId))
@@ -444,23 +570,61 @@ namespace Game.Scenarios.Presentation
             return false;
         }
 
-        // The walking controller implements IViewFocus; it lives in another assembly, so it is found by interface.
-        private static IViewFocus FindViewFocus()
+        // The walking controller implements IViewFocus and IPlayerPlacement; it lives in another assembly,
+        // so it is found by interface.
+        private static T FindInScene<T>() where T : class
         {
             MonoBehaviour[] behaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             for (int i = 0; i < behaviours.Length; i++)
             {
-                if (behaviours[i] is IViewFocus focus)
+                if (behaviours[i] is T found)
                 {
-                    return focus;
+                    return found;
                 }
             }
 
             return null;
         }
 
+        private static Vector3 LookPointOf(Component target)
+        {
+            if (target.TryGetComponent(out ScenarioActor actor) && actor.TryGetFocusPoint(out Vector3 head))
+            {
+                return head;
+            }
+
+            return target.TryGetComponent(out ScenarioInteractable interactable) ? interactable.FocusPoint : target.transform.position;
+        }
+
+        private bool IsStandingAt(Vector3 point)
+        {
+            Vector3 player = ((Component)_placement).transform.position;
+            return new Vector2(player.x - point.x, player.z - point.z).sqrMagnitude < StandTolerance * StandTolerance;
+        }
+
+        private IEnumerator ApproachRoutine(Transform standPoint, Vector3 lookAt, Action action)
+        {
+            _isApproaching = true;
+            if (_fader != null)
+            {
+                yield return _fader.Fade(1f, _approachFadeOutSeconds);
+            }
+
+            _placement.PlaceAt(standPoint.position, lookAt);
+            _isApproaching = false;
+
+            // The dialogue opens on the black screen and is revealed together with the passenger.
+            action();
+            if (_fader != null)
+            {
+                yield return _fader.Fade(0f, _approachFadeInSeconds);
+            }
+        }
+
         private void FocusOn(ScenarioActor actor)
         {
+            StopLook();
+            _focusActor = actor;
             if (_viewFocus != null && actor.TryGetFocusPoint(out Vector3 point))
             {
                 _viewFocus.FocusOn(point);
@@ -469,10 +633,79 @@ namespace Game.Scenarios.Presentation
 
         private void ClearFocus()
         {
+            StopLook();
+            _focusActor = null;
             if (_viewFocus != null)
             {
                 _viewFocus.ClearFocus();
             }
+        }
+
+        // A scripted glance: "look at the bag, then back at the passenger" while the node's text is on screen.
+        private void PlayLook(IReadOnlyList<LookStepData> steps, ScenarioActor speaker)
+        {
+            StopLook();
+            if (_viewFocus != null && steps.Count > 0)
+            {
+                _lookRoutine = StartCoroutine(LookSequence(steps, speaker));
+            }
+        }
+
+        private void StopLook()
+        {
+            if (_lookRoutine != null)
+            {
+                StopCoroutine(_lookRoutine);
+                _lookRoutine = null;
+            }
+        }
+
+        private IEnumerator LookSequence(IReadOnlyList<LookStepData> steps, ScenarioActor speaker)
+        {
+            for (int i = 0; i < steps.Count; i++)
+            {
+                if (TryResolveFocusPoint(steps[i].Target, out Vector3 point))
+                {
+                    _viewFocus.FocusOn(point);
+                }
+
+                // A holding step keeps the camera on its target until the next node focuses elsewhere.
+                if (steps[i].Hold)
+                {
+                    _focusActor = null;
+                    _lookRoutine = null;
+                    yield break;
+                }
+
+                yield return new WaitForSeconds(steps[i].Seconds);
+            }
+
+            _lookRoutine = null;
+            if (speaker != null && speaker.TryGetFocusPoint(out Vector3 back))
+            {
+                _viewFocus.FocusOn(back);
+            }
+        }
+
+        private bool TryResolveFocusPoint(string id, out Vector3 point)
+        {
+            ScenarioActor actor = FindActor(id);
+            if (actor != null && actor.TryGetFocusPoint(out point))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < _targets.Count; i++)
+            {
+                if (_targets[i].TargetId == id)
+                {
+                    point = _targets[i].FocusPoint;
+                    return true;
+                }
+            }
+
+            point = Vector3.zero;
+            return false;
         }
 
         private static string SpeakerName(ScenarioActor actor)

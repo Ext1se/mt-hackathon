@@ -109,7 +109,21 @@ namespace Game.Scenarios.Presentation.UI
 
             _title.text = data != null ? data.Title : string.Empty;
             _summary.text = data != null ? data.Summary : string.Empty;
-            _status.text = isRunning ? _runningLabel : $"{_notStartedLabel}. {_startHint}";
+            _status.text = isRunning ? $"{_runningLabel}: {VariantLabel(data, _runner.CurrentVariantId)}" : $"{_notStartedLabel}. {_startHint}";
+        }
+
+        // Testers need to know which branch they are on; the variant title comes from the scenario file.
+        private static string VariantLabel(ScenarioData data, string variantId)
+        {
+            foreach (VariantData variant in data.Variants)
+            {
+                if (variant.Id == variantId)
+                {
+                    return $"{variant.Id} — {variant.Title}";
+                }
+            }
+
+            return variantId;
         }
 
         private ScenarioData SceneScenario()

@@ -10,6 +10,8 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private Button _startButton;
         [Tooltip("Scene loaded by the start button; empty for a placeholder card.")]
         [SerializeField] private string _sceneName = string.Empty;
+        [Tooltip("Story variant to force in the scene; empty for the weighted random pick.")]
+        [SerializeField] private string _forcedVariant = string.Empty;
 
         public bool IsAvailable => !string.IsNullOrEmpty(_sceneName);
 
@@ -28,6 +30,7 @@ namespace Game.Scenarios.Presentation.UI
         {
             if (IsAvailable)
             {
+                ScenarioLaunch.ForcedVariant = _forcedVariant;
                 SceneManager.LoadScene(_sceneName);
             }
         }

@@ -24,6 +24,8 @@ namespace VSM.Interaction
             RaycastHit hit;
             if (!Physics.Raycast(view.transform.position, view.transform.forward, out hit, 2.3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) { if (held) Hint("Наведите на пол или стол"); return; }
             if (held) { Place(hit); return; }
+            var scenarioTarget = hit.collider.GetComponentInParent<Game.Scenarios.Presentation.World.IScenarioInteractable>();
+            if (scenarioTarget != null) { scenarioTarget.Interact(); return; }
             var door = hit.collider.GetComponentInParent<VSMSlidingDoor>();
             if (door) { door.Toggle(); Hint(door.IsOpen ? "Дверь открывается" : "Дверь закрывается"); return; }
             var prop = hit.collider.GetComponentInParent<VSMTaskProp>();

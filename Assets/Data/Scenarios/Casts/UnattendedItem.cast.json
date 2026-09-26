@@ -1,0 +1,25 @@
+{
+  "scenario": "Assets/Data/Scenarios/UnattendedItem.json",
+  "forcedVariant": "",
+  "startHint": "Подойдите к пассажирке 3Г (вагон с рюкзаком, третий ряд слева) и нажмите действие.",
+  "groups": [
+    { "name": "Car7_C03", "visibilitySource": "C03_ROOT" },
+    { "name": "Car8_C04", "visibilitySource": "C04_ROOT" }
+  ],
+  "actors": [
+    { "id": "passenger_3G", "name": "Пассажирка 3Г", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_3.001_1", "starter": true },
+    { "id": "passenger_4V", "name": "Пассажир 4В", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_4.001_0" },
+    { "id": "passenger_8A", "name": "Пассажир 8А", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_8_0" },
+    { "id": "passenger_5B", "name": "Пассажирка 5Б", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_5_0" },
+    { "id": "passenger_1A", "name": "Пассажирка 1А", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_1.001_1" },
+    { "id": "passenger_3V", "name": "Пассажир 3В", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_6_0", "variant": "A", "target": "candidate_owner", "props": [ "cap", "scarf", "thermos" ] },
+    { "id": "friend_1", "name": "", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_5_0" },
+    { "id": "friend_2", "name": "", "prefab": "female", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_5_1" },
+    { "id": "friend_3", "name": "", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_6_1" },
+    { "id": "double_cap", "name": "Пассажир в кепке", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_3.001_0", "pose": "SittingAsleep", "target": "candidate_cap", "props": [ "cap" ] },
+    { "id": "double_scarf", "name": "Пассажир в шарфе", "prefab": "male", "group": "Car8_C04", "seat": "Seat_C04_SEAT_comfort_9_1", "target": "candidate_scarf", "props": [ "scarf" ] },
+    { "id": "chief", "name": "Начальник поезда" },
+    { "id": "security", "name": "Сотрудник ПТБ" }
+  ],
+  "lockedProps": [ "DuffelBag" ]
+}

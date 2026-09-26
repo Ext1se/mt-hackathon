@@ -1,0 +1,3 @@
+<linker>
+    <assembly fullname="Game.Scenarios.Core" preserve="all" />
+</linker>

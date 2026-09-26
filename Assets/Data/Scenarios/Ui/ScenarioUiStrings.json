@@ -1,0 +1,32 @@
+{
+  "labels": {
+    "loyalty": "Лояльность",
+    "safety": "Безопасность",
+    "comp.comm": "Сервисное общение",
+    "comp.rules": "Знание регламента",
+    "comp.escalation": "Эскалация",
+    "comp.composure": "Хладнокровие",
+    "comp.speed": "Скорость решений",
+    "var.severity": "Тяжесть состояния",
+    "var.panic": "Паника в вагоне",
+    "var.aggression": "Агрессия",
+    "var.annoyance": "Недовольство соседей"
+  },
+  "grades": [ "Провал", "Удовлетворительно", "Хорошо", "Отлично" ],
+  "ui": {
+    "hint": "Подсказка",
+    "continue": "Далее",
+    "close": "Закрыть",
+    "quest": "Задание",
+    "hubActions": "Осталось действий: {0}",
+    "scales": "Лояльность {0} ({1})   ·   Безопасность {2} ({3})",
+    "reference": "эталон",
+    "timeout": "время вышло",
+    "debriefTitle": "Разбор",
+    "briefingButton": "Сценарий",
+    "briefingNotStarted": "Не начат",
+    "briefingRunning": "В процессе",
+    "briefingControls": "Tab — описание сценария   ·   Shift — бег   ·   E — действие",
+    "menuButton": "В меню"
+  }
+}

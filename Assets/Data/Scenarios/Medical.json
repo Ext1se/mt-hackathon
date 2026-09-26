@@ -1,0 +1,643 @@
+{
+  "id": "medical",
+  "title": "Пассажиру плохо",
+  "summary": "Первая реакция, организация помощи, работа с окружающими.",
+  "loyalty": 50,
+  "safety": 50,
+  "variables": [
+    { "key": "var.severity", "initial": 2, "min": 1, "max": 5 },
+    { "key": "var.panic", "initial": 0, "min": 0, "max": 3 }
+  ],
+  "variants": [
+    { "id": "A", "weight": 1, "title": "Сердце" },
+    { "id": "B", "weight": 1, "title": "Паническая атака" }
+  ],
+  "start": "M1",
+  "nodes": [
+    {
+      "id": "M1",
+      "speaker": "passenger_12A",
+      "emotion": "fear",
+      "lines": [ { "text": "Вы развозите напитки в вагоне 4. Соседка с места 12А машет рукой: «Проводник! Подойдите скорее, соседу плохо!»" } ],
+      "timeLimit": 10,
+      "timeoutOption": "timeout",
+      "options": [
+        {
+          "id": "approach",
+          "text": "Поставить тележку у сервисной зоны и сразу подойти.",
+          "reference": true,
+          "effects": [ { "key": "loyalty", "value": 5 }, { "key": "safety", "value": 5 }, { "key": "comp.rules", "value": 1 } ],
+          "feedback": "При угрозе здоровью обслуживание прерывается. Тележку вы оставили не в проходе, чтобы не заблокировать путь начальнику и медикам.",
+          "next": "M1W"
+        },
+        {
+          "id": "finish_row",
+          "text": "«Одну минуту, только закончу с этим рядом».",
+          "effects": [ { "key": "loyalty", "value": -10 }, { "key": "safety", "value": -5 }, { "key": "var.severity", "value": 1 } ],
+          "feedback": "Сигнал о плохом самочувствии важнее любой сервисной задачи. Каждая минута может быть важна.",
+          "next": "M1W"
+        },
+        {
+          "id": "drop_cart",
+          "text": "Бросить тележку посреди прохода и бежать.",
+          "effects": [ { "key": "safety", "value": -5 }, { "key": "flag.cart_in_aisle", "op": "set", "value": 1 } ],
+          "feedback": "Быстро — хорошо, но проход должен оставаться свободным (№14).",
+          "next": "M1W"
+        },
+        {
+          "id": "radio_blind",
+          "text": "Сразу вызвать начальника поезда по рации, не подходя к пассажиру.",
+          "speaker": "chief",
+          "lines": [ { "text": "«Какое место? Что случилось?» Ответить пока нечего." } ],
+          "effects": [ { "key": "comp.escalation", "value": -1 }, { "key": "flag.chief_called_blind", "op": "set", "value": 1 } ],
+          "feedback": "Начальника нужно звать, но сначала оцените ситуацию хотя бы за пару секунд: без места и симптомов вызов мало полезен.",
+          "next": "M1W"
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: растерялись",
+          "effects": [ { "key": "loyalty", "value": -10 }, { "key": "safety", "value": -5 }, { "key": "var.severity", "value": 1 } ],
+          "feedback": "Пока вы медлили, пассажиру стало хуже. Сигнал о плохом самочувствии — повод прервать любую работу.",
+          "next": "M1W"
+        }
+      ]
+    },
+    {
+      "id": "M1W",
+      "kind": "roam",
+      "lines": [ { "text": "Подойдите к пассажиру на месте 12В." } ],
+      "timeLimit": 20,
+      "timeoutOption": "too_slow",
+      "options": [
+        { "id": "reach", "text": "Подойти к пассажиру", "target": "passenger_12V", "objective": "Подойти к пассажиру 12В", "next": "M2" },
+        {
+          "id": "too_slow",
+          "hidden": true,
+          "text": "Время вышло: шли слишком долго",
+          "effects": [ { "key": "var.severity", "value": 1 } ],
+          "feedback": "К пассажиру, которому плохо, нужно идти сразу.",
+          "next": "M2"
+        }
+      ]
+    },
+    {
+      "id": "M2",
+      "speaker": "passenger_12V",
+      "emotion": "fear",
+      "lines": [
+        { "conditions": [ { "key": "variant.A" } ], "text": "Пассажир 12В бледный, часто дышит и держится за грудь: «Мне… нехорошо. Воздуха не хватает»." },
+        { "text": "Пассажир 12В бледный, часто дышит и сжимает подлокотник: «Мне… нехорошо. Воздуха не хватает»." }
+      ],
+      "timeLimit": 12,
+      "timeoutOption": "freeze",
+      "options": [
+        {
+          "id": "calm",
+          "text": "Присесть рядом: «Я рядом. Сейчас приглашу начальника поезда, и мы организуем помощь».",
+          "reference": true,
+          "effects": [ { "key": "loyalty", "value": 10 }, { "key": "safety", "value": 5 }, { "key": "comp.comm", "value": 1 }, { "key": "comp.escalation", "value": 1 } ],
+          "feedback": "Эталонная реплика (№19): вы остаётесь рядом, обозначаете, что помощь организуется, и не пугаете.",
+          "next": "M3"
+        },
+        {
+          "id": "shout",
+          "text": "Громко: «Вам плохо с сердцем?! Кто-нибудь, помогите!»",
+          "effects": [
+            { "key": "loyalty", "value": -5 },
+            { "key": "var.panic", "value": 1 },
+            { "key": "var.severity", "value": 1 },
+            { "key": "var.severity", "value": 1, "conditions": [ { "key": "variant.B" } ] },
+            { "key": "comp.composure", "value": -1 }
+          ],
+          "feedback": "Не допускать паники (№19, №45). Громкие догадки пугают и пассажира, и вагон. При панической атаке это напрямую ухудшает состояние.",
+          "next": "M3"
+        },
+        {
+          "id": "leave",
+          "text": "«Сейчас вернусь» — и уйти за начальником.",
+          "effects": [ { "key": "safety", "value": -10 }, { "key": "var.severity", "value": 1 }, { "key": "flag.left_alone", "op": "set", "value": 1 } ],
+          "feedback": "Пассажира в таком состоянии нельзя оставлять одного (№29). Начальника вызывают по рации, не отходя.",
+          "next": "M3"
+        },
+        {
+          "id": "dismiss",
+          "text": "«Может, Вы просто перенервничали? Выпейте воды, пройдёт».",
+          "effects": [ { "key": "loyalty", "value": -10 }, { "key": "safety", "value": -10 }, { "key": "comp.comm", "value": -1 }, { "key": "comp.rules", "value": -1 } ],
+          "feedback": "Проводник не ставит диагноз. Обесценивание жалобы может стоить здоровья пассажиру и лишает его доверия к вам.",
+          "next": "M3"
+        },
+        {
+          "id": "freeze",
+          "hidden": true,
+          "text": "Время вышло: застыли",
+          "effects": [ { "key": "var.severity", "value": 1 } ],
+          "feedback": "Растерянность стоит времени: пассажиру стало хуже.",
+          "next": "M3"
+        }
+      ]
+    },
+    {
+      "id": "M3",
+      "kind": "hub",
+      "lines": [ { "text": "Что делаете? Каждое действие занимает около минуты." } ],
+      "timeLimit": 45,
+      "maxActions": 5,
+      "exit": [ { "conditions": [ { "key": "flag.chief_called", "op": "eq", "value": 0 } ], "node": "M3L" } ],
+      "exitNext": "M6",
+      "hints": [
+        { "afterSeconds": 15, "conditions": [ { "key": "flag.chief_called", "op": "eq", "value": 0 } ], "text": "Начальник поезда ещё не знает о ситуации." },
+        { "text": "Прежде чем действовать, уточните симптомы и спросите, бывало ли такое раньше." }
+      ],
+      "options": [
+        {
+          "id": "radio_chief",
+          "text": "Сообщить начальнику поезда по рации: «Вагон 4, место 12В, пассажиру плохо, нужна помощь».",
+          "speaker": "chief",
+          "lines": [ { "text": "«Принял, иду»." } ],
+          "effects": [
+            { "key": "safety", "value": 10 },
+            { "key": "safety", "value": 5, "conditions": [ { "key": "flag.chief_called_blind" } ] },
+            { "key": "comp.escalation", "value": 1 },
+            { "key": "flag.chief_called", "op": "set", "value": 1 }
+          ],
+          "feedback": "Начальник поезда получил место и суть ситуации, а вы остались рядом с пассажиром."
+        },
+        {
+          "id": "ask_symptoms",
+          "text": "«Что именно Вас беспокоит? Где болит?»",
+          "speaker": "passenger_12V",
+          "lines": [
+            { "conditions": [ { "key": "variant.A" } ], "text": "«Давит в груди… отдаёт в левую руку»." },
+            { "text": "«Сердце колотится, руки немеют, кажется, сейчас умру»." }
+          ],
+          "effects": [ { "key": "comp.comm", "value": 1 }, { "key": "flag.asked_symptoms", "op": "set", "value": 1 } ],
+          "feedback": "Симптомы понадобятся для доклада начальнику и медику."
+        },
+        {
+          "id": "ask_history",
+          "text": "«С Вами такое раньше бывало? Принимаете что-то постоянно?»",
+          "speaker": "passenger_12V",
+          "lines": [
+            { "conditions": [ { "key": "variant.A" } ], "text": "«Давление… Таблетки в чемодане, в багаже»." },
+            { "text": "«Бывало, врач говорил — панические атаки. Обычно проходит минут за десять»." }
+          ],
+          "effects": [ { "key": "comp.comm", "value": 1 }, { "key": "comp.rules", "value": 1 }, { "key": "flag.asked_history", "op": "set", "value": 1 } ],
+          "feedback": "Вопрос из рекомендаций (№29): история помогает понять, что происходит, и передать это медикам."
+        },
+        {
+          "id": "announce",
+          "text": "Объявить по громкой связи поиск медика.",
+          "next": "M3_announce"
+        },
+        {
+          "id": "seat",
+          "text": "Помочь сесть удобнее, ослабить ремень, попросить соседей не толпиться.",
+          "effects": [ { "key": "safety", "value": 5 } ],
+          "feedback": "Удобная поза и свободное пространство — помощь в пределах компетенции проводника."
+        },
+        {
+          "id": "water",
+          "text": "Принести воды.",
+          "effects": [ { "key": "loyalty", "value": 5 } ],
+          "feedback": "Предложить воду — допустимая помощь (№28)."
+        },
+        {
+          "id": "breathing",
+          "text": "Подышать вместе: «Давайте вдох на четыре счёта, задержка, выдох…»",
+          "conditions": [ { "key": "flag.asked_symptoms", "group": 0 }, { "key": "flag.asked_history", "group": 1 } ],
+          "speaker": "passenger_12V",
+          "lines": [
+            { "conditions": [ { "key": "variant.A" } ], "text": "Пассажир старается дышать ровно, но боль в груди не проходит." },
+            { "text": "Дыхание постепенно выравнивается." }
+          ],
+          "effects": [
+            { "key": "var.severity", "value": -1, "conditions": [ { "key": "variant.B" } ] },
+            { "key": "var.severity", "value": -1, "conditions": [ { "key": "variant.B" }, { "key": "flag.asked_history" } ] },
+            { "key": "loyalty", "value": 10, "conditions": [ { "key": "variant.B" } ] },
+            { "key": "loyalty", "value": 5, "conditions": [ { "key": "variant.A" } ] },
+            { "key": "flag.breathing", "op": "set", "value": 1 }
+          ],
+          "feedback": "Дыхание по квадрату помогает при панической атаке (№29). При проблемах с сердцем оно не заменяет медицинскую помощь."
+        },
+        {
+          "id": "first_aid_kit",
+          "text": "Принести аптечку первой помощи.",
+          "lines": [ { "text": "Аптечка под рукой — пригодится медику." } ],
+          "effects": [ { "key": "safety", "value": 5 } ]
+        },
+        {
+          "id": "own_pill",
+          "text": "Дать таблетку из своей личной сумки.",
+          "speaker": "passenger_12V",
+          "lines": [ { "text": "Пассажир благодарит и выпивает таблетку." } ],
+          "effects": [ { "key": "loyalty", "value": 5 }, { "key": "safety", "value": -30 }, { "key": "comp.rules", "value": -2 }, { "key": "flag.meds_given", "op": "set", "value": 1 } ],
+          "feedback": "Личные лекарства не выдаются (№28). Мы не знаем, как препарат подействует, и ответственность ляжет на проводника. Правильный путь — аптечка, начальник поезда, медик."
+        }
+      ]
+    },
+    {
+      "id": "M3_announce",
+      "lines": [ { "text": "Как сформулировать объявление?" } ],
+      "options": [
+        {
+          "id": "neutral",
+          "text": "«Уважаемые пассажиры, если среди вас есть медицинский работник, просим подойти в вагон 4»",
+          "effects": [ { "key": "safety", "value": 10 }, { "key": "comp.escalation", "value": 1 }, { "key": "flag.doctor_announced", "op": "set", "value": 1 } ],
+          "feedback": "Объявление без подробностей о здоровье: этого достаточно, чтобы медик откликнулся.",
+          "next": "@hub"
+        },
+        {
+          "id": "detailed",
+          "text": "«Срочно! Мужчине плохо с сердцем в 4-м вагоне!»",
+          "effects": [ { "key": "flag.doctor_announced", "op": "set", "value": 1 }, { "key": "var.panic", "value": 1 }, { "key": "loyalty", "value": -10 }, { "key": "comp.rules", "value": -1 } ],
+          "feedback": "Подробности о здоровье — чужие персональные данные (по аналогии с №30), и такая формулировка сеет панику.",
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "M3W",
+      "lines": [ { "text": "Пассажиру становится хуже: помощь всё ещё не вызвана." } ],
+      "onEnter": [ { "key": "var.severity", "value": 1 } ],
+      "feedback": "При проблемах с сердцем каждая минута без начальника поезда и медика ухудшает состояние.",
+      "options": [ { "id": "continue", "text": "Продолжить", "next": "@return" } ]
+    },
+    {
+      "id": "M3L",
+      "speaker": "chief",
+      "lines": [ { "text": "Начальник поезда узнал о ситуации от пассажиров и пришёл сам." } ],
+      "onEnter": [ { "key": "var.severity", "value": 1 }, { "key": "safety", "value": -10 }, { "key": "comp.escalation", "value": -1 } ],
+      "feedback": "Начальника поезда нужно вызвать самому и сразу.",
+      "options": [ { "id": "continue", "text": "Продолжить", "next": "M6" } ]
+    },
+    {
+      "id": "M4",
+      "speaker": "passenger_12A",
+      "emotion": "fear",
+      "lines": [ { "text": "Соседка достаёт блистер: «У меня есть таблетки от сердца, давайте дадим ему!» Пассажир: «Давайте… что угодно…»" } ],
+      "timeLimit": 8,
+      "critical": true,
+      "timeoutOption": "timeout",
+      "options": [
+        {
+          "id": "thank_wait",
+          "text": "«Спасибо, что хотите помочь! Давайте дождёмся медика: мы не знаем, как препарат подействует именно на него».",
+          "reference": true,
+          "effects": [ { "key": "safety", "value": 10 }, { "key": "comp.rules", "value": 1 }, { "key": "comp.comm", "value": 1 } ],
+          "feedback": "Вы остановили опасное действие и поблагодарили соседку, не обидев её.",
+          "next": "@return"
+        },
+        {
+          "id": "allow",
+          "text": "Разрешить.",
+          "effects": [ { "key": "loyalty", "value": 5 }, { "key": "safety", "value": -25 }, { "key": "flag.meds_given", "op": "set", "value": 1 } ],
+          "feedback": "Правило действует и для лекарств других пассажиров (№28). Проводник отвечает за то, что происходит в его вагоне.",
+          "next": "@return"
+        },
+        {
+          "id": "snap",
+          "text": "Резко: «Уберите! Нельзя!»",
+          "effects": [ { "key": "safety", "value": 5 }, { "key": "loyalty", "value": -10 }, { "key": "comp.comm", "value": -1 } ],
+          "feedback": "Решение верное, форма — нет. Соседка хотела помочь; резкость поднимает градус в вагоне.",
+          "next": "@return"
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: соседка дала таблетку сама",
+          "effects": [ { "key": "loyalty", "value": 5 }, { "key": "safety", "value": -25 }, { "key": "flag.meds_given", "op": "set", "value": 1 } ],
+          "feedback": "Пока вы молчали, соседка дала таблетку. Остановить опасное действие нужно сразу.",
+          "next": "@return"
+        }
+      ]
+    },
+    {
+      "id": "M5",
+      "lines": [ { "text": "Несколько пассажиров встали. Пассажир 14Г снимает на телефон. Кто-то: «Он что, умирает?»" } ],
+      "timeLimit": 10,
+      "timeoutOption": "timeout",
+      "options": [
+        {
+          "id": "calm_all",
+          "text": "Всем: «Пожалуйста, сохраняйте спокойствие и оставайтесь на местах, помощь уже организована». Лично 14Г: «Прошу Вас не снимать пассажира без его согласия».",
+          "reference": true,
+          "effects": [ { "key": "loyalty", "value": 10 }, { "key": "var.panic", "value": -1 }, { "key": "comp.composure", "value": 1 }, { "key": "flag.filming_stopped", "op": "set", "value": 1 } ],
+          "feedback": "Эталон №45 и №25: одна спокойная фраза вагону и личная просьба к тому, кто снимает.",
+          "next": "@return"
+        },
+        {
+          "id": "only_filming",
+          "text": "Только попросить 14Г не снимать.",
+          "effects": [ { "key": "loyalty", "value": 5 }, { "key": "flag.filming_stopped", "op": "set", "value": 1 } ],
+          "feedback": "Съёмку остановили, но вагон остался без информации: паника растёт на слухах.",
+          "next": "@return"
+        },
+        {
+          "id": "ignore",
+          "text": "Не отвлекаться, заниматься только пациентом.",
+          "effects": [ { "key": "var.panic", "value": 1 }, { "key": "loyalty", "value": -15 } ],
+          "feedback": "Пациент — приоритет, но одна короткая фраза вагону занимает несколько секунд и снимает панику. Видео попало в соцсети.",
+          "next": "@return"
+        },
+        {
+          "id": "order",
+          "text": "«Уберите телефон немедленно, это незаконно!»",
+          "effects": [ { "key": "loyalty", "value": -10 }, { "key": "var.panic", "value": 1 }, { "key": "comp.composure", "value": -1 } ],
+          "feedback": "Конфликт с третьим пассажиром отвлекает от главного. Просьба, а не требование.",
+          "next": "@return"
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: не отреагировали",
+          "effects": [ { "key": "var.panic", "value": 1 }, { "key": "loyalty", "value": -15 } ],
+          "feedback": "Вагон остался без информации, видео попало в соцсети.",
+          "next": "@return"
+        }
+      ]
+    },
+    {
+      "id": "M6",
+      "speaker": "chief",
+      "lines": [
+        { "conditions": [ { "key": "flag.doctor_announced" } ], "text": "Начальник поезда подходит вместе с врачом из вагона 6: «Докладывайте»." },
+        { "text": "Начальник поезда подходит: «Докладывайте». Поиск медика он объявляет сам." }
+      ],
+      "onEnter": [
+        { "key": "var.severity", "value": 1, "conditions": [ { "key": "variant.A" }, { "key": "flag.doctor_announced", "op": "eq", "value": 0 } ] },
+        { "key": "var.severity", "value": 1, "conditions": [ { "key": "variant.A" }, { "key": "flag.cart_in_aisle" } ] }
+      ],
+      "feedback": "Без объявления медика и со свободным проходом помощь пришла бы быстрее.",
+      "options": [
+        {
+          "id": "full",
+          "text": "Полный доклад: место 12В, мужчина около 55 лет, в сознании; жалобы, что было раньше, что уже сделано.",
+          "reference": true,
+          "conditions": [ { "key": "flag.asked_symptoms" }, { "key": "flag.asked_history" } ],
+          "effects": [ { "key": "safety", "value": 10 }, { "key": "comp.escalation", "value": 2 } ],
+          "feedback": "Хороший доклад: место, возраст, сознание, жалобы, история, что уже сделано.",
+          "nextRules": [
+            { "conditions": [ { "key": "flag.meds_given" } ], "node": "M6_meds" },
+            { "conditions": [ { "key": "variant.A" } ], "node": "M7A" },
+            { "conditions": [ { "key": "var.panic", "value": 2 } ], "node": "@end" },
+            { "conditions": [ { "key": "var.severity", "value": 4 } ], "node": "@end" }
+          ],
+          "next": "M7B"
+        },
+        {
+          "id": "partial",
+          "text": "Частичный доклад: место 12В и то, что успели узнать.",
+          "conditions": [ { "key": "flag.asked_symptoms", "group": 0 }, { "key": "flag.asked_history", "group": 1 } ],
+          "effects": [ { "key": "safety", "value": 5 }, { "key": "comp.escalation", "value": 1 } ],
+          "feedback": "Полезно, но неполно: спросите и о симптомах, и о том, бывало ли такое раньше.",
+          "nextRules": [
+            { "conditions": [ { "key": "flag.meds_given" } ], "node": "M6_meds" },
+            { "conditions": [ { "key": "variant.A" } ], "node": "M7A" },
+            { "conditions": [ { "key": "var.panic", "value": 2 } ], "node": "@end" },
+            { "conditions": [ { "key": "var.severity", "value": 4 } ], "node": "@end" }
+          ],
+          "next": "M7B"
+        },
+        {
+          "id": "vague",
+          "text": "«Мужчине плохо, я не знаю, что с ним».",
+          "effects": [ { "key": "safety", "value": -5 }, { "key": "comp.escalation", "value": -1 } ],
+          "feedback": "Без фактов начальнику поезда и медику приходится начинать с нуля.",
+          "nextRules": [
+            { "conditions": [ { "key": "flag.meds_given" } ], "node": "M6_meds" },
+            { "conditions": [ { "key": "variant.A" } ], "node": "M7A" },
+            { "conditions": [ { "key": "var.panic", "value": 2 } ], "node": "@end" },
+            { "conditions": [ { "key": "var.severity", "value": 4 } ], "node": "@end" }
+          ],
+          "next": "M7B"
+        }
+      ]
+    },
+    {
+      "id": "M6_meds",
+      "speaker": "chief",
+      "lines": [ { "text": "Начальник поезда: «Лекарства давали?»" } ],
+      "options": [
+        {
+          "id": "admit",
+          "text": "Сообщить: «Да, пассажиру дали таблетку».",
+          "reference": true,
+          "effects": [ { "key": "comp.rules", "value": 1 } ],
+          "feedback": "Скрывать ошибку опаснее, чем признать её: медики должны знать, что давали.",
+          "nextRules": [
+            { "conditions": [ { "key": "variant.A" } ], "node": "M7A" },
+            { "conditions": [ { "key": "var.panic", "value": 2 } ], "node": "@end" },
+            { "conditions": [ { "key": "var.severity", "value": 4 } ], "node": "@end" }
+          ],
+          "next": "M7B"
+        },
+        {
+          "id": "hide",
+          "text": "Промолчать.",
+          "effects": [
+            { "key": "safety", "value": -20 },
+            { "key": "flag.hid_meds", "op": "set", "value": 1 },
+            { "key": "var.severity", "value": 1, "conditions": [ { "key": "variant.A" } ] }
+          ],
+          "feedback": "Медики не знают о препарате и могут назначить несовместимое лечение.",
+          "nextRules": [
+            { "conditions": [ { "key": "variant.A" } ], "node": "M7A" },
+            { "conditions": [ { "key": "var.panic", "value": 2 } ], "node": "@end" },
+            { "conditions": [ { "key": "var.severity", "value": 4 } ], "node": "@end" }
+          ],
+          "next": "M7B"
+        }
+      ]
+    },
+    {
+      "id": "M7A",
+      "speaker": "chief",
+      "lines": [
+        { "conditions": [ { "key": "flag.doctor_announced" } ], "text": "Врач: «Похоже на сердечный приступ, нужна скорая к ближайшей станции». Начальник поезда вызывает скорую: «Подготовьте пассажира к высадке»." },
+        { "text": "Начальник поезда вызывает скорую к ближайшей станции: «Подготовьте пассажира к высадке»." }
+      ],
+      "timeLimit": 12,
+      "timeoutOption": "timeout",
+      "options": [
+        {
+          "id": "stay",
+          "text": "Остаться рядом, попросить соседку помочь собрать вещи, уточнить, где багаж.",
+          "reference": true,
+          "lines": [
+            { "conditions": [ { "key": "flag.asked_history" } ], "text": "Вы знаете про чемодан в багаже — соседка помогает его достать." },
+            { "text": "Соседка помогает собрать вещи." }
+          ],
+          "effects": [ { "key": "loyalty", "value": 10 }, { "key": "safety", "value": 5 }, { "key": "comp.comm", "value": 1 } ],
+          "feedback": "Пассажир не остаётся один, вещи собраны заранее.",
+          "next": "M8A"
+        },
+        {
+          "id": "go_door",
+          "text": "Пойти готовить выход у дверей, оставив пассажира.",
+          "effects": [ { "key": "safety", "value": -10 }, { "key": "flag.left_alone", "op": "set", "value": 1 } ],
+          "feedback": "Пассажира в тяжёлом состоянии нельзя оставлять одного.",
+          "next": "M8A"
+        },
+        {
+          "id": "persuade",
+          "text": "«Может, доедете до Питера, там уже в больницу?»",
+          "effects": [ { "key": "safety", "value": -15 }, { "key": "comp.rules", "value": -1 } ],
+          "feedback": "Решение о высадке принимают начальник и медики. Уговаривать пассажира отказаться от помощи нельзя.",
+          "next": "M8A"
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: пассажир остался один",
+          "effects": [ { "key": "safety", "value": -10 }, { "key": "flag.left_alone", "op": "set", "value": 1 } ],
+          "feedback": "Пока вы медлили, пассажир остался без присмотра.",
+          "next": "M8A"
+        }
+      ]
+    },
+    {
+      "id": "M8A",
+      "lines": [ { "text": "Поезд прибывает на станцию, скорая ждёт на платформе." } ],
+      "onEnter": [ { "key": "var.severity", "value": 1, "conditions": [ { "key": "flag.meds_given" } ] } ],
+      "feedback": "Медики спрашивают, какой препарат давали: чужое лекарство осложнило помощь.",
+      "options": [
+        {
+          "id": "precise",
+          "text": "Передать медикам: когда началось, какие симптомы, что давали.",
+          "reference": true,
+          "effects": [ { "key": "safety", "value": 5 }, { "key": "comp.escalation", "value": 1 } ],
+          "feedback": "Медики получают точную картину и экономят время.",
+          "next": "M8A_close"
+        },
+        {
+          "id": "vague",
+          "text": "«Медики сами разберутся».",
+          "effects": [ { "key": "safety", "value": -5 } ],
+          "feedback": "Медикам нужна информация от тех, кто был рядом.",
+          "next": "M8A_close"
+        }
+      ]
+    },
+    {
+      "id": "M8A_close",
+      "lines": [ { "text": "Поезд отправляется. Вагон притих." } ],
+      "options": [
+        {
+          "id": "thank_all",
+          "text": "«Благодарю всех за помощь и понимание, поездка продолжается». Отдельно поблагодарить соседку и врача.",
+          "reference": true,
+          "effects": [ { "key": "loyalty", "value": 10 }, { "key": "comp.comm", "value": 1 } ],
+          "feedback": "Шаг «заверить»: вагон знает, что всё под контролем.",
+          "next": "@end"
+        },
+        {
+          "id": "silent",
+          "text": "Ничего не говорить.",
+          "effects": [ { "key": "loyalty", "value": -5 } ],
+          "feedback": "Пассажиры видели всё и ждут, что им скажут.",
+          "next": "@end"
+        }
+      ]
+    },
+    {
+      "id": "M7B",
+      "speaker": "chief",
+      "lines": [
+        { "conditions": [ { "key": "flag.doctor_announced" }, { "key": "flag.breathing" } ], "text": "Врач: «Похоже на паническую атаку, скорая не нужна, но присмотрите». Пассажиру постепенно лучше." },
+        { "conditions": [ { "key": "flag.breathing" } ], "text": "Пассажиру постепенно лучше. Начальник поезда: «Держите на контроле»." },
+        { "text": "Пассажиру всё ещё тревожно, но хуже не становится. Начальник поезда: «Держите на контроле»." }
+      ],
+      "options": [
+        {
+          "id": "support",
+          "text": "Отвлечь разговором, предложить журнал. «Если снова станет хуже — нажмите кнопку вызова, я рядом». Вернуться через 10–15 минут.",
+          "reference": true,
+          "effects": [ { "key": "loyalty", "value": 15 }, { "key": "comp.comm", "value": 1 } ],
+          "feedback": "Эталон №29 и №11: не оставлять без внимания и вернуться позже.",
+          "next": "M8B"
+        },
+        {
+          "id": "leave",
+          "text": "«Ну вот, всё прошло, отдыхайте» — и больше не подходить.",
+          "effects": [ { "key": "loyalty", "value": -5 } ],
+          "feedback": "После такого эпизода важно вернуться и спросить о самочувствии.",
+          "next": "@end"
+        },
+        {
+          "id": "insist",
+          "text": "Настоять на высадке и скорой вопреки желанию пассажира.",
+          "effects": [ { "key": "loyalty", "value": -10 }, { "key": "comp.rules", "value": -1 } ],
+          "feedback": "Решение о высадке принимают начальник поезда и медики, не проводник.",
+          "next": "@end"
+        }
+      ]
+    },
+    {
+      "id": "M8B",
+      "speaker": "passenger_12V",
+      "emotion": "smile",
+      "lines": [ { "text": "Через 15 минут вы подходите снова. Пассажир: «Спасибо, что вернулись. Уже гораздо лучше»." } ],
+      "onEnter": [ { "key": "loyalty", "value": 10 }, { "key": "flag.followup", "op": "set", "value": 1 } ],
+      "feedback": "Вы вернулись и спросили о самочувствии.",
+      "options": [ { "id": "finish", "text": "Завершить", "next": "@end" } ]
+    }
+  ],
+  "triggers": [
+    { "id": "neighbour_pills", "hub": "M3", "conditions": [ { "key": "hub.actions", "value": 2 } ], "node": "M4" },
+    {
+      "id": "carriage_nervous",
+      "hub": "M3",
+      "conditions": [ { "key": "hub.actions", "value": 3, "group": 0 }, { "key": "var.panic", "value": 1, "group": 1 } ],
+      "node": "M5"
+    },
+    {
+      "id": "getting_worse",
+      "hub": "M3",
+      "conditions": [
+        { "key": "variant.A" },
+        { "key": "hub.actions", "value": 3 },
+        { "key": "flag.chief_called", "op": "eq", "value": 0 },
+        { "key": "flag.doctor_announced", "op": "eq", "value": 0 }
+      ],
+      "node": "M3W"
+    }
+  ],
+  "endings": [
+    {
+      "id": "dangerous",
+      "title": "Опасные действия",
+      "conditions": [ { "key": "flag.meds_given", "group": 0 }, { "key": "flag.hid_meds", "group": 1 } ],
+      "lines": [
+        { "conditions": [ { "key": "variant.A" } ], "text": "Пассажира госпитализируют в тяжёлом состоянии. Медики спрашивают, какой препарат ему давали." },
+        { "text": "В этот раз обошлось, но реакция на чужое лекарство непредсказуема." }
+      ]
+    },
+    {
+      "id": "inflated",
+      "title": "Ситуация раздута",
+      "conditions": [ { "key": "var.panic", "value": 2 } ],
+      "lines": [ { "text": "Помощь оказана, но в вагоне паника, видео попало в соцсети, пассажиры пишут жалобы." } ]
+    },
+    {
+      "id": "delayed",
+      "title": "Помощь с потерей времени",
+      "conditions": [ { "key": "var.severity", "value": 3, "group": 0 }, { "key": "flag.left_alone", "group": 1 } ],
+      "lines": [ { "text": "Всё закончилось хорошо, но помощь пришла позже, чем могла." } ]
+    },
+    {
+      "id": "calm_restored",
+      "title": "Спокойствие вернулось",
+      "conditions": [ { "key": "variant.B" }, { "key": "flag.breathing" }, { "key": "flag.followup" } ],
+      "lines": [ { "text": "Пассажир благодарит, вагон спокоен." } ]
+    },
+    {
+      "id": "exemplary",
+      "title": "Образцовая помощь",
+      "lines": [
+        { "conditions": [ { "key": "variant.A" } ], "text": "Пассажир передан медикам, вагон спокоен." },
+        { "text": "Пассажир успокоился, вагон спокоен." }
+      ]
+    }
+  ]
+}

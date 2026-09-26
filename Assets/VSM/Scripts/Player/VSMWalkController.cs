@@ -18,8 +18,10 @@ namespace VSM.Player
         [Tooltip("Сенсорная область обзора.")] public VSMTouchPad lookPad;
         [Tooltip("Поле подсказок игроку.")] public Text status;
         [SerializeField, Tooltip("Скорость ходьбы, метры в секунду.")] float speed = 1.65f;
+        [SerializeField, Tooltip("Скорость бега при зажатом Shift, метры в секунду.")] float runSpeed = 3.3f;
+        [Tooltip("Разрешить бег по Shift (левый стик геймпада — нажатие).")] public bool allowRunning = true;
         CharacterController motor;
-        InputAction move, look, interact;
+        InputAction move, look, interact, sprint;
         VSMInteractor interactor;
         float pitch, vertical;
         VSMCursorMode cursorMode;
@@ -29,6 +31,7 @@ namespace VSM.Player
             cursorMode = GetComponent<VSMCursorMode>(); motor = GetComponent<CharacterController>(); interactor = GetComponent<VSMInteractor>();
             interactor.view = view; interactor.status = status;
             move = actions.FindAction("Walk/Move"); look = actions.FindAction("Walk/Look"); interact = actions.FindAction("Walk/Interact");
+            sprint = actions.FindAction("Walk/Sprint", false);
             gameObject.layer = 2;
             if (!XRSettings.isDeviceActive) Application.targetFrameRate = Application.isMobilePlatform ? 60 : -1;
             pitch = Mathf.DeltaAngle(0, view.transform.localEulerAngles.x);
@@ -47,7 +50,8 @@ namespace VSM.Player
             vertical = motor.isGrounded ? -1 : Mathf.Max(-15, vertical - 18 * Time.deltaTime);
             Vector3 forward = Vector3.ProjectOnPlane(view.transform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
-            if (motor.enabled) motor.Move(((forward * v.y + right * v.x) * speed + Vector3.up * vertical) * Time.deltaTime);
+            float currentSpeed = allowRunning && sprint != null && sprint.IsPressed() ? runSpeed : speed;
+            if (motor.enabled) motor.Move(((forward * v.y + right * v.x) * currentSpeed + Vector3.up * vertical) * Time.deltaTime);
             if (interact.WasPressedThisFrame()) Interact();
         }
         /// <summary>Поворачивает обзор мышью, геймпадом или касанием только вне XR.</summary>
@@ -60,6 +64,8 @@ namespace VSM.Player
             transform.Rotate(0, delta.x, 0); pitch = Mathf.Clamp(pitch - delta.y, -70, 70);
             view.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
         }
+        /// <summary>Бежит ли пассажир в этом кадре.</summary>
+        public bool IsRunning { get { return allowRunning && sprint != null && sprint.IsPressed(); } }
         /// <summary>Передаёт событие кнопки отдельному компоненту взаимодействия.</summary>
         public void Interact() { if (interactor) interactor.Interact(); }
     }

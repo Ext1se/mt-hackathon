@@ -1,0 +1,111 @@
+{
+  "id": "fixture",
+  "title": "Fixture",
+  "summary": "Engine test scenario.",
+  "loyalty": 50,
+  "safety": 50,
+  "variables": [
+    { "key": "var.panic", "initial": 0, "min": 0, "max": 3 }
+  ],
+  "variants": [
+    { "id": "A", "weight": 1, "title": "Variant A" },
+    { "id": "B", "weight": 1, "title": "Variant B" }
+  ],
+  "start": "intro",
+  "nodes": [
+    {
+      "id": "intro",
+      "speaker": "neighbour",
+      "emotion": "fear",
+      "lines": [
+        { "conditions": [ { "key": "variant.A" } ], "text": "Intro A" },
+        { "text": "Intro B" }
+      ],
+      "timeLimit": 10,
+      "critical": true,
+      "timeoutOption": "freeze",
+      "hints": [
+        { "afterSeconds": 5, "text": "Auto hint" },
+        { "conditions": [ { "key": "variant.B" } ], "text": "Hint for B" },
+        { "text": "Requested hint" }
+      ],
+      "options": [
+        {
+          "id": "good",
+          "text": "Good",
+          "reference": true,
+          "feedback": "Well done",
+          "effects": [ { "key": "loyalty", "value": 10 }, { "key": "comp.comm", "value": 1 } ],
+          "next": "hub"
+        },
+        {
+          "id": "bad",
+          "text": "Bad",
+          "effects": [ { "key": "safety", "value": -60 }, { "key": "var.panic", "value": 5 } ],
+          "next": "hub"
+        },
+        { "id": "onlyB", "text": "Only B", "conditions": [ { "key": "variant.B" } ], "next": "@end" },
+        { "id": "freeze", "text": "Froze", "hidden": true, "effects": [ { "key": "var.panic", "value": 1 } ], "next": "hub" }
+      ]
+    },
+    {
+      "id": "hub",
+      "kind": "hub",
+      "lines": [ { "text": "What now?" } ],
+      "timeLimit": 30,
+      "maxActions": 3,
+      "exit": [ { "conditions": [ { "key": "flag.reported" } ], "node": "handover" } ],
+      "exitNext": "@end",
+      "options": [
+        { "id": "report", "text": "Report", "effects": [ { "key": "flag.reported", "op": "set", "value": 1 } ] },
+        {
+          "id": "ask",
+          "text": "Ask",
+          "speaker": "patient",
+          "lines": [
+            { "conditions": [ { "key": "variant.A" } ], "text": "Answer A" },
+            { "text": "Answer B" }
+          ]
+        },
+        { "id": "water", "text": "Water" },
+        { "id": "secret", "text": "Secret", "conditions": [ { "key": "flag.reported" } ] }
+      ]
+    },
+    {
+      "id": "event",
+      "lines": [ { "text": "Something happens" } ],
+      "timeLimit": 5,
+      "timeoutOption": "late",
+      "options": [
+        { "id": "calm", "text": "Calm", "effects": [ { "key": "var.panic", "value": -1 } ], "next": "@return" },
+        { "id": "late", "text": "Late", "hidden": true, "next": "@return" }
+      ]
+    },
+    {
+      "id": "handover",
+      "lines": [ { "text": "Handover" } ],
+      "onEnter": [ { "key": "safety", "value": 5 } ],
+      "feedback": "Handover done",
+      "options": [ { "id": "done", "text": "Done", "next": "@end" } ]
+    }
+  ],
+  "triggers": [
+    { "id": "after_two", "hub": "hub", "conditions": [ { "key": "hub.actions", "value": 2 } ], "node": "event" }
+  ],
+  "endings": [
+    {
+      "id": "panic",
+      "title": "Panic",
+      "conditions": [ { "key": "var.panic", "value": 2 } ],
+      "lines": [ { "text": "Everyone panicked" } ]
+    },
+    {
+      "id": "calm",
+      "title": "Calm",
+      "lines": [
+        { "conditions": [ { "key": "variant.A" } ], "text": "Calm A" },
+        { "text": "Calm B" }
+      ]
+    }
+  ]
+}

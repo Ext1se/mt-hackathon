@@ -1,0 +1,25 @@
+{
+    "name": "Game.Scenarios.Tests",
+    "rootNamespace": "Game.Scenarios.Tests",
+    "references": [
+        "Game.Scenarios.Core",
+        "Game.Scenarios.Presentation",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

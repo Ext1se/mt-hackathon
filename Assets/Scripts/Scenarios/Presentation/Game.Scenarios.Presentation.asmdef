@@ -1,0 +1,23 @@
+{
+    "name": "Game.Scenarios.Presentation",
+    "rootNamespace": "Game.Scenarios.Presentation",
+    "references": [
+        "Game.Scenarios.Core",
+        "Game.Characters.Face",
+        "Game.Characters.Passengers",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

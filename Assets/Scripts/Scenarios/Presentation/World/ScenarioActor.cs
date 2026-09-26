@@ -1,0 +1,135 @@
+using System.Collections;
+using System.Collections.Generic;
+using Game.Characters.Face;
+using Game.Characters.Passengers;
+using UnityEngine;
+
+namespace Game.Scenarios.Presentation.World
+{
+    /// <summary>
+    /// A scenario character: speaks with lip sync, shows emotions and can take a fixed seat.
+    /// Runs before PassengerSpawner so its seat is already occupied when the wagon is filled.
+    /// </summary>
+    [DefaultExecutionOrder(-100)]
+    public sealed class ScenarioActor : MonoBehaviour
+    {
+        private const float SecondsPerCharacter = 0.06f;
+        private const float MinTalkSeconds = 1f;
+        private const float MaxTalkSeconds = 6f;
+
+        // CharacterCustomizer lives in Assembly-CSharp, which an asmdef cannot reference, so the randomizer is called by name.
+        private const string RandomizeBodyMessage = "randomizeAll";
+        private const string RandomizeOutfitMessage = "setRandomOutfit";
+
+        [SerializeField] private ScenarioRunner _runner;
+        [Tooltip("Speaker id used in scenario JSON, e.g. passenger_12V.")]
+        [SerializeField] private string _actorId = string.Empty;
+        [SerializeField] private string _displayName = string.Empty;
+        [Tooltip("Optional: lip sync and expressions.")]
+        [SerializeField] private FaceController _face;
+        [SerializeField] private List<EmotionBinding> _emotions = new List<EmotionBinding>();
+        [Tooltip("Optional: the actor is hidden while a scenario plays another story variant.")]
+        [SerializeField] private string _onlyInVariant = string.Empty;
+        [Tooltip("Randomize body and outfit through CharacterCustomizer on start.")]
+        [SerializeField] private bool _randomizeAppearance = true;
+
+        [Header("Seat")]
+        [Tooltip("Optional: the passenger takes this spot on start instead of a random one.")]
+        [SerializeField] private Passenger _passenger;
+        [SerializeField] private PassengerSpot _seat;
+        [SerializeField] private PassengerPose _pose = PassengerPose.Sitting;
+
+        public string ActorId => _actorId;
+        public string DisplayName => _displayName;
+
+        // Registered for the whole lifetime, not only while active: a culled wagon must not lose its speakers' names.
+        private void Awake()
+        {
+            if (_runner != null)
+            {
+                _runner.Register(this);
+            }
+        }
+
+        private void Start()
+        {
+            if (_passenger != null && _seat != null)
+            {
+                _passenger.TakeSpot(_seat, _pose);
+            }
+
+            if (_randomizeAppearance && _passenger != null)
+            {
+                StartCoroutine(RandomizeAppearance());
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_runner != null)
+            {
+                _runner.Unregister(this);
+            }
+        }
+
+        public void Speak(string text)
+        {
+            if (_face == null || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            _face.Talk(Mathf.Clamp(text.Length * SecondsPerCharacter, MinTalkSeconds, MaxTalkSeconds));
+        }
+
+        public void SetEmotion(string emotion)
+        {
+            if (_face == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(emotion))
+            {
+                _face.ClearExpression();
+                return;
+            }
+
+            foreach (EmotionBinding binding in _emotions)
+            {
+                if (binding.Emotion == emotion)
+                {
+                    _face.SetExpression(binding.Expression);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>Hides the actor when the playthrough picked a variant it does not belong to.</summary>
+        public void OnScenarioStarted(string variantId)
+        {
+            if (_onlyInVariant.Length > 0 && _onlyInVariant != variantId)
+            {
+                gameObject.SetActive(false);
+            }
+        }
+
+        public void OnScenarioEnded()
+        {
+            if (_onlyInVariant.Length > 0 && !gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
+
+            SetEmotion(string.Empty);
+        }
+
+        private IEnumerator RandomizeAppearance()
+        {
+            // CharacterCustomizer initializes in its own Start; randomizing before that is ignored.
+            yield return null;
+            SendMessage(RandomizeBodyMessage, SendMessageOptions.DontRequireReceiver);
+            SendMessage(RandomizeOutfitMessage, SendMessageOptions.DontRequireReceiver);
+        }
+    }
+}

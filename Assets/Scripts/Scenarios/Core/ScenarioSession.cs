@@ -71,12 +71,15 @@ namespace Game.Scenarios.Core
         public bool IsRunning => _current != null && _result == null;
         public IReadOnlyList<DecisionRecord> Decisions => _decisions;
 
+        /// <summary>When false, timed nodes and hubs never time out; time is still tracked for hints and records.</summary>
+        public bool TimersEnabled { get; set; } = true;
+
         /// <summary>Length of the clock that runs now: the hub clock inside a hub, otherwise the node clock. 0 = untimed.</summary>
         public float TimeLimit
         {
             get
             {
-                if (!IsRunning)
+                if (!IsRunning || !TimersEnabled)
                 {
                     return 0f;
                 }
@@ -157,6 +160,10 @@ namespace Game.Scenarios.Core
             spent += deltaTime;
             _timeInNode[node.Id] = spent;
             ShowDueHints(node, spent);
+            if (!TimersEnabled)
+            {
+                return;
+            }
 
             if (IsInActiveHub)
             {
@@ -205,19 +212,23 @@ namespace Game.Scenarios.Core
         private void Resolve(OptionData option, bool timedOut)
         {
             NodeData node = _current;
-            bool isHubAction = IsInActiveHub;
+            // Anything chosen while a hub is active belongs to it (its menus included), except trigger interrupts.
+            bool isInsideHub = _activeHub != null && _returnStack.Count == 0;
             List<AppliedEffect> applied = new List<AppliedEffect>();
             EffectApplier.Apply(option.Effects, _state, applied);
             ApplySpeedRule(node, option, timedOut, applied);
 
-            if (isHubAction)
+            if (isInsideHub)
             {
                 if (!option.Repeatable)
                 {
-                    _takenHubOptions.Add(option.Id);
+                    _takenHubOptions.Add(TakenKey(node, option));
                 }
 
-                _state.Add(ScenarioKeys.HubActions, 1);
+                if (!option.Free)
+                {
+                    _state.Add(ScenarioKeys.HubActions, 1);
+                }
             }
 
             _timeInNode.TryGetValue(node.Id, out float seconds);
@@ -225,7 +236,7 @@ namespace Game.Scenarios.Core
                 option.Reference, timedOut, applied, seconds));
             string speaker = string.IsNullOrEmpty(option.Speaker) ? node.Speaker : option.Speaker;
             ChoiceResolved?.Invoke(new ChoiceOutcome(node.Id, option.Id, option.Text, speaker, ResolveText(option.Lines),
-                timedOut, applied));
+                timedOut, option.Free, applied));
 
             string next = ResolveNext(option.NextRules, option.Next);
             if (string.IsNullOrEmpty(next))
@@ -437,7 +448,12 @@ namespace Game.Scenarios.Core
                 return false;
             }
 
-            return node != _activeHub || !_takenHubOptions.Contains(option.Id);
+            return _activeHub == null || !_takenHubOptions.Contains(TakenKey(node, option));
+        }
+
+        private static string TakenKey(NodeData node, OptionData option)
+        {
+            return node.Id + "/" + option.Id;
         }
 
         private OptionData FindVisibleOption(string optionId)

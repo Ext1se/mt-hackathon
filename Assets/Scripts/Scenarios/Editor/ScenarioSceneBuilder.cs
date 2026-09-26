@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using Game.Scenarios.Presentation;
 using Game.Scenarios.Presentation.UI;
+using Game.Scenarios.Presentation.World;
 using Newtonsoft.Json.Linq;
 using TMPro;
 using UnityEditor;
@@ -53,9 +54,17 @@ namespace Game.Scenarios.Editor
         {
             "Mobile_Controls/SafeArea/Interact",
             "Mobile_Controls/SafeArea/Header",
-            "Mobile_Controls/SafeArea/Hint",
-            "Mobile_Controls/SafeArea/Crosshair"
+            "Mobile_Controls/SafeArea/Hint"
         };
+
+        // Walking-mode HUD pieces replaced by the scenario HUD for the whole scenario.
+        private static readonly string[] s_scenarioHudPaths =
+        {
+            "Mobile_Controls/SafeArea/Header",
+            "Mobile_Controls/SafeArea/Hint"
+        };
+
+        private const string WalkCrosshairPath = "Mobile_Controls/SafeArea/Crosshair";
 
         private static TMP_FontAsset s_font;
         private static JObject s_strings;
@@ -68,6 +77,10 @@ namespace Game.Scenarios.Editor
             ScenarioLabels labels = EnsureLabels();
             OptionButton optionPrefab = EnsureOptionButtonPrefab();
             DecisionRow rowPrefab = EnsureDecisionRowPrefab();
+
+            // Settings toggled by hand on the runner survive a rebuild.
+            ScenarioRunner previous = Object.FindFirstObjectByType<ScenarioRunner>();
+            bool timersEnabled = previous == null || previous.TimersEnabled;
 
             // The inspector throws if the selected object is destroyed under it.
             Selection.activeGameObject = null;
@@ -91,6 +104,8 @@ namespace Game.Scenarios.Editor
             runnerObject.FindProperty("_hint").objectReferenceValue = hint;
             runnerObject.FindProperty("_quest").objectReferenceValue = quest;
             runnerObject.FindProperty("_debrief").objectReferenceValue = debrief;
+            runnerObject.FindProperty("_playerName").stringValue = Ui("playerName");
+            runnerObject.FindProperty("_timersEnabled").boolValue = timersEnabled;
             runnerObject.ApplyModifiedPropertiesWithoutUndo();
             BuildBriefing(canvas.transform, runner);
             WireCursorMode(runner);
@@ -200,13 +215,13 @@ namespace Game.Scenarios.Editor
             colors.selectedColor = ButtonHighlight;
             button.colors = colors;
             LayoutElement layout = root.AddComponent<LayoutElement>();
-            layout.minHeight = 58f;
+            layout.minHeight = 50f;
             layout.flexibleWidth = 1f;
 
-            TMP_Text label = CreateText("Label", root.transform, 24f, FontStyles.Normal, Color.white, TextAlignmentOptions.MidlineLeft);
+            TMP_Text label = CreateText("Label", root.transform, 22f, FontStyles.Normal, Color.white, TextAlignmentOptions.MidlineLeft);
             // The label's preferred height drives the button height, so long answers wrap instead of clipping.
             VerticalLayoutGroup group = root.AddComponent<VerticalLayoutGroup>();
-            group.padding = new RectOffset(20, 20, 10, 10);
+            group.padding = new RectOffset(18, 18, 8, 8);
             group.childControlHeight = true;
             group.childControlWidth = true;
             group.childForceExpandHeight = false;
@@ -334,6 +349,10 @@ namespace Game.Scenarios.Editor
             TMP_Text seconds = CreateText("Seconds", timerRoot.transform, 20f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             Stretch(seconds.rectTransform, Vector2.zero, Vector2.zero);
 
+            Button radio = CreateButton("RadioButton", root, Ui("radioButton"), AccentColor);
+            Place((RectTransform)radio.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -14f), new Vector2(240f, 50f));
+            ((RectTransform)radio.transform).pivot = new Vector2(0.5f, 1f);
+
             SerializedObject hudObject = new SerializedObject(hud);
             hudObject.FindProperty("_root").objectReferenceValue = root.gameObject;
             hudObject.FindProperty("_title").objectReferenceValue = title;
@@ -344,6 +363,7 @@ namespace Game.Scenarios.Editor
             hudObject.FindProperty("_timerRoot").objectReferenceValue = timerRoot;
             hudObject.FindProperty("_timerFill").objectReferenceValue = fill;
             hudObject.FindProperty("_timerSeconds").objectReferenceValue = seconds;
+            hudObject.FindProperty("_radioButton").objectReferenceValue = radio;
             hudObject.ApplyModifiedPropertiesWithoutUndo();
             return hud;
         }
@@ -353,22 +373,55 @@ namespace Game.Scenarios.Editor
             GameObject holder = CreateHolder("Dialogue", canvas);
             DialogueView dialogue = holder.AddComponent<DialogueView>();
 
+            // The panel grows with its content: a short answer takes a strip, a long menu takes up to the option cap.
             RectTransform root = CreatePanel("Root", holder.transform, PanelColor);
-            Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(1500f, 640f));
+            root.anchorMin = new Vector2(0f, 0f);
+            root.anchorMax = new Vector2(1f, 0f);
+            root.pivot = new Vector2(0.5f, 0f);
+            root.offsetMin = new Vector2(80f, 24f);
+            root.offsetMax = new Vector2(-80f, 24f);
+            ContentSizeFitter fitter = root.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            VerticalLayoutGroup layout = root.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(28, 24, 14, 14);
+            layout.spacing = 8f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandHeight = false;
 
-            TMP_Text speaker = CreateText("Speaker", root, 24f, FontStyles.Bold, AccentColor, TextAlignmentOptions.MidlineLeft);
-            Place(speaker.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -14f), new Vector2(-48f, 32f));
-            TMP_Text text = CreateText("Text", root, 26f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
-            Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -50f), new Vector2(-48f, 130f));
+            Image accent = CreatePanel("Accent", root, AccentColor).GetComponent<Image>();
+            accent.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            Place(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(6f, 0f));
+            accent.rectTransform.pivot = new Vector2(0f, 0.5f);
 
-            RectTransform optionsContainer = CreateScrollList("Options", root, new Vector2(24f, 84f), new Vector2(-24f, -190f), 8f);
+            TMP_Text speaker = CreateText("Speaker", root, 22f, FontStyles.Bold, AccentColor, TextAlignmentOptions.MidlineLeft);
+            TMP_Text text = CreateText("Text", root, 24f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
 
-            TMP_Text hubActions = CreateText("HubActions", root, 22f, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineLeft);
-            Place(hubActions.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 20f), new Vector2(600f, 40f));
-            Button hintButton = CreateButton("HintButton", root, Ui("hint"), ButtonColor);
-            Place((RectTransform)hintButton.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-284f, 16f), new Vector2(240f, 54f));
-            Button continueButton = CreateButton("ContinueButton", root, Ui("continue"), AccentColor);
-            Place((RectTransform)continueButton.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-24f, 16f), new Vector2(240f, 54f));
+            RectTransform optionsContainer = CreateScrollList("Options", root, Vector2.zero, Vector2.zero, 6f);
+            GameObject optionsHolder = optionsContainer.parent.parent.gameObject;
+            LayoutElement optionsElement = optionsHolder.AddComponent<LayoutElement>();
+            ScrollListHeight optionsHeight = optionsHolder.AddComponent<ScrollListHeight>();
+            SerializedObject heightObject = new SerializedObject(optionsHeight);
+            heightObject.FindProperty("_element").objectReferenceValue = optionsElement;
+            heightObject.FindProperty("_content").objectReferenceValue = optionsContainer;
+            heightObject.FindProperty("_maxHeight").floatValue = 250f;
+            heightObject.ApplyModifiedPropertiesWithoutUndo();
+
+            GameObject footer = new GameObject("Footer", typeof(RectTransform));
+            footer.transform.SetParent(root, false);
+            HorizontalLayoutGroup footerLayout = footer.AddComponent<HorizontalLayoutGroup>();
+            footerLayout.spacing = 12f;
+            footerLayout.childControlWidth = true;
+            footerLayout.childControlHeight = true;
+            footerLayout.childForceExpandWidth = false;
+            footerLayout.childForceExpandHeight = false;
+            footerLayout.childAlignment = TextAnchor.MiddleRight;
+            TMP_Text hubActions = CreateText("HubActions", footer.transform, 20f, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineLeft);
+            hubActions.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+            Button hintButton = CreateButton("HintButton", footer.transform, Ui("hint"), ButtonColor);
+            SetButtonSize(hintButton, 200f, 46f);
+            Button continueButton = CreateButton("ContinueButton", footer.transform, Ui("continue"), AccentColor);
+            SetButtonSize(continueButton, 200f, 46f);
 
             SerializedObject dialogueObject = new SerializedObject(dialogue);
             dialogueObject.FindProperty("_root").objectReferenceValue = root.gameObject;
@@ -384,18 +437,26 @@ namespace Game.Scenarios.Editor
             return dialogue;
         }
 
+        private static void SetButtonSize(Button button, float width, float height)
+        {
+            LayoutElement element = button.gameObject.AddComponent<LayoutElement>();
+            element.preferredWidth = width;
+            element.preferredHeight = height;
+            element.minHeight = height;
+        }
+
         private static HintView BuildHint(Transform canvas)
         {
             GameObject holder = CreateHolder("Hint", canvas);
             HintView hint = holder.AddComponent<HintView>();
 
             RectTransform root = CreatePanel("Root", holder.transform, PlateColor);
-            Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 680f), new Vector2(1500f, 64f));
+            Place(root, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -166f), new Vector2(500f, 96f));
             Image stripe = CreatePanel("Stripe", root, AccentColor).GetComponent<Image>();
             Place(stripe.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(8f, 0f));
             stripe.rectTransform.pivot = new Vector2(0f, 0.5f);
-            TMP_Text text = CreateText("Text", root, 24f, FontStyles.Italic, Color.white, TextAlignmentOptions.MidlineLeft);
-            Stretch(text.rectTransform, new Vector2(28f, 6f), new Vector2(-20f, -6f));
+            TMP_Text text = CreateText("Text", root, 20f, FontStyles.Italic, Color.white, TextAlignmentOptions.MidlineLeft);
+            Stretch(text.rectTransform, new Vector2(24f, 8f), new Vector2(-16f, -8f));
 
             SerializedObject hintObject = new SerializedObject(hint);
             hintObject.FindProperty("_root").objectReferenceValue = root.gameObject;
@@ -410,12 +471,18 @@ namespace Game.Scenarios.Editor
             QuestTracker quest = holder.AddComponent<QuestTracker>();
 
             RectTransform root = CreatePanel("Root", holder.transform, PlateColor);
-            Place(root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -120f), new Vector2(560f, 120f));
+            Place(root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -120f), new Vector2(620f, 300f));
+            ContentSizeFitter fitter = root.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            VerticalLayoutGroup layout = root.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(16, 16, 10, 12);
+            layout.spacing = 4f;
+            layout.childControlHeight = true;
+            layout.childControlWidth = true;
+            layout.childForceExpandHeight = false;
             TMP_Text header = CreateText("Header", root, 20f, FontStyles.Bold, AccentColor, TextAlignmentOptions.TopLeft);
             header.text = Ui("quest");
-            Place(header.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -10f), new Vector2(-32f, 28f));
             TMP_Text objectives = CreateText("Objectives", root, 22f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
-            Stretch(objectives.rectTransform, new Vector2(16f, 10f), new Vector2(-16f, -40f));
 
             SerializedObject questObject = new SerializedObject(quest);
             questObject.FindProperty("_root").objectReferenceValue = root.gameObject;
@@ -474,7 +541,11 @@ namespace Game.Scenarios.Editor
             Place((RectTransform)toggle.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -108f), new Vector2(220f, 44f));
 
             RectTransform root = CreatePanel("Root", holder.transform, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.97f));
-            Place(root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100f, 420f));
+            root.anchorMin = new Vector2(0f, 0.5f);
+            root.anchorMax = new Vector2(1f, 0.5f);
+            root.pivot = new Vector2(0.5f, 0.5f);
+            root.offsetMin = new Vector2(120f, -210f);
+            root.offsetMax = new Vector2(-120f, 210f);
             TMP_Text title = CreateText("Title", root, 38f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopLeft);
             Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -32f), new Vector2(-80f, 50f));
             Image stripe = CreatePanel("Stripe", root, AccentColor).GetComponent<Image>();
@@ -520,9 +591,29 @@ namespace Game.Scenarios.Editor
 
             UiOverlapHider hider = runner.gameObject.AddComponent<UiOverlapHider>();
             SerializedObject hiderObject = new SerializedObject(hider);
-            SerializedProperty hidden = hiderObject.FindProperty("_hiddenWhileOpen");
-            hidden.ClearArray();
-            foreach (string path in s_walkHudPaths)
+            hiderObject.FindProperty("_runner").objectReferenceValue = runner;
+            FillObjects(hiderObject.FindProperty("_hiddenWhileOpen"), s_walkHudPaths);
+            FillObjects(hiderObject.FindProperty("_hiddenWhileRunning"), s_scenarioHudPaths);
+            hiderObject.ApplyModifiedPropertiesWithoutUndo();
+            UnityEventTools.AddPersistentListener(uiOpenChanged, new UnityAction<bool>(hider.SetUiOpen));
+
+            // The scenario reticle replaces the walking crosshair.
+            GameObject walkCrosshair = GameObject.Find(WalkCrosshairPath);
+            if (walkCrosshair != null)
+            {
+                Undo.RecordObject(walkCrosshair, "Build scenario UI");
+                walkCrosshair.SetActive(false);
+            }
+
+            LookHighlighter highlighter = BuildLookHighlighter(runner);
+            UnityEventTools.AddPersistentListener(uiOpenChanged, new UnityAction<bool>(highlighter.SetUiOpen));
+            EditorUtility.SetDirty(runner);
+        }
+
+        private static void FillObjects(SerializedProperty list, string[] paths)
+        {
+            list.ClearArray();
+            foreach (string path in paths)
             {
                 GameObject piece = GameObject.Find(path);
                 if (piece == null)
@@ -530,13 +621,50 @@ namespace Game.Scenarios.Editor
                     continue;
                 }
 
-                hidden.InsertArrayElementAtIndex(hidden.arraySize);
-                hidden.GetArrayElementAtIndex(hidden.arraySize - 1).objectReferenceValue = piece;
+                list.InsertArrayElementAtIndex(list.arraySize);
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = piece;
             }
+        }
 
-            hiderObject.ApplyModifiedPropertiesWithoutUndo();
-            UnityEventTools.AddPersistentListener(uiOpenChanged, new UnityAction<bool>(hider.SetUiOpen));
-            EditorUtility.SetDirty(runner);
+        private static LookHighlighter BuildLookHighlighter(ScenarioRunner runner)
+        {
+            Transform canvas = GameObject.Find(CanvasName).transform;
+            GameObject holder = CreateHolder("Look", canvas);
+            holder.transform.SetAsFirstSibling();
+
+            GameObject reticleObject = new GameObject("Reticle", typeof(RectTransform));
+            reticleObject.transform.SetParent(holder.transform, false);
+            Image reticle = reticleObject.AddComponent<Image>();
+            reticle.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>(BuiltinKnob);
+            reticle.raycastTarget = false;
+            Place(reticle.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(14f, 14f));
+            GameObject ringObject = new GameObject("Ring", typeof(RectTransform));
+            ringObject.transform.SetParent(reticleObject.transform, false);
+            ringObject.transform.SetAsFirstSibling();
+            Image ring = ringObject.AddComponent<Image>();
+            ring.sprite = reticle.sprite;
+            ring.color = new Color(0f, 0f, 0f, 0.45f);
+            ring.raycastTarget = false;
+            Place(ring.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(24f, 24f));
+
+            RectTransform labelRoot = CreatePanel("LabelRoot", holder.transform, PlateColor);
+            labelRoot.GetComponent<Image>().raycastTarget = false;
+            Place(labelRoot, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -60f), new Vector2(720f, 44f));
+            TMP_Text label = CreateText("Label", labelRoot, 22f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            Stretch(label.rectTransform, new Vector2(16f, 4f), new Vector2(-16f, -4f));
+
+            Camera view = Camera.main;
+            LookHighlighter highlighter = runner.gameObject.AddComponent<LookHighlighter>();
+            SerializedObject highlighterObject = new SerializedObject(highlighter);
+            highlighterObject.FindProperty("_runner").objectReferenceValue = runner;
+            highlighterObject.FindProperty("_view").objectReferenceValue = view;
+            highlighterObject.FindProperty("_reticle").objectReferenceValue = reticle;
+            highlighterObject.FindProperty("_labelRoot").objectReferenceValue = labelRoot.gameObject;
+            highlighterObject.FindProperty("_label").objectReferenceValue = label;
+            highlighterObject.FindProperty("_startLabel").stringValue = Ui("lookStart");
+            highlighterObject.FindProperty("_keyHint").stringValue = Ui("lookKeyHint");
+            highlighterObject.ApplyModifiedPropertiesWithoutUndo();
+            return highlighter;
         }
 
         // Views sit on full-screen holders so their panels anchor to the screen, not to a default 100x100 rect.
@@ -658,6 +786,16 @@ namespace Game.Scenarios.Editor
             rect.pivot = new Vector2(anchorMin.x == anchorMax.x ? anchorMin.x : 0.5f, anchorMin.y == anchorMax.y ? anchorMin.y : 0.5f);
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
+        }
+
+        // Anchored to the bottom edge with side margins, so the panel fits portrait screens too.
+        private static void StretchBottom(RectTransform rect, float sideMargin, float bottom, float height)
+        {
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(1f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.offsetMin = new Vector2(sideMargin, bottom);
+            rect.offsetMax = new Vector2(-sideMargin, bottom + height);
         }
 
         internal static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)

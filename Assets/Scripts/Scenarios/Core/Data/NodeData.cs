@@ -16,6 +16,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("critical")] private bool _critical = false;
         [JsonProperty("timeoutOption")] private string _timeoutOption = string.Empty;
         [JsonProperty("options")] private List<OptionData> _options = new List<OptionData>();
+        [JsonProperty("roam")] private bool _roam = false;
         [JsonProperty("maxActions")] private int _maxActions = 0;
         [JsonProperty("leave")] private List<NextRuleData> _leave = new List<NextRuleData>();
         [JsonProperty("exit")] private List<NextRuleData> _exit = new List<NextRuleData>();
@@ -36,6 +37,9 @@ namespace Game.Scenarios.Core.Data
         public bool Critical => _critical;
         public string TimeoutOption => _timeoutOption;
         public IReadOnlyList<OptionData> Options => _options;
+        /// <summary>Hub only: played in the world, its options are objects to walk up to (each needs a target).</summary>
+        public bool Roam => _roam;
+
         public int MaxActions => _maxActions;
         /// <summary>Hub only: checked every time the hub resumes; the first rule whose conditions hold ends the hub early.</summary>
         public IReadOnlyList<NextRuleData> Leave => _leave;

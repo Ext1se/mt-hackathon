@@ -48,6 +48,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 829129507584722598, guid: 14b5eb99542dbb14e98809f8ffcc610f, type: 3}
+      propertyPath: Randomizer
+      value: 
+      objectReference: {fileID: 11400000, guid: d5e7dec7d90d4674ca43e32776b16e85, type: 2}
     - target: {fileID: 1127680710956633387, guid: 14b5eb99542dbb14e98809f8ffcc610f, type: 3}
       propertyPath: m_Name
       value: Passenger_Male
@@ -70,6 +74,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1127680710956633387, guid: 14b5eb99542dbb14e98809f8ffcc610f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1304833483950945942}
+    - targetCorrespondingSourceObject: {fileID: 1127680710956633387, guid: 14b5eb99542dbb14e98809f8ffcc610f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1186070036274858387}
   m_SourcePrefab: {fileID: 100100000, guid: 14b5eb99542dbb14e98809f8ffcc610f, type: 3}
 --- !u!95 &7749328012150727531 stripped
 Animator:
@@ -141,3 +148,19 @@ MonoBehaviour:
   _face: {fileID: 3456059461988071184}
   _sleepExpression: {fileID: 11400000, guid: a1533acd61a036c4eaabd094d614cd88, type: 2}
   _sleepBlendTime: 1.5
+--- !u!114 &1186070036274858387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8521007401260024916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cada92d689b5c0149bb1ecc2cf8ee70d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Characters.Passengers::Game.Characters.Passengers.PassengerHandProp
+  _passenger: {fileID: 1304833483950945942}
+  _animator: {fileID: 7749328012150727531}
+  _set: {fileID: 11400000, guid: c388daaf450d1e641ba57620f119460d, type: 2}
+  _pivot: {fileID: 0}

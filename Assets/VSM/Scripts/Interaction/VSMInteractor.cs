@@ -21,17 +21,27 @@ namespace VSM.Interaction
         /// <summary>Берёт предмет, кладёт его на свободную поверхность или переключает дверь.</summary>
         public void Interact()
         {
+            if (!held) { var scenarioObject = FindScenarioObject(); if (scenarioObject != null) { foreach (var target in scenarioObject.GetComponentsInParent<Game.Scenarios.Presentation.World.IScenarioInteractable>()) target.Interact(); return; } }
             RaycastHit hit;
             if (!Physics.Raycast(view.transform.position, view.transform.forward, out hit, 2.3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) { if (held) Hint("Наведите на пол или стол"); return; }
             if (held) { Place(hit); return; }
-            var scenarioTarget = hit.collider.GetComponentInParent<Game.Scenarios.Presentation.World.IScenarioInteractable>();
-            if (scenarioTarget != null) { scenarioTarget.Interact(); return; }
             var door = hit.collider.GetComponentInParent<VSMSlidingDoor>();
             if (door) { door.Toggle(); Hint(door.IsOpen ? "Дверь открывается" : "Дверь закрывается"); return; }
             var prop = hit.collider.GetComponentInParent<VSMTaskProp>();
             if (!prop) return;
             if (!prop.portable) { Hint(prop.displayName + " — объект задания"); return; }
             PickUp(prop);
+        }
+        /// <summary>Ищет ближайший объект сценария вдоль луча сквозь мебель: сидящий пассажир скрыт коллайдером кресла.</summary>
+        GameObject FindScenarioObject()
+        {
+            GameObject nearest = null; float nearestDistance = float.MaxValue;
+            foreach (var hit in Physics.RaycastAll(view.transform.position, view.transform.forward, 2.3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            {
+                var target = hit.collider.GetComponentInParent<Game.Scenarios.Presentation.World.IScenarioInteractable>();
+                if (target != null && hit.distance < nearestDistance) { nearest = hit.collider.gameObject; nearestDistance = hit.distance; }
+            }
+            return nearest;
         }
         /// <summary>Запоминает положение предмета и отключает его столкновения на время переноса.</summary>
         void PickUp(VSMTaskProp prop)

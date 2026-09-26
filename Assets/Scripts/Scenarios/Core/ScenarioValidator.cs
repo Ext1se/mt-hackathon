@@ -54,7 +54,7 @@ namespace Game.Scenarios.Core
         {
             string where = $"Node '{node.Id}'";
             bool isHub = node.Kind == NodeKinds.Hub;
-            bool isRoam = node.Kind == NodeKinds.Roam;
+            bool isRoam = node.Kind == NodeKinds.Roam || (isHub && node.Roam);
             if (!isHub && !isRoam && node.Kind != NodeKinds.Choice)
             {
                 errors.Add($"{where}: unknown kind '{node.Kind}'.");

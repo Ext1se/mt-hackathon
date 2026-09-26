@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Game.Scenarios.Core;
 using TMPro;
@@ -20,14 +21,24 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private GameObject _timerRoot;
         [SerializeField] private Image _timerFill;
         [SerializeField] private TMP_Text _timerSeconds;
+        [Tooltip("Optional: the radio, a world target the player carries; shown when the scenario offers it.")]
+        [SerializeField] private Button _radioButton;
         [SerializeField] private Color _gainColor = new Color(0.3f, 0.8f, 0.4f);
         [SerializeField] private Color _lossColor = new Color(0.9f, 0.3f, 0.3f);
 
         private int _shownSeconds = -1;
         private float _hideDeltaAt;
 
+        public event Action RadioRequested;
+
         private void Awake()
         {
+            if (_radioButton != null)
+            {
+                _radioButton.onClick.AddListener(OnRadioClicked);
+            }
+
+            SetRadioVisible(false);
             _loyalty.minValue = ScenarioKeys.ScaleMin;
             _loyalty.maxValue = ScenarioKeys.ScaleMax;
             _safety.minValue = ScenarioKeys.ScaleMin;
@@ -42,6 +53,22 @@ namespace Game.Scenarios.Presentation.UI
                 _hideDeltaAt = 0f;
                 _loyaltyDelta.gameObject.SetActive(false);
                 _safetyDelta.gameObject.SetActive(false);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_radioButton != null)
+            {
+                _radioButton.onClick.RemoveListener(OnRadioClicked);
+            }
+        }
+
+        public void SetRadioVisible(bool isVisible)
+        {
+            if (_radioButton != null)
+            {
+                _radioButton.gameObject.SetActive(isVisible);
             }
         }
 
@@ -108,6 +135,11 @@ namespace Game.Scenarios.Presentation.UI
                 _shownSeconds = seconds;
                 _timerSeconds.text = seconds.ToString();
             }
+        }
+
+        private void OnRadioClicked()
+        {
+            RadioRequested?.Invoke();
         }
 
         private void ShowDelta(TMP_Text label, int delta)

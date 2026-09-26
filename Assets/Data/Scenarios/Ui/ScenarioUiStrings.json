@@ -27,6 +27,10 @@
     "briefingNotStarted": "Не начат",
     "briefingRunning": "В процессе",
     "briefingControls": "Tab — описание сценария   ·   Shift — бег   ·   E — действие",
-    "menuButton": "В меню"
+    "menuButton": "В меню",
+    "playerName": "Проводник",
+    "radioButton": "Рация",
+    "lookStart": "Начать сценарий",
+    "lookKeyHint": "   ·   E"
   }
 }

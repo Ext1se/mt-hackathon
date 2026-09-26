@@ -33,6 +33,12 @@ namespace Game.Characters.Passengers
 
         public PassengerPose Pose => _pose;
         public PassengerSpot Spot => _spot;
+        /// <summary>Body clip playing now; null before the first pose.</summary>
+        public AnimationClip CurrentClip => _currentClip;
+        /// <summary>Raised when the body clip changes, with the new clip.</summary>
+        public event System.Action<AnimationClip> ClipChanged;
+        /// <summary>The passenger's own clips; a seat with its own set overrides them while seated there.</summary>
+        public PassengerAnimationSet AnimationSet => _animationSet;
 
         // Seat-specific clips fitted to the seat model take priority over the passenger's generic ones.
         private PassengerAnimationSet ActiveSet =>
@@ -214,12 +220,17 @@ namespace Game.Characters.Passengers
                 return;
             }
 
-            if (clip != _currentClip)
+            bool isNewClip = clip != _currentClip;
+            if (isNewClip)
             {
                 _animator.CrossFadeInFixedTime(stateHash, fadeTime, BodyLayer, normalizedOffset * clip.length);
             }
 
             _currentClip = clip;
+            if (isNewClip && ClipChanged != null)
+            {
+                ClipChanged(clip);
+            }
             float speed = Mathf.Max(_animator.speed, 0.01f);
             if (clip.isLooping)
             {

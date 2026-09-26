@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf4837d59aa74984cbf05ea123a765c8, type: 3}
+  m_Name: PassengerPool_All
+  m_EditorClassIdentifier: Game.Characters.Passengers::Game.Characters.Passengers.PassengerPool
+  _prefabs:
+  - {fileID: 9116069827057667529, guid: 96c5f4f2cf007644d80de884e4770957, type: 3}
+  - {fileID: 5553660158416658612, guid: 3c4ed079f2626c64698d8cda777949c6, type: 3}
+  - {fileID: 4505234839931695602, guid: fa8fce9a3416e7945b5ff5d297470c8b, type: 3}
+  - {fileID: 7941535901894139365, guid: e7ceee1a4f2171845911dc9d0f3f25c2, type: 3}
+  - {fileID: 793252757198925690, guid: f80e36c44ebd9cd4e808f69353a2a888, type: 3}
+  - {fileID: 3040307425966832057, guid: 899a381958c9b85418589ceeb04e2883, type: 3}
+  - {fileID: 2391212084691700763, guid: ba50b42290aca6d4db6c0f6f011eae29, type: 3}
+  - {fileID: 8499332698385171397, guid: 692185d9696afd44d93d5b030d24ceaa, type: 3}
+  - {fileID: 5825966616158369758, guid: 7b85cedd4e6609b4183b9fdfa7c4ff01, type: 3}
+  - {fileID: 8672855613491290511, guid: 472cec6857817c8429ce1b512a2c0f51, type: 3}
+  - {fileID: 7957329771794432824, guid: 6279754bc130d3340a3b2bf20d826369, type: 3}
+  - {fileID: 4384592895201615843, guid: cc2cd0997ad09854ebbe5cc1a554a9da, type: 3}
+  - {fileID: 6407362999498539187, guid: a0de7226d9c0cb44fa3f70d138a8408f, type: 3}
+  - {fileID: 6783624085800454497, guid: fdd5193645946fe4fa6db6b2d2e47f27, type: 3}
+  - {fileID: 6485152798034092246, guid: 078bc41d9c14c944786f838369c40158, type: 3}
+  - {fileID: 7394481700683935031, guid: 018aa9c4dd02f8a4ca83775942db8642, type: 3}

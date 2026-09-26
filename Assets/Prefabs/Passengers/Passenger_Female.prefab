@@ -100,6 +100,10 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0.20684224
       objectReference: {fileID: 0}
+    - target: {fileID: 6931212556051971663, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
+      propertyPath: Randomizer
+      value: 
+      objectReference: {fileID: 11400000, guid: a26d526322e6e36498dfe97ef9911f8a, type: 2}
     - target: {fileID: 8152730912067525347, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
       propertyPath: m_Controller
       value: 
@@ -134,6 +138,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1272060476704202414, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
       insertIndex: -1
       addedObject: {fileID: 116957090966738220}
+    - targetCorrespondingSourceObject: {fileID: 1272060476704202414, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5399413414702048551}
   m_SourcePrefab: {fileID: 100100000, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
 --- !u!95 &142086621582451911 stripped
 Animator:
@@ -205,3 +212,19 @@ MonoBehaviour:
   _face: {fileID: 6005118426048224598}
   _sleepExpression: {fileID: 11400000, guid: a1533acd61a036c4eaabd094d614cd88, type: 2}
   _sleepBlendTime: 1.5
+--- !u!114 &5399413414702048551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7024453053632012426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cada92d689b5c0149bb1ecc2cf8ee70d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Characters.Passengers::Game.Characters.Passengers.PassengerHandProp
+  _passenger: {fileID: 116957090966738220}
+  _animator: {fileID: 142086621582451911}
+  _set: {fileID: 11400000, guid: c388daaf450d1e641ba57620f119460d, type: 2}
+  _pivot: {fileID: 0}

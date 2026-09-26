@@ -11,6 +11,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("text")] private string _text = string.Empty;
         [JsonProperty("hidden")] private bool _hidden = false;
         [JsonProperty("repeatable")] private bool _repeatable = false;
+        [JsonProperty("free")] private bool _free = false;
         [JsonProperty("reference")] private bool _reference = false;
         [JsonProperty("speaker")] private string _speaker = string.Empty;
         [JsonProperty("target")] private string _target = string.Empty;
@@ -30,6 +31,9 @@ namespace Game.Scenarios.Core.Data
 
         /// <summary>In a hub, stays available after being chosen.</summary>
         public bool Repeatable => _repeatable;
+
+        /// <summary>Navigation inside a hub (open an object's menu, step back): does not count as a hub action.</summary>
+        public bool Free => _free;
 
         /// <summary>The reference answer from the dataset.</summary>
         public bool Reference => _reference;

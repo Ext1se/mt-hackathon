@@ -91,6 +91,21 @@ namespace Game.Scenarios.Tests
         }
 
         [Test]
+        public void Tick_TimersDisabled_NeverTimesOut()
+        {
+            ScenarioSession session = StartFixture("A");
+            session.TimersEnabled = false;
+
+            session.Tick(100f);
+
+            Assert.That(session.Current.Node.Id, Is.EqualTo("intro"));
+            Assert.That(session.TimeLimit, Is.EqualTo(0f));
+            session.Choose("good");
+            session.Tick(100f);
+            Assert.That(session.Current.Node.Id, Is.EqualTo("hub"), "hub timer is off too");
+        }
+
+        [Test]
         public void Choose_ReferenceOnCriticalNode_GivesSpeedBonus()
         {
             ScenarioSession session = StartFixture("A");

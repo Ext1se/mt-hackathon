@@ -6,8 +6,9 @@ namespace Game.Scenarios.Core
     public sealed class ChoiceOutcome
     {
         public ChoiceOutcome(string nodeId, string optionId, string optionText, string speaker, string responseText,
-            bool timedOut, IReadOnlyList<AppliedEffect> effects)
+            bool timedOut, bool isFree, IReadOnlyList<AppliedEffect> effects)
         {
+            IsFree = isFree;
             NodeId = nodeId;
             OptionId = optionId;
             OptionText = optionText;
@@ -23,6 +24,9 @@ namespace Game.Scenarios.Core
         public string Speaker { get; }
         public string ResponseText { get; }
         public bool TimedOut { get; }
+
+        /// <summary>Navigation inside a hub: nothing worth pausing on.</summary>
+        public bool IsFree { get; }
         public IReadOnlyList<AppliedEffect> Effects { get; }
     }
 }

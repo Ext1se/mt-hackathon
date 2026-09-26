@@ -19,6 +19,6 @@ namespace Game.Scenarios.Core
         public IReadOnlyList<OptionView> Options { get; }
         public int HubActionsLeft { get; }
         public bool IsHub => Node.Kind == NodeKinds.Hub;
-        public bool IsRoam => Node.Kind == NodeKinds.Roam;
+        public bool IsRoam => Node.Kind == NodeKinds.Roam || (Node.Kind == NodeKinds.Hub && Node.Roam);
     }
 }

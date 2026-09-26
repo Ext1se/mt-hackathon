@@ -26,6 +26,12 @@ namespace Game.Scenarios.Editor
         private const string MalePrefabPath = "Assets/Prefabs/Passengers/Passenger_Male.prefab";
         private const string FemalePrefabPath = "Assets/Prefabs/Passengers/Passenger_Female.prefab";
         private const string ExpressionsFolder = "Assets/Data/Characters/FaceExpressions";
+        private const string LitShader = "Universal Render Pipeline/Lit";
+        private const string UnlitShader = "Universal Render Pipeline/Unlit";
+        private static readonly Vector3 MarkerOffset = new Vector3(0f, 1.55f, 0f);
+        private static readonly Vector3 ObjectMarkerOffset = new Vector3(0f, 0.6f, 0f);
+        private static readonly Color StartMarkerColor = new Color(0.35f, 0.9f, 0.45f, 1f);
+        private static readonly Color TargetMarkerColor = new Color(0.95f, 0.3f, 0.2f, 1f);
 
         private static readonly (string Emotion, string Asset)[] s_emotions =
         {
@@ -84,6 +90,33 @@ namespace Game.Scenarios.Editor
                 }
 
                 ConfigureActor(instance, actor, runner, scenario, forcedVariant);
+            }
+
+            JArray objects = (JArray)cast["objects"];
+            if (objects != null)
+            {
+                foreach (JObject entry in objects)
+                {
+                    ConfigureSceneObject(entry, runner);
+                }
+            }
+
+            JArray prefabs = (JArray)cast["prefabs"];
+            if (prefabs != null)
+            {
+                foreach (JObject entry in prefabs)
+                {
+                    ConfigurePrefab(entry, groups, runner);
+                }
+            }
+
+            JArray points = (JArray)cast["points"];
+            if (points != null)
+            {
+                foreach (JObject entry in points)
+                {
+                    ConfigurePoint(entry, groups, runner);
+                }
             }
 
             JArray lockedProps = (JArray)cast["lockedProps"];
@@ -190,18 +223,14 @@ namespace Game.Scenarios.Editor
             if (!string.IsNullOrEmpty(target) || isStarter)
             {
                 CapsuleCollider collider = instance.AddComponent<CapsuleCollider>();
-                collider.center = new Vector3(0f, 0.55f, 0f);
-                collider.radius = 0.25f;
-                collider.height = 1.1f;
+                collider.center = new Vector3(0f, 0.7f, 0f);
+                collider.radius = 0.3f;
+                collider.height = 1.4f;
             }
 
             if (!string.IsNullOrEmpty(target))
             {
-                ScenarioInteractable interactable = instance.AddComponent<ScenarioInteractable>();
-                SerializedObject interactableObject = new SerializedObject(interactable);
-                interactableObject.FindProperty("_runner").objectReferenceValue = runner;
-                interactableObject.FindProperty("_targetId").stringValue = target;
-                interactableObject.ApplyModifiedPropertiesWithoutUndo();
+                AddInteractable(instance, runner, target, ReadVector(data["marker"], MarkerOffset));
             }
 
             if (isStarter)
@@ -211,6 +240,8 @@ namespace Game.Scenarios.Editor
                 starterObject.FindProperty("_runner").objectReferenceValue = runner;
                 starterObject.FindProperty("_scenario").objectReferenceValue = scenario;
                 starterObject.FindProperty("_forcedVariant").stringValue = forcedVariant;
+                starterObject.FindProperty("_marker").objectReferenceValue = CreateMarker(instance.transform, "Marker_Start", StartMarkerColor,
+                    MarkerOffset + Vector3.up * 0.25f);
                 starterObject.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -222,6 +253,122 @@ namespace Game.Scenarios.Editor
                     AddProp(instance.transform, (string)prop);
                 }
             }
+        }
+
+        // An existing scene object (a prop) that becomes a world target.
+        private static void ConfigureSceneObject(JObject data, ScenarioRunner runner)
+        {
+            string name = (string)data["name"];
+            GameObject found = GameObject.Find(name);
+            if (found == null)
+            {
+                Debug.LogWarning($"Scene object '{name}' was not found.");
+                return;
+            }
+
+            VSMTaskProp prop = found.GetComponentInParent<VSMTaskProp>();
+            GameObject host = prop != null ? prop.gameObject : found;
+            if (host.GetComponentInChildren<Collider>() == null)
+            {
+                host.AddComponent<BoxCollider>();
+            }
+
+            AddInteractable(host, runner, (string)data["target"], ReadVector(data["marker"], ObjectMarkerOffset));
+        }
+
+        // A prop instantiated for the scenario, e.g. a ticket terminal in a wagon that has none.
+        private static void ConfigurePrefab(JObject data, Dictionary<string, Transform> groups, ScenarioRunner runner)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>((string)data["prefab"]);
+            if (prefab == null)
+            {
+                Debug.LogWarning($"Prefab '{(string)data["prefab"]}' was not found.");
+                return;
+            }
+
+            Transform parent = groups[(string)data["group"]];
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            instance.name = (string)data["id"];
+            instance.transform.position = ReadVector(data["position"], Vector3.zero);
+            instance.transform.rotation = Quaternion.Euler(ReadVector(data["rotation"], Vector3.zero));
+            VSMTaskProp prop = instance.GetComponent<VSMTaskProp>();
+            if (prop != null)
+            {
+                prop.portable = false;
+            }
+
+            if (instance.GetComponentInChildren<Collider>() == null)
+            {
+                instance.AddComponent<BoxCollider>();
+            }
+
+            AddInteractable(instance, runner, (string)data["target"], ReadVector(data["marker"], ObjectMarkerOffset));
+        }
+
+        // An invisible interaction volume: a seat to inspect, a wall panel by a door.
+        private static void ConfigurePoint(JObject data, Dictionary<string, Transform> groups, ScenarioRunner runner)
+        {
+            Transform parent = groups[(string)data["group"]];
+            GameObject point = new GameObject((string)data["id"]);
+            point.transform.SetParent(parent, false);
+            string seatName = (string)data["seat"];
+            Vector3 position = ReadVector(data["position"], Vector3.zero);
+            if (!string.IsNullOrEmpty(seatName))
+            {
+                GameObject seat = GameObject.Find(seatName);
+                if (seat == null)
+                {
+                    Debug.LogWarning($"Seat '{seatName}' for point '{point.name}' was not found.");
+                }
+                else
+                {
+                    position = seat.transform.position + ReadVector(data["offset"], Vector3.zero);
+                }
+            }
+
+            point.transform.position = position;
+            BoxCollider collider = point.AddComponent<BoxCollider>();
+            collider.size = ReadVector(data["size"], new Vector3(0.4f, 0.4f, 0.4f));
+            AddInteractable(point, runner, (string)data["target"], ReadVector(data["marker"], ObjectMarkerOffset));
+        }
+
+        private static void AddInteractable(GameObject host, ScenarioRunner runner, string target, Vector3 markerOffset)
+        {
+            ScenarioInteractable interactable = host.AddComponent<ScenarioInteractable>();
+            SerializedObject interactableObject = new SerializedObject(interactable);
+            interactableObject.FindProperty("_runner").objectReferenceValue = runner;
+            interactableObject.FindProperty("_targetId").stringValue = target;
+            interactableObject.FindProperty("_marker").objectReferenceValue = CreateMarker(host.transform, "Marker_Target", TargetMarkerColor, markerOffset);
+            interactableObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Vector3 ReadVector(JToken token, Vector3 fallback)
+        {
+            JArray array = token as JArray;
+            if (array == null || array.Count != 3)
+            {
+                return fallback;
+            }
+
+            return new Vector3((float)array[0], (float)array[1], (float)array[2]);
+        }
+
+        // A spinning diamond above the object; the owning component shows it only while the object matters.
+        private static GameObject CreateMarker(Transform actor, string materialName, Color color, Vector3 offset)
+        {
+            GameObject marker = new GameObject("Marker");
+            marker.transform.SetParent(actor, false);
+            marker.transform.localPosition = offset;
+            marker.AddComponent<ScenarioMarker>();
+
+            GameObject diamond = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            diamond.name = "Diamond";
+            Object.DestroyImmediate(diamond.GetComponent<Collider>());
+            diamond.transform.SetParent(marker.transform, false);
+            diamond.transform.localRotation = Quaternion.Euler(45f, 0f, 45f);
+            diamond.transform.localScale = new Vector3(0.11f, 0.11f, 0.11f);
+            diamond.GetComponent<Renderer>().sharedMaterial = EnsureMaterial(materialName, color, UnlitShader);
+            return marker;
         }
 
         // Placeholder props until the distinctive character model is made: the owner must be recognizable by description.
@@ -260,6 +407,11 @@ namespace Game.Scenarios.Editor
 
         private static Material EnsureMaterial(string name, Color color)
         {
+            return EnsureMaterial(name, color, LitShader);
+        }
+
+        private static Material EnsureMaterial(string name, Color color, string shaderName)
+        {
             if (!AssetDatabase.IsValidFolder(MaterialsFolder))
             {
                 AssetDatabase.CreateFolder(Path.GetDirectoryName(MaterialsFolder).Replace('\\', '/'), Path.GetFileName(MaterialsFolder));
@@ -269,9 +421,13 @@ namespace Game.Scenarios.Editor
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+                Shader shader = Shader.Find(shaderName);
                 material = new Material(shader != null ? shader : Shader.Find("Standard"));
                 material.color = color;
+                if (material.HasProperty("_BaseColor"))
+                {
+                    material.SetColor("_BaseColor", color);
+                }
                 AssetDatabase.CreateAsset(material, path);
             }
 

@@ -16,8 +16,42 @@ namespace Game.Characters.Passengers
 
         private readonly List<PassengerSpot> _spots = new List<PassengerSpot>();
 
-        /// <summary>Adds the spots to fill in this block to <paramref name="result"/>.</summary>
+        /// <summary>True while no seat of the block is taken or reserved, so the block may be filled by its pattern.</summary>
+        public bool IsAvailable
+        {
+            get
+            {
+                CollectSpots();
+                for (int i = 0; i < _spots.Count; i++)
+                {
+                    if (!_spots[i].IsAvailable)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>Adds the spots to fill in this block to <paramref name="result"/>; an occupied block adds nothing.</summary>
         public void ChooseSpots(List<PassengerSpot> result)
+        {
+            if (IsAvailable)
+            {
+                ChoosePattern(result);
+            }
+        }
+
+        /// <summary>The block's seats in row order (left to right along the block's local X axis).</summary>
+        public void GetSpots(List<PassengerSpot> result)
+        {
+            CollectSpots();
+            result.AddRange(_spots);
+        }
+
+        /// <summary>Adds the spots of a random fill pattern to <paramref name="result"/> without checking occupancy.</summary>
+        public void ChoosePattern(List<PassengerSpot> result)
         {
             CollectSpots();
             switch (_spots.Count)

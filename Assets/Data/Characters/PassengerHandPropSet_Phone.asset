@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1eea12e55f0b88469e3e4b6d1447565, type: 3}
+  m_Name: PassengerHandPropSet_Phone
+  m_EditorClassIdentifier: Game.Characters.Passengers::Game.Characters.Passengers.PassengerHandPropSet
+  _prefab: {fileID: 376521264077626247, guid: cf90bf409aa68d8479c273a34663e606, type: 3}
+  _prefabLocalPosition: {x: 0, y: -0.078, z: -0.078}
+  _prefabLocalEuler: {x: 45, y: 0, z: 0}
+  _prefabScale: 0.25
+  _grips:
+  - Clip: {fileID: -203655887218126122, guid: f6d841693dd939e4880c5dc12780621c, type: 3}
+    Hand: 0
+    LocalPosition: {x: 0.06, y: -0.02, z: 0}
+    LocalEuler: {x: 90, y: 90, z: 0}
+  - Clip: {fileID: -203655887218126122, guid: 43da293daa168f842a729edb00774804, type: 3}
+    Hand: 0
+    LocalPosition: {x: 0.06, y: -0.02, z: 0}
+    LocalEuler: {x: 90, y: 90, z: 0}
+  - Clip: {fileID: -203655887218126122, guid: 398d6456df886614184f9d68d85404dd, type: 3}
+    Hand: 0
+    LocalPosition: {x: 0.06, y: -0.015, z: 0}
+    LocalEuler: {x: 90, y: 90, z: 0}
+  - Clip: {fileID: -203655887218126122, guid: 393e07e2364e3af4ba646ab80b8e1804, type: 3}
+    Hand: 1
+    LocalPosition: {x: -0.06, y: 0.015, z: 0}
+    LocalEuler: {x: 270, y: 90, z: 0}

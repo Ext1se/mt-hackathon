@@ -5,9 +5,12 @@ using UnityEngine;
 namespace Game.Characters.Passengers
 {
     /// <summary>
-    /// Fills the <see cref="PassengerSpot"/>s under this object with random passengers on start.
-    /// Spots inside a <see cref="PassengerSeatBlock"/> are filled by the block's pattern: the block is taken with the seat
-    /// occupancy chance, then the block decides which of its seats get a passenger. Other spots are filled one by one.
+    /// Owns the <see cref="PassengerSpot"/>s under this object. In <see cref="PassengerSpawnMode.Placed"/> mode the
+    /// passengers are put in the scene in the editor (Tools/Passengers/Place Passengers) and the spawner only keeps
+    /// them in sync with the wagon visibility. In <see cref="PassengerSpawnMode.RandomOnStart"/> mode it fills the spots
+    /// with random passengers on start. Spots inside a <see cref="PassengerSeatBlock"/> are filled by the block's
+    /// pattern: the block is taken with the seat occupancy chance, then the block decides which of its seats get a
+    /// passenger. Other spots are filled one by one. Reserved and occupied spots are skipped.
     /// </summary>
     public class PassengerSpawner : MonoBehaviour
     {
@@ -17,7 +20,13 @@ namespace Game.Characters.Passengers
         private const string RandomizeBodyMessage = "randomizeAll";
         private const string RandomizeOutfitMessage = "setRandomOutfit";
 
-        [Tooltip("Passenger prefabs (CharacterCustomizer characters with a Passenger component).")]
+        // The code default stays RandomOnStart so spawners saved before this field existed keep spawning;
+        // the train scenes set Placed explicitly.
+        [Tooltip("Placed: passengers are arranged in the editor and kept in the scene. Random On Start: a new random crowd every run.")]
+        [SerializeField] private PassengerSpawnMode _spawnMode = PassengerSpawnMode.RandomOnStart;
+        [Tooltip("Prefab pool to pick from; when set, Prefabs below is ignored.")]
+        [SerializeField] private PassengerPool _pool;
+        [Tooltip("Passenger prefabs (CharacterCustomizer characters with a Passenger component), used when no pool is set.")]
         [SerializeField] private Passenger[] _prefabs = new Passenger[0];
         [SerializeField] private Transform _passengersRoot;
 
@@ -45,6 +54,14 @@ namespace Game.Characters.Passengers
         private bool _isAppearanceReady;
 
         public IReadOnlyList<Passenger> Passengers => _passengers;
+        public PassengerSpawnMode SpawnMode => _spawnMode;
+        public PassengerPool Pool => _pool;
+        /// <summary>Prefabs to pick from: the pool when set, otherwise the spawner's own list.</summary>
+        public IReadOnlyList<Passenger> Prefabs => _pool != null ? _pool.Prefabs : _prefabs;
+        public Transform PassengersRoot => _passengersRoot != null ? _passengersRoot : transform;
+        public float SeatOccupancy => _seatOccupancy;
+        public float StandingOccupancy => _standingOccupancy;
+        public float SleepChance => _sleepChance;
 
         private void Start()
         {
@@ -57,6 +74,13 @@ namespace Game.Characters.Passengers
             {
                 Debug.LogWarning($"{nameof(PassengerSpawner)} on '{name}': visibility sync needs a separate Passengers Root.", this);
                 _visibilitySource = null;
+            }
+
+            if (_spawnMode == PassengerSpawnMode.Placed)
+            {
+                // Placed passengers take their spots themselves; their look comes from the prefab preset.
+                _isAppearanceReady = true;
+                return;
             }
 
             Spawn();
@@ -82,7 +106,8 @@ namespace Game.Characters.Passengers
         {
             Clear();
 
-            if (_prefabs.Length == 0)
+            IReadOnlyList<Passenger> prefabs = Prefabs;
+            if (prefabs.Count == 0)
             {
                 Debug.LogWarning($"{nameof(PassengerSpawner)} on '{name}' has no passenger prefabs.", this);
                 return;
@@ -97,7 +122,7 @@ namespace Game.Characters.Passengers
             for (int i = 0; i < _chosenSpots.Count; i++)
             {
                 PassengerSpot spot = _chosenSpots[i];
-                if (!spot.IsFree)
+                if (!spot.IsAvailable)
                 {
                     continue;
                 }
@@ -111,7 +136,7 @@ namespace Game.Characters.Passengers
                         : PassengerPose.Sitting;
                 }
 
-                Passenger prefab = _prefabs[Random.Range(0, _prefabs.Length)];
+                Passenger prefab = prefabs[Random.Range(0, prefabs.Count)];
                 Passenger passenger = Instantiate(prefab, spot.transform.position, spot.transform.rotation, parent);
                 passenger.name = $"{prefab.name}_{_passengers.Count:00}";
                 passenger.TakeSpot(spot, pose);
@@ -182,7 +207,7 @@ namespace Game.Characters.Passengers
             for (int i = 0; i < _spots.Count; i++)
             {
                 PassengerSpot spot = _spots[i];
-                if (spot.GetComponentInParent<PassengerSeatBlock>() != null)
+                if (!spot.IsAvailable || spot.GetComponentInParent<PassengerSeatBlock>() != null)
                 {
                     continue;
                 }

@@ -25,18 +25,34 @@ namespace Game.Characters.Passengers
         [SerializeField] private bool _allowSleep = true;
         [Tooltip("Optional: clips fitted to this seat model. Overrides the passenger's own animation set while seated here.")]
         [SerializeField] private PassengerAnimationSet _animationSet;
+        [Tooltip("Kept for a scenario actor: the spawner and the placement tool leave this spot empty.")]
+        [SerializeField] private bool _reserved;
 
         private Passenger _occupant;
 
         public PassengerSpotKind Kind => _kind;
         public PassengerAnimationSet AnimationSet => _animationSet;
+        public bool IsReserved => _reserved;
         public Passenger Occupant => _occupant;
         public bool IsFree => _occupant == null;
+        /// <summary>Free and not reserved: the spawner may put a random passenger here.</summary>
+        public bool IsAvailable => _occupant == null && !_reserved;
 
         private void OnDrawGizmos()
         {
             Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.color = _occupant != null ? new Color(0.9f, 0.4f, 0.2f) : new Color(0.2f, 0.8f, 0.4f);
+            if (_occupant != null)
+            {
+                Gizmos.color = new Color(0.9f, 0.4f, 0.2f);
+            }
+            else if (_reserved)
+            {
+                Gizmos.color = new Color(0.4f, 0.6f, 0.9f);
+            }
+            else
+            {
+                Gizmos.color = new Color(0.2f, 0.8f, 0.4f);
+            }
 
             if (_kind == PassengerSpotKind.Seat)
             {

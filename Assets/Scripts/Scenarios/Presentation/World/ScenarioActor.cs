@@ -20,6 +20,7 @@ namespace Game.Scenarios.Presentation.World
         // CharacterCustomizer lives in Assembly-CSharp, which an asmdef cannot reference, so the randomizer is called by name.
         private const string RandomizeBodyMessage = "randomizeAll";
         private const string RandomizeOutfitMessage = "setRandomOutfit";
+        private const float SeatedHeadHeight = 1.2f;
 
         [SerializeField] private ScenarioRunner _runner;
         [Tooltip("Speaker id used in scenario JSON, e.g. passenger_12V.")]
@@ -39,12 +40,15 @@ namespace Game.Scenarios.Presentation.World
         [SerializeField] private PassengerSpot _seat;
         [SerializeField] private PassengerPose _pose = PassengerPose.Sitting;
 
+        private Animator _animator;
+
         public string ActorId => _actorId;
         public string DisplayName => _displayName;
 
         // Registered for the whole lifetime, not only while active: a culled wagon must not lose its speakers' names.
         private void Awake()
         {
+            _animator = GetComponent<Animator>();
             if (_runner != null)
             {
                 _runner.Register(this);
@@ -53,6 +57,14 @@ namespace Game.Scenarios.Presentation.World
 
         private void Start()
         {
+            // CharacterCustomizer's PhysicsManager disables every collider of the character in Awake (ragdoll off);
+            // the interaction collider on the root must stay on so the player's ray can hit the actor.
+            Collider interaction = GetComponent<Collider>();
+            if (interaction != null)
+            {
+                interaction.enabled = true;
+            }
+
             if (_passenger != null && _seat != null)
             {
                 _passenger.TakeSpot(_seat, _pose);
@@ -103,6 +115,29 @@ namespace Game.Scenarios.Presentation.World
                     return;
                 }
             }
+        }
+
+        /// <summary>Where the player should look when this actor speaks; false for voices without a body (radio).</summary>
+        public bool TryGetFocusPoint(out Vector3 point)
+        {
+            if (_passenger == null && _face == null)
+            {
+                point = Vector3.zero;
+                return false;
+            }
+
+            if (_animator != null && _animator.isHuman)
+            {
+                Transform head = _animator.GetBoneTransform(HumanBodyBones.Head);
+                if (head != null)
+                {
+                    point = head.position;
+                    return true;
+                }
+            }
+
+            point = transform.position + Vector3.up * SeatedHeadHeight;
+            return true;
         }
 
         /// <summary>Hides the actor when the playthrough picked a variant it does not belong to.</summary>

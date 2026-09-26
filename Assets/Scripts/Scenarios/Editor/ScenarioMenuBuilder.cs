@@ -90,7 +90,11 @@ namespace Game.Scenarios.Editor
             GameObject cards = new GameObject("Cards", typeof(RectTransform));
             cards.transform.SetParent(background, false);
             RectTransform cardsRect = (RectTransform)cards.transform;
-            ScenarioSceneBuilder.Place(cardsRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -240f), new Vector2(1000f, 720f));
+            cardsRect.anchorMin = new Vector2(0f, 1f);
+            cardsRect.anchorMax = new Vector2(1f, 1f);
+            cardsRect.pivot = new Vector2(0.5f, 1f);
+            cardsRect.offsetMin = new Vector2(100f, -960f);
+            cardsRect.offsetMax = new Vector2(-100f, -240f);
             VerticalLayoutGroup group = cards.AddComponent<VerticalLayoutGroup>();
             group.spacing = 20f;
             group.childControlHeight = true;

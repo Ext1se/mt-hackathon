@@ -7,6 +7,7 @@ namespace Game.Characters.Face
     /// <summary>
     /// Drives the facial rig of a CharacterCustomizer character through the FACS and Visemes layers of CC_Face_Animator:
     /// crossfaded expressions, idle eye motion and fake speech. It must be the only writer of these Animator parameters.
+    /// Also fades the eye shadows (the eye occlusion mesh and the skin's eye AO) while the eyelids close.
     /// </summary>
     [RequireComponent(typeof(Animator))]
     public class FaceController : MonoBehaviour
@@ -36,6 +37,15 @@ namespace Game.Characters.Face
         [SerializeField, Range(0f, 1f)] private float _mouthWeightWhileTalking = 0.5f;
         [SerializeField, Min(0.01f)] private float _talkBlendTime = 0.15f;
 
+        [Header("Eye shadows")]
+        [Tooltip("Materials whose name starts with this are the shadow in the eye opening. It stays in place when the "
+            + "eyelids close and darkens them, so it is faded out as the eyes close.")]
+        [SerializeField] private string _eyeOcclusionMaterialPrefix = "M_Eye_AO";
+        [SerializeField] private string _eyeOcclusionColorProperty = "_Tint";
+        [Tooltip("Skin float baked around the eyes (dark tinted socket shading) on the same head meshes; "
+            + "faded out as the eyes close for the same reason.")]
+        [SerializeField] private string _skinEyeShadowProperty = "_Eye_AO";
+
         private int[] _parameterHashes;
         private bool[] _hasParameter;
         private bool[] _isMouth;
@@ -57,6 +67,10 @@ namespace Game.Characters.Face
         private bool _isTalkingIndefinitely;
         private float _noiseSeed;
         private bool _isReady;
+
+        private readonly List<EyeOcclusionSlot> _eyeOcclusion = new List<EyeOcclusionSlot>();
+        private float _eyeOcclusionAlpha = 1f;
+        private bool _hasSearchedEyeOcclusion;
 
         public FaceExpression CurrentExpression => _currentExpression;
         public bool IsTalking => _isTalkingIndefinitely || Time.time < _talkUntil;
@@ -94,6 +108,7 @@ namespace Game.Characters.Face
 
             ComposeOutput(Time.time);
             WriteToAnimator();
+            UpdateEyeOcclusion();
         }
 
         private void OnDisable()
@@ -107,6 +122,7 @@ namespace Game.Characters.Face
             Array.Clear(_outputWeights, 0, _outputWeights.Length);
             Array.Clear(_visemeWeights, 0, _visemeWeights.Length);
             WriteToAnimator();
+            SetEyeOcclusionAlpha(1f);
         }
 
         private void Reset()
@@ -272,7 +288,9 @@ namespace Game.Characters.Face
             _outputWeights[(int)FaceParameter.EyeWideLeft] *= 1f - blink;
             _outputWeights[(int)FaceParameter.EyeWideRight] *= 1f - blink;
 
-            Vector2 look = _eyeMotion.Look;
+            // Closed eyes (sleep) keep still: the look shapes also move the eyelids.
+            float closed = Mathf.Min(_outputWeights[blinkLeft], _outputWeights[blinkRight]);
+            Vector2 look = _eyeMotion.Look * (1f - Mathf.Clamp01(closed));
             if (look.x >= 0f)
             {
                 _outputWeights[(int)FaceParameter.EyeLookOutRight] += look.x;
@@ -296,6 +314,87 @@ namespace Game.Characters.Face
             }
         }
 
+        private void UpdateEyeOcclusion()
+        {
+            float closed = Mathf.Clamp01(Mathf.Min(_outputWeights[(int)FaceParameter.EyeBlinkLeft],
+                _outputWeights[(int)FaceParameter.EyeBlinkRight]));
+            float alpha = 1f - closed;
+            // Rewritten only on a visible change or when the eyes are fully open or shut again.
+            bool isEndpoint = alpha <= 0f || alpha >= 1f;
+            if (Mathf.Abs(alpha - _eyeOcclusionAlpha) < 0.02f && !(isEndpoint && alpha != _eyeOcclusionAlpha))
+            {
+                return;
+            }
+
+            SetEyeOcclusionAlpha(alpha);
+        }
+
+        private void SetEyeOcclusionAlpha(float alpha)
+        {
+            if (alpha < 1f && !_hasSearchedEyeOcclusion)
+            {
+                _hasSearchedEyeOcclusion = true;
+                FindEyeOcclusion();
+            }
+
+            _eyeOcclusionAlpha = alpha;
+            for (int i = 0; i < _eyeOcclusion.Count; i++)
+            {
+                _eyeOcclusion[i].Apply(alpha);
+            }
+        }
+
+        // Looked up on first need: the character look (and its head meshes) may be built after Awake. Changed through
+        // Renderer.materials, the renderer's own instances that CharacterCustomizer edits as well: the shader ignores
+        // property blocks, and a shared material would darken or lighten every character at once.
+        private void FindEyeOcclusion()
+        {
+            if (string.IsNullOrEmpty(_eyeOcclusionMaterialPrefix))
+            {
+                return;
+            }
+
+            int colorId = Shader.PropertyToID(_eyeOcclusionColorProperty);
+            int skinId = string.IsNullOrEmpty(_skinEyeShadowProperty) ? 0 : Shader.PropertyToID(_skinEyeShadowProperty);
+            foreach (SkinnedMeshRenderer meshRenderer in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (!HasEyeOcclusionMaterial(meshRenderer.sharedMaterials))
+                {
+                    continue;
+                }
+
+                foreach (Material material in meshRenderer.materials)
+                {
+                    if (material == null)
+                    {
+                        continue;
+                    }
+
+                    if (material.name.StartsWith(_eyeOcclusionMaterialPrefix, StringComparison.Ordinal) && material.HasColor(colorId))
+                    {
+                        _eyeOcclusion.Add(EyeOcclusionSlot.ForColorAlpha(material, colorId));
+                    }
+                    else if (skinId != 0 && material.HasFloat(skinId))
+                    {
+                        _eyeOcclusion.Add(EyeOcclusionSlot.ForFloat(material, skinId));
+                    }
+                }
+            }
+        }
+
+        private bool HasEyeOcclusionMaterial(Material[] materials)
+        {
+            for (int i = 0; i < materials.Length; i++)
+            {
+                if (materials[i] != null && materials[i].name.StartsWith(_eyeOcclusionMaterialPrefix, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void WriteToAnimator()
         {
             for (int i = 0; i < _outputWeights.Length; i++)
@@ -311,6 +410,54 @@ namespace Game.Characters.Face
                 if (_hasViseme[i])
                 {
                     _animator.SetFloat(_visemeHashes[i], _visemeWeights[i]);
+                }
+            }
+        }
+
+        /// <summary>A material property scaled by how open the eyes are: a colour's alpha or a plain float.</summary>
+        private readonly struct EyeOcclusionSlot
+        {
+            private readonly Material _material;
+            private readonly int _propertyId;
+            private readonly bool _isColor;
+            private readonly Color _color;
+            private readonly float _value;
+
+            private EyeOcclusionSlot(Material material, int propertyId, bool isColor, Color color, float value)
+            {
+                _material = material;
+                _propertyId = propertyId;
+                _isColor = isColor;
+                _color = color;
+                _value = value;
+            }
+
+            public static EyeOcclusionSlot ForColorAlpha(Material material, int propertyId)
+            {
+                return new EyeOcclusionSlot(material, propertyId, true, material.GetColor(propertyId), 0f);
+            }
+
+            public static EyeOcclusionSlot ForFloat(Material material, int propertyId)
+            {
+                return new EyeOcclusionSlot(material, propertyId, false, default, material.GetFloat(propertyId));
+            }
+
+            public void Apply(float openness)
+            {
+                if (_material == null)
+                {
+                    return;
+                }
+
+                if (_isColor)
+                {
+                    Color color = _color;
+                    color.a *= openness;
+                    _material.SetColor(_propertyId, color);
+                }
+                else
+                {
+                    _material.SetFloat(_propertyId, _value * openness);
                 }
             }
         }

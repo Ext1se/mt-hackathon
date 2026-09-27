@@ -124,7 +124,7 @@ namespace Game.Scenarios.Presentation.World
                 return true;
             }
 
-            if (candidate.TryGetComponent(out ScenarioStarter starter) && !_runner.IsRunning)
+            if (candidate.TryGetComponent(out ScenarioStarter starter) && _runner.CanStart)
             {
                 return true;
             }

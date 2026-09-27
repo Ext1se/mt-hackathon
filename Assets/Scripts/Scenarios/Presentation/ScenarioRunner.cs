@@ -78,12 +78,16 @@ namespace Game.Scenarios.Presentation
         // The terminal was opened from the HUD outside a terminal node: read-only, closed without a scenario choice.
         private bool _isBrowsingTerminal;
         private bool _hasPulsedDevices;
+        private bool _isFinished;
 
         /// <summary>Raised when a scenario starts and when its debrief is closed.</summary>
         public event Action RunningChanged;
 
         /// <summary>True from start until the debrief is closed.</summary>
         public bool IsRunning => _session != null;
+
+        /// <summary>A scenario can be started here: none is running and the playthrough has not been finished.</summary>
+        public bool CanStart => _session == null && !_isFinished;
 
         /// <summary>A dialogue, card, terminal or other scenario panel is open over the world.</summary>
         public bool IsUiOpen { get; private set; }
@@ -636,8 +640,10 @@ namespace Game.Scenarios.Presentation
             _dialogue.SetHintAvailable(isAvailable);
         }
 
+        // "Continue" after the debrief: the player walks on, the scenario is over and does not start again.
         private void OnDebriefClosed()
         {
+            _isFinished = true;
             _debrief.Hide();
             _hud.Hide();
             DetachSession();

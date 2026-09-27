@@ -104,7 +104,7 @@ namespace Game.Scenarios.Editor
                     instance.name = (string)actor["id"];
                 }
 
-                ConfigureActor(instance, actor, runner, scenario, forcedVariant);
+                ConfigureActor(instance, WithCastDefaults(actor, cast), runner, scenario, forcedVariant);
                 ConfigureHeadLook(instance, (JObject)cast["headLook"], (JObject)actor["headLook"]);
                 actors[(string)actor["id"]] = instance;
             }
@@ -122,7 +122,7 @@ namespace Game.Scenarios.Editor
                         continue;
                     }
 
-                    JObject data = (JObject)extra.DeepClone();
+                    JObject data = WithCastDefaults(extra, cast);
                     data["randomize"] = false;
                     ConfigureActor(instance, data, runner, scenario, forcedVariant);
                     ConfigureHeadLook(instance, (JObject)cast["headLook"], (JObject)extra["headLook"]);
@@ -201,9 +201,31 @@ namespace Game.Scenarios.Editor
                 briefingObject.ApplyModifiedPropertiesWithoutUndo();
             }
 
+            PauseView pause = Object.FindFirstObjectByType<PauseView>(FindObjectsInactive.Include);
+            if (pause != null)
+            {
+                SerializedObject pauseObject = new SerializedObject(pause);
+                pauseObject.FindProperty("_scenario").objectReferenceValue = scenario;
+                pauseObject.FindProperty("_startHint").stringValue = (string)cast["startHint"] ?? string.Empty;
+                pauseObject.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Selection.activeGameObject = root;
             Debug.Log($"Scenario cast built from {castPath}.");
+        }
+
+        // Cast-wide settings (e.g. "fearLimit") apply to every actor that does not set its own.
+        private static JObject WithCastDefaults(JObject actor, JObject cast)
+        {
+            JObject data = (JObject)actor.DeepClone();
+            JToken fearLimit = cast["fearLimit"];
+            if (fearLimit != null && data["fearLimit"] == null)
+            {
+                data["fearLimit"] = fearLimit;
+            }
+
+            return data;
         }
 
         private static GameObject FindPlacedOn(string seatName)
@@ -325,6 +347,7 @@ namespace Game.Scenarios.Editor
             actorObject.FindProperty("_displayName").stringValue = (string)data["name"] ?? string.Empty;
             actorObject.FindProperty("_face").objectReferenceValue = instance.GetComponent<FaceController>();
             actorObject.FindProperty("_emotionIntensity").floatValue = (float?)data["emotionIntensity"] ?? 1f;
+            actorObject.FindProperty("_fearLimit").floatValue = (float?)data["fearLimit"] ?? 1f;
             actorObject.FindProperty("_holdClip").stringValue = (string)data["holdClip"] ?? string.Empty;
             actorObject.FindProperty("_onlyInVariant").stringValue = (string)data["variant"] ?? string.Empty;
             actorObject.FindProperty("_randomizeAppearance").boolValue = passenger != null && ((bool?)data["randomize"] ?? true);

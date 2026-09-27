@@ -131,6 +131,9 @@ MonoBehaviour:
     _smoothingTime: 0.05
   _mouthWeightWhileTalking: 0.5
   _talkBlendTime: 0.15
+  _eyeOcclusionMaterialPrefix: M_Eye_AO
+  _eyeOcclusionColorProperty: _Tint
+  _skinEyeShadowProperty: _Eye_AO
 --- !u!114 &1304833483950945942
 MonoBehaviour:
   m_ObjectHideFlags: 0

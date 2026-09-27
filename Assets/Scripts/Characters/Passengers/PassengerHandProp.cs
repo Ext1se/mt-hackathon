@@ -50,6 +50,12 @@ namespace Game.Characters.Passengers
             _animator = GetComponent<Animator>();
         }
 
+        /// <summary>True when <paramref name="clip"/> needs the prop and the prop's clips are switched off.</summary>
+        public bool Blocks(AnimationClip clip)
+        {
+            return _set != null && _set.IsBlocked(clip);
+        }
+
         /// <summary>Shows the prop in the grip of <paramref name="clip"/> or hides it when the clip has none.</summary>
         public void Apply(AnimationClip clip)
         {

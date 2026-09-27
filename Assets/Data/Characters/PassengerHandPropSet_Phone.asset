@@ -33,3 +33,4 @@ MonoBehaviour:
     Hand: 1
     LocalPosition: {x: -0.06, y: 0.015, z: 0}
     LocalEuler: {x: 270, y: 90, z: 0}
+  _clipsEnabled: 0

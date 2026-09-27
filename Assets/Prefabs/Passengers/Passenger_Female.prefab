@@ -101,6 +101,10 @@ PrefabInstance:
       value: -0.20684224
       objectReference: {fileID: 0}
     - target: {fileID: 6931212556051971663, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
+      propertyPath: Outfits
+      value: 
+      objectReference: {fileID: 11400000, guid: e50934e08b49eae4895bd01a35a04a37, type: 2}
+    - target: {fileID: 6931212556051971663, guid: 51ca181595adb9f4badfe0ef54b91255, type: 3}
       propertyPath: Randomizer
       value: 
       objectReference: {fileID: 11400000, guid: a26d526322e6e36498dfe97ef9911f8a, type: 2}
@@ -195,6 +199,9 @@ MonoBehaviour:
     _smoothingTime: 0.05
   _mouthWeightWhileTalking: 0.5
   _talkBlendTime: 0.15
+  _eyeOcclusionMaterialPrefix: M_Eye_AO
+  _eyeOcclusionColorProperty: _Tint
+  _skinEyeShadowProperty: _Eye_AO
 --- !u!114 &116957090966738220
 MonoBehaviour:
   m_ObjectHideFlags: 0

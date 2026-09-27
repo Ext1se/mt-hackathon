@@ -27,6 +27,8 @@ namespace Game.Characters.Passengers
         [SerializeField] private PassengerAnimationSet _animationSet;
         [Tooltip("Kept for a scenario actor: the spawner and the placement tool leave this spot empty.")]
         [SerializeField] private bool _reserved;
+        [Tooltip("Clips never played on this spot, by name prefix (e.g. Stand_Bored at the bistro counter).")]
+        [SerializeField] private string[] _excludedClips = new string[0];
 
         private Passenger _occupant;
 
@@ -37,6 +39,25 @@ namespace Game.Characters.Passengers
         public bool IsFree => _occupant == null;
         /// <summary>Free and not reserved: the spawner may put a random passenger here.</summary>
         public bool IsAvailable => _occupant == null && !_reserved;
+
+        /// <summary>True when <paramref name="clip"/> is not to be played on this spot.</summary>
+        public bool Excludes(AnimationClip clip)
+        {
+            if (clip == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _excludedClips.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(_excludedClips[i]) && clip.name.StartsWith(_excludedClips[i], System.StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         private void OnDrawGizmos()
         {

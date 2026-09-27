@@ -1,6 +1,7 @@
 {
   "scenario": "Assets/Data/Scenarios/UnattendedItem.json",
   "forcedVariant": "A",
+  "fearLimit": 0.4,
   "startHint": "Пожалуйста, обратитесь к пассажиру на месте 3Г в вагоне №3.",
   "headLook": { "enabled": true, "maxYaw": 70, "maxPitchUp": 20, "maxPitchDown": 30, "releaseMargin": 30, "maxDistance": 3, "neckShare": 0.35 },
   "groups": [
@@ -11,7 +12,7 @@
     { "id": "passenger_3G", "name": "Пассажирка 3Г", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_3.001_1", "starter": true, "target": "passenger_3G", "stand": [ 0.05, 0, -57.75 ], "emotionIntensity": 0.6 },
     { "id": "passenger_4V", "name": "Пассажир 4В", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_4.001_0", "target": "passenger_4V", "stand": [ 0.05, 0, -58.65 ] },
     { "id": "passenger_2B", "name": "Пассажир 2Б", "prefab": "male", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_2_0", "target": "passenger_2B", "stand": [ 0.0, 0, -56.8 ] },
-    { "id": "passenger_5B", "name": "Пассажирка 5Б", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_5_0", "target": "passenger_5B", "stand": [ 0.0, 0, -59.45 ], "holdClip": "Sit_ImpatientWaiting", "proximity": { "signal": "flag.near_5b", "radius": 1.6 } },
+    { "id": "passenger_5B", "name": "Пассажирка 5Б", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_5_0", "target": "passenger_5B", "stand": [ 0.0, 0, -59.45 ], "holdClip": "Sit_ImpatientWaiting", "emotionIntensity": 0.4, "proximity": { "signal": "flag.near_5b", "radius": 1.6 } },
     { "id": "passenger_1A", "name": "Пассажирка 1А", "prefab": "female", "group": "Car7_C03", "seat": "Seat_C03_SEAT_comfort_1.001_1", "target": "passenger_1A", "stand": [ 0.05, 0, -55.85 ] },
     { "id": "passenger_3B", "name": "Пассажир 3Б", "prefab": "Assets/Prefabs/Passengers/Scenario/Passenger_BagOwner.prefab", "randomize": false, "group": "Car10_C06", "seat": "Bistro_Counter_0", "pose": "Standing", "variant": "A", "target": "candidate_owner", "stand": [ 0.1, 0, -133.5 ] },
     { "id": "double_bald", "name": "Пассажир в куртке", "prefab": "Assets/Prefabs/Passengers/Scenario/Passenger_BagOwner_DoubleA.prefab", "randomize": false, "group": "Car10_C06", "seat": "Seat_C06_SEAT_standard2_1_1", "target": "candidate_bald", "stand": [ -0.26, 0, -137.6 ] },

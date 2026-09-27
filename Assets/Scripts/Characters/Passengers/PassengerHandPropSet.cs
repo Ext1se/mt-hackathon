@@ -31,11 +31,19 @@ namespace Game.Characters.Passengers
         [SerializeField] private Vector3 _prefabLocalEuler;
         [SerializeField, Min(0.001f)] private float _prefabScale = 1f;
         [SerializeField] private Grip[] _grips = new Grip[0];
+        [Tooltip("Off: passengers never pick the clips that use this prop, so it is never shown.")]
+        [SerializeField] private bool _clipsEnabled = true;
 
         public GameObject Prefab => _prefab;
         public Vector3 PrefabLocalPosition => _prefabLocalPosition;
         public Quaternion PrefabLocalRotation => Quaternion.Euler(_prefabLocalEuler);
         public float PrefabScale => _prefabScale;
+
+        /// <summary>True for a clip that uses this prop while its clips are switched off.</summary>
+        public bool IsBlocked(AnimationClip clip)
+        {
+            return !_clipsEnabled && TryGetGrip(clip, out Grip _);
+        }
 
         /// <summary>Finds the grip of <paramref name="clip"/>; false when the clip uses no prop.</summary>
         public bool TryGetGrip(AnimationClip clip, out Grip grip)

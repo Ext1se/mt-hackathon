@@ -18,6 +18,7 @@ namespace Game.Scenarios.Presentation.World
         private const float MaxTalkSeconds = 6f;
 
         // CharacterCustomizer lives in Assembly-CSharp, which an asmdef cannot reference, so the randomizer is called by name.
+        private const string FearEmotion = "fear";
         private const string RandomizeBodyMessage = "randomizeAll";
         private const string RandomizeOutfitMessage = "setRandomOutfit";
         private const float SeatedHeadHeight = 1.2f;
@@ -31,6 +32,8 @@ namespace Game.Scenarios.Presentation.World
         [SerializeField] private List<EmotionBinding> _emotions = new List<EmotionBinding>();
         [Tooltip("How strongly this character shows emotions: 1 is the full expression, lower is subtler.")]
         [SerializeField, Range(0f, 1f)] private float _emotionIntensity = 1f;
+        [Tooltip("Upper limit for the fear expression, whatever the intensity; the cast file sets it for everyone.")]
+        [SerializeField, Range(0f, 1f)] private float _fearLimit = 1f;
         [Tooltip("Optional: the actor is hidden while a scenario plays another story variant.")]
         [SerializeField] private string _onlyInVariant = string.Empty;
         [Tooltip("Randomize body and outfit through CharacterCustomizer on start.")]
@@ -125,7 +128,8 @@ namespace Game.Scenarios.Presentation.World
             {
                 if (binding.Emotion == emotion)
                 {
-                    _face.SetExpression(binding.Expression, _emotionIntensity);
+                    float intensity = emotion == FearEmotion ? Mathf.Min(_emotionIntensity, _fearLimit) : _emotionIntensity;
+                    _face.SetExpression(binding.Expression, intensity);
                     return;
                 }
             }

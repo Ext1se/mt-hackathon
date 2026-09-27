@@ -31,6 +31,7 @@ namespace Game.Characters.Passengers
         private int _sleepLayer = -1;
         private float _sleepWeight;
         private string _heldClip = string.Empty;
+        private PassengerHandProp _handProp;
 
         public PassengerPose Pose => _pose;
         public PassengerSpot Spot => _spot;
@@ -58,6 +59,7 @@ namespace Game.Characters.Passengers
             // Poses are authored with root motion baked in; the spot alone decides where the passenger is.
             _animator.applyRootMotion = false;
             _sleepLayer = _animator.GetLayerIndex(SleepLayerName);
+            TryGetComponent(out _handProp);
 
             if (_animationSet != null)
             {
@@ -264,6 +266,12 @@ namespace Game.Characters.Passengers
                 return false;
             }
 
+            // Clips of a switched-off hand prop (the phone) and clips the spot excludes are never picked.
+            if ((_handProp != null && _handProp.Blocks(clip)) || (_spot != null && _spot.Excludes(clip)))
+            {
+                return false;
+            }
+
             return !loopingOnly || clip.isLooping;
         }
 
@@ -276,7 +284,10 @@ namespace Game.Characters.Passengers
             }
 
             int stateHash = Animator.StringToHash(clip.name);
-            if (!_animator.HasState(BodyLayer, stateHash))
+            // An inactive Animator can neither be asked nor played (e.g. a passenger moved while its wagon is culled):
+            // the clip is remembered and OnEnable starts it.
+            bool isAnimatorActive = _animator.isActiveAndEnabled;
+            if (isAnimatorActive && !_animator.HasState(BodyLayer, stateHash))
             {
                 Debug.LogWarning($"{nameof(Passenger)} on '{name}': Animator has no state '{clip.name}'.", this);
                 _nextSwitchTime = float.PositiveInfinity;
@@ -284,7 +295,7 @@ namespace Game.Characters.Passengers
             }
 
             bool isNewClip = clip != _currentClip;
-            if (isNewClip)
+            if (isNewClip && isAnimatorActive)
             {
                 _animator.CrossFadeInFixedTime(stateHash, fadeTime, BodyLayer, normalizedOffset * clip.length);
             }

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f6e30eea65664a4b852f2eb792cf668, type: 3}
+  m_Script: {fileID: 11500000, guid: f2161d981690a6a469585a81a5cbad1f, type: 3}
   m_Name: Randomizer_Passenger_Female
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Characters.Appearance.PassengerRandomizer
   hairBlacklistCaucasian:
   - Hair_Default
   - Eyebrows_Default
@@ -37,6 +37,7 @@ MonoBehaviour:
   - Beard_03
   - Beard_04
   - Afro_Short_02
+  - Buzzcut_01
   hairBlacklistAsian:
   - Hair_Default
   - Eyebrows_Default
@@ -54,3 +55,7 @@ MonoBehaviour:
   africanWeight: 0
   asianWeight: 1
   mixedWeight: 1
+  _lockedShapes:
+  - mod_eyes_depth
+  - mod_eyes_height
+  - mod_eyes_narrow

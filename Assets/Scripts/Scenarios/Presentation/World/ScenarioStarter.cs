@@ -34,7 +34,7 @@ namespace Game.Scenarios.Presentation.World
 
         public void Interact()
         {
-            if (_runner != null && _scenario != null && !_runner.IsRunning)
+            if (_runner != null && _scenario != null && _runner.CanStart)
             {
                 _runner.Approach(_standPoint, this, StartScenario);
             }
@@ -42,7 +42,7 @@ namespace Game.Scenarios.Presentation.World
 
         private void StartScenario()
         {
-            if (!_runner.IsRunning)
+            if (_runner.CanStart)
             {
                 string variant = ScenarioLaunch.ForcedVariant ?? _forcedVariant;
                 _runner.StartScenario(_scenario, variant);
@@ -53,7 +53,7 @@ namespace Game.Scenarios.Presentation.World
         {
             if (_marker != null)
             {
-                _marker.SetActive(_runner != null && !_runner.IsRunning);
+                _marker.SetActive(_runner != null && _runner.CanStart);
             }
         }
     }

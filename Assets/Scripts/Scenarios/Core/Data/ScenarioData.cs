@@ -10,6 +10,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("id")] private string _id = string.Empty;
         [JsonProperty("title")] private string _title = string.Empty;
         [JsonProperty("summary")] private string _summary = string.Empty;
+        [JsonProperty("intro")] private string _intro = string.Empty;
         [JsonProperty("loyalty")] private int _loyalty = 50;
         [JsonProperty("safety")] private int _safety = 50;
         [JsonProperty("variables")] private List<VariableData> _variables = new List<VariableData>();
@@ -23,6 +24,13 @@ namespace Game.Scenarios.Core.Data
         public string Id => _id;
         public string Title => _title;
         public string Summary => _summary;
+
+        /// <summary>
+        /// General description for the intro screen: the situation and the player's role, without the story branches
+        /// or the right decisions. Empty means the summary is shown instead.
+        /// </summary>
+        public string Intro => _intro;
+
         public int Loyalty => _loyalty;
         public int Safety => _safety;
         public IReadOnlyList<VariableData> Variables => _variables;

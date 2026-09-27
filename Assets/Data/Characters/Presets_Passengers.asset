@@ -763,19 +763,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.044166606
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.11927332
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.22384875
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -1157,19 +1157,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.10015487
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.041955058
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.19916333
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -1551,19 +1551,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.22902302
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.32582077
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.14172557
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -1945,19 +1945,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: -0.34883964
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.15060823
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.29846653
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -2339,19 +2339,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.1530764
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.016504565
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.19450346
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -2732,19 +2732,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: -0.12927262
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.06381338
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.24279514
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -3125,19 +3125,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: -0.0072144023
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.2220125
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.34957018
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -3388,8 +3388,8 @@ MonoBehaviour:
     - Shirt_01
     - Jeans_01
     - Dress_Shoes_01
-    - Glasses_01
-    ApparelMaterials: 05000000020000000000000001000000
+    - Headwear_Default
+    ApparelMaterials: 05000000020000000000000000000000
     FloatProperties:
     - propertyName: _Skin_Smoothness
       stringValue: 
@@ -3518,19 +3518,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.032909293
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.231315
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.05470078
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -3781,8 +3781,8 @@ MonoBehaviour:
     - Shirt_01
     - Jeans_01
     - Dress_Shoes_01
-    - Glasses_01
-    ApparelMaterials: 05000000030000000100000001000000
+    - Headwear_Default
+    ApparelMaterials: 05000000030000000100000000000000
     FloatProperties:
     - propertyName: _Skin_Smoothness
       stringValue: 
@@ -3911,19 +3911,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.05736906
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.18143076
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.16238393
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -4305,19 +4305,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.062553644
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.14683804
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.20214145
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -4699,19 +4699,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.006962498
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.12678573
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.22324233
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -5093,19 +5093,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: -0.42886886
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.06349222
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.26219437
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -5487,19 +5487,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: -0.1695159
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.14222856
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.008944153
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -5880,19 +5880,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.19017111
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.14719184
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.23937304
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -6273,19 +6273,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: 0.11337867
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: -0.009900168
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: 0.45348182
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
@@ -6666,19 +6666,19 @@ MonoBehaviour:
       meshTag: 
     - propertyName: mod_eyes_height
       stringValue: 
-      floatValue: -0.2743848
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_depth
       stringValue: 
-      floatValue: 0.007815539
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 
     - propertyName: mod_eyes_narrow
       stringValue: 
-      floatValue: -0.15123993
+      floatValue: 0
       colorValue: {r: 0, g: 0, b: 0, a: 1}
       materialIndex: -1
       meshTag: 

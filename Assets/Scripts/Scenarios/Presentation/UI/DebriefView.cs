@@ -1,14 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using DG.Tweening;
 using Game.Scenarios.Core;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Game.Scenarios.Presentation.UI
 {
-    /// <summary>Post-scenario screen: ending, grades, competencies and every decision with its feedback.</summary>
+    /// <summary>
+    /// Post-scenario screen: ending, grades, competencies and every decision with its feedback. Continue lets the player
+    /// walk on in the scene, restart reloads it, menu goes to the main menu.
+    /// </summary>
     public sealed class DebriefView : MonoBehaviour
     {
         [SerializeField] private GameObject _root;
@@ -18,7 +23,12 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private TMP_Text _competencies;
         [SerializeField] private RectTransform _decisionsContainer;
         [SerializeField] private DecisionRow _rowPrefab;
+        [Tooltip("Continue: back to the scene, the scenario is over.")]
         [SerializeField] private Button _closeButton;
+        [SerializeField] private Button _restartButton;
+        [SerializeField] private Button _menuButton;
+        [Tooltip("Main menu scene; the menu button is hidden when empty.")]
+        [SerializeField] private string _menuScene = string.Empty;
         [Tooltip("{0} loyalty, {1} loyalty grade, {2} safety, {3} safety grade. The words live here, not in code.")]
         [SerializeField] private string _scalesFormat = "{0} ({1}) / {2} ({3})";
 
@@ -30,12 +40,32 @@ namespace Game.Scenarios.Presentation.UI
         private void Awake()
         {
             _closeButton.onClick.AddListener(OnCloseClicked);
+            if (_restartButton != null)
+            {
+                _restartButton.onClick.AddListener(OnRestartClicked);
+            }
+
+            if (_menuButton != null)
+            {
+                _menuButton.onClick.AddListener(OnMenuClicked);
+                _menuButton.gameObject.SetActive(!string.IsNullOrEmpty(_menuScene));
+            }
+
             _root.SetActive(false);
         }
 
         private void OnDestroy()
         {
             _closeButton.onClick.RemoveListener(OnCloseClicked);
+            if (_restartButton != null)
+            {
+                _restartButton.onClick.RemoveListener(OnRestartClicked);
+            }
+
+            if (_menuButton != null)
+            {
+                _menuButton.onClick.RemoveListener(OnMenuClicked);
+            }
         }
 
         public void Show(ScenarioResult result, ScenarioLabels labels)
@@ -122,9 +152,27 @@ namespace Game.Scenarios.Presentation.UI
             return false;
         }
 
+        // Time and tweens are global: both are reset before the next scene starts.
+        private static void LeaveTo(string scene)
+        {
+            Time.timeScale = 1f;
+            DOTween.KillAll();
+            SceneManager.LoadScene(scene);
+        }
+
         private void OnCloseClicked()
         {
             Closed?.Invoke();
+        }
+
+        private void OnRestartClicked()
+        {
+            LeaveTo(SceneManager.GetActiveScene().path);
+        }
+
+        private void OnMenuClicked()
+        {
+            LeaveTo(_menuScene);
         }
     }
 }

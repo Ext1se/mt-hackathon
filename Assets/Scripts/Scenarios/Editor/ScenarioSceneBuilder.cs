@@ -48,8 +48,19 @@ namespace Game.Scenarios.Editor
         private const string GuideShader = "Game/Scenarios/Guide Trail";
         private const float GuideScrollSpeed = 1.4f;
         private const int GuideTextureSize = 64;
-        // Title row, variable meter row, scales row; the panels below the HUD are placed relative to it.
-        private const float HudHeight = 124f;
+        // Title row and one row of bars; the panels below the HUD are placed relative to it.
+        private const float HudHeight = 92f;
+        // A HUD bar group: the name on the left, the bar, then the change popup.
+        private const float HudLabelWidth = 180f;
+        private const float HudBarWidth = 260f;
+        private const float HudDeltaWidth = 64f;
+        private const float HudRowHeight = 30f;
+        // The intro and pause panel.
+        private const float IntroWidth = 1120f;
+        private const float IntroHeight = 660f;
+        private const float IntroKeyWidth = 150f;
+        private const float IntroControlRowHeight = 42f;
+        private const float IntroControlRowStep = 52f;
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
         private static readonly Color PanelColor = new Color(0.06f, 0.08f, 0.11f, 0.94f);
@@ -72,18 +83,18 @@ namespace Game.Scenarios.Editor
         private static readonly string[] s_walkHudPaths =
         {
             "Mobile_Controls/SafeArea/Interact",
-            "Mobile_Controls/SafeArea/Header",
-            "Mobile_Controls/SafeArea/Hint"
+            "Mobile_Controls/SafeArea/Header"
         };
 
         // Walking-mode HUD pieces replaced by the scenario HUD for the whole scenario.
         private static readonly string[] s_scenarioHudPaths =
         {
-            "Mobile_Controls/SafeArea/Header",
-            "Mobile_Controls/SafeArea/Hint"
+            "Mobile_Controls/SafeArea/Header"
         };
 
         private const string WalkCrosshairPath = "Mobile_Controls/SafeArea/Crosshair";
+        // The walking controls line; the controls are explained on the intro screen (and on Esc) instead.
+        private const string WalkHintPath = "Mobile_Controls/SafeArea/Hint";
         private const float DeviceSlotWidth = 96f;
         private const float DeviceSlotHeight = 126f;
 
@@ -368,25 +379,33 @@ namespace Game.Scenarios.Editor
             TMP_Text title = CreateText("Title", root, 26f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(900f, 34f));
 
-            Slider loyalty = CreateSlider("Loyalty", root, LoyaltyColor);
-            Place((RectTransform)loyalty.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(240f, 18f), new Vector2(360f, 22f));
-            TMP_Text loyaltyLabel = CreateText("LoyaltyLabel", root, 20f, FontStyles.Bold, LoyaltyColor, TextAlignmentOptions.MidlineLeft);
-            loyaltyLabel.text = (string)s_strings["labels"]["loyalty"];
-            Place(loyaltyLabel.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 14f), new Vector2(210f, 30f));
-            TMP_Text loyaltyDelta = CreateText("LoyaltyDelta", root, 22f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
-            Place(loyaltyDelta.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(612f, 14f), new Vector2(80f, 30f));
+            // Loyalty, the scenario meter (panic) and safety in one row, each as "name, bar"; a hidden meter
+            // lets the other two close up in the middle.
+            GameObject bars = new GameObject("Bars", typeof(RectTransform));
+            bars.transform.SetParent(root, false);
+            Place((RectTransform)bars.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -50f), new Vector2(-48f, HudRowHeight));
+            HorizontalLayoutGroup barsLayout = bars.AddComponent<HorizontalLayoutGroup>();
+            barsLayout.spacing = 40f;
+            barsLayout.childAlignment = TextAnchor.MiddleCenter;
+            barsLayout.childControlWidth = true;
+            barsLayout.childControlHeight = true;
+            barsLayout.childForceExpandWidth = false;
+            barsLayout.childForceExpandHeight = false;
 
-            Slider safety = CreateSlider("Safety", root, SafetyColor);
-            Place((RectTransform)safety.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-240f, 18f), new Vector2(360f, 22f));
-            TMP_Text safetyLabel = CreateText("SafetyLabel", root, 20f, FontStyles.Bold, SafetyColor, TextAlignmentOptions.MidlineRight);
-            safetyLabel.text = (string)s_strings["labels"]["safety"];
-            Place(safetyLabel.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-24f, 14f), new Vector2(210f, 30f));
-            TMP_Text safetyDelta = CreateText("SafetyDelta", root, 22f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineRight);
-            Place(safetyDelta.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-612f, 14f), new Vector2(80f, 30f));
+            GameObject loyaltyGroup = CreateHudBarGroup("Loyalty", bars.transform, (string)s_strings["labels"]["loyalty"], LoyaltyColor,
+                out Slider loyalty, out TMP_Text loyaltyLabel, out TMP_Text loyaltyDelta);
+            GameObject meter = CreateHudBarGroup("Meter", bars.transform, string.Empty, PanicColor, out Slider meterBar,
+                out TMP_Text meterLabel, out TMP_Text meterDelta);
+            // The meter has no change popup; its slot stays empty so all three groups are the same width.
+            Object.DestroyImmediate(meterDelta.gameObject);
+            Image meterFill = meterBar.fillRect.GetComponent<Image>();
+            CreateHudBarGroup("Safety", bars.transform, (string)s_strings["labels"]["safety"], SafetyColor, out Slider safety,
+                out TMP_Text safetyLabel, out TMP_Text safetyDelta);
 
             GameObject timerRoot = new GameObject("Timer", typeof(RectTransform));
             timerRoot.transform.SetParent(root, false);
-            Place((RectTransform)timerRoot.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 6f), new Vector2(48f, 48f));
+            // In the right corner: the bar row spans the whole width.
+            Place((RectTransform)timerRoot.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -4f), new Vector2(40f, 40f));
             Image track = timerRoot.AddComponent<Image>();
             track.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>(BuiltinKnob);
             track.color = TrackColor;
@@ -402,18 +421,6 @@ namespace Game.Scenarios.Editor
             fill.fillClockwise = false;
             TMP_Text seconds = CreateText("Seconds", timerRoot.transform, 20f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             Stretch(seconds.rectTransform, Vector2.zero, Vector2.zero);
-
-            GameObject meter = new GameObject("Meter", typeof(RectTransform));
-            meter.transform.SetParent(root, false);
-            // Its own row under the title, so it never overlaps the scales on a narrow screen.
-            Place((RectTransform)meter.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(360f, 30f));
-            // Drawn like the scales: a label and a bar of the same height; the bar's colour follows the level.
-            TMP_Text meterLabel = CreateText("Label", meter.transform, 20f, FontStyles.Bold, PanicColor, TextAlignmentOptions.MidlineRight);
-            meterLabel.enableWordWrapping = false;
-            Place(meterLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(170f, 30f));
-            Slider meterBar = CreateSlider("Bar", meter.transform, PanicColor);
-            Place((RectTransform)meterBar.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(180f, 22f));
-            Image meterFill = meterBar.fillRect.GetComponent<Image>();
 
             // The devices the conductor carries: slots in the bottom-left corner, always on screen during a scenario;
             // unavailable ones are dimmed.
@@ -1356,9 +1363,15 @@ namespace Game.Scenarios.Editor
 
             RectTransform rows = CreateScrollList("Decisions", root, new Vector2(580f, 100f), new Vector2(-60f, -232f), 10f);
 
-            Button close = CreateButton("CloseButton", root, Ui("close"), AccentColor);
+            Button close = CreateButton("CloseButton", root, Ui("debriefContinue"), AccentColor);
             Place((RectTransform)close.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(60f, 30f), new Vector2(260f, 56f));
             ((RectTransform)close.transform).pivot = new Vector2(0f, 0f);
+            Button restart = CreateButton("RestartButton", root, Ui("debriefRestart"), ButtonColor);
+            Place((RectTransform)restart.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(340f, 30f), new Vector2(260f, 56f));
+            ((RectTransform)restart.transform).pivot = new Vector2(0f, 0f);
+            Button menu = CreateButton("MenuButton", root, Ui("debriefMenu"), ButtonColor);
+            Place((RectTransform)menu.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(620f, 30f), new Vector2(200f, 56f));
+            ((RectTransform)menu.transform).pivot = new Vector2(0f, 0f);
 
             SerializedObject debriefObject = new SerializedObject(debrief);
             debriefObject.FindProperty("_root").objectReferenceValue = root.gameObject;
@@ -1369,43 +1382,82 @@ namespace Game.Scenarios.Editor
             debriefObject.FindProperty("_decisionsContainer").objectReferenceValue = rows;
             debriefObject.FindProperty("_rowPrefab").objectReferenceValue = rowPrefab;
             debriefObject.FindProperty("_closeButton").objectReferenceValue = close;
+            debriefObject.FindProperty("_restartButton").objectReferenceValue = restart;
+            debriefObject.FindProperty("_menuButton").objectReferenceValue = menu;
+            debriefObject.FindProperty("_menuScene").stringValue = Path.GetFileNameWithoutExtension(ScenarioMenuBuilder.MenuScenePath());
             debriefObject.FindProperty("_scalesFormat").stringValue = Ui("scales");
             debriefObject.ApplyModifiedPropertiesWithoutUndo();
             return debrief;
         }
 
-        // Esc: stops time, frees the cursor, offers to resume, restart the scene or go to the menu.
+        // The intro screen on scene start and the pause menu on Esc: two pages (the scenario, then the controls and the
+        // yellow trail), game time stopped, restart and menu buttons in the pause menu only.
         private static PauseView BuildPause(Transform canvas, ScenarioRunner runner)
         {
             GameObject holder = CreateHolder("Pause", canvas);
             PauseView pause = holder.AddComponent<PauseView>();
+            JObject intro = (JObject)s_strings["intro"];
 
-            RectTransform root = CreatePanel("Root", holder.transform, new Color(0f, 0f, 0f, 0.6f));
+            RectTransform root = CreatePanel("Root", holder.transform, new Color(0f, 0f, 0f, 0.7f));
             Stretch(root, Vector2.zero, Vector2.zero);
             RectTransform panel = CreatePanel("Panel", root, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.98f));
-            Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(460f, 340f));
+            Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(IntroWidth, IntroHeight));
             Image stripe = CreatePanel("Accent", panel, AccentColor).GetComponent<Image>();
             Place(stripe.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f));
             stripe.rectTransform.pivot = new Vector2(0f, 0.5f);
-            TMP_Text title = CreateText("Title", panel, 34f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
-            title.text = Ui("pauseTitle");
-            Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(400f, 48f));
+            TMP_Text caption = CreateText("Caption", panel, 20f, FontStyles.Bold, MutedText, TextAlignmentOptions.MidlineLeft);
+            StretchTop(caption.rectTransform, 48f, 48f, 24f, 28f);
 
-            Button resume = CreateButton("ResumeButton", panel, Ui("pauseResume"), AccentColor);
-            Place((RectTransform)resume.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(340f, 56f));
+            RectTransform scenarioPage = CreateIntroPage("ScenarioPage", panel, out TMP_Text scenarioTitle);
+            TMP_Text scenarioText = CreateText("Text", scenarioPage, 26f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
+            Stretch(scenarioText.rectTransform, Vector2.zero, new Vector2(0f, -88f));
+
+            RectTransform controlsPage = CreateIntroPage("ControlsPage", panel, out TMP_Text controlsTitle);
+            controlsTitle.text = (string)intro["controlsTitle"];
+            BuildIntroControls(controlsPage, (JArray)intro["controls"]);
+            RectTransform guide = CreatePanel("Guide", controlsPage, new Color(GuideColor.r, GuideColor.g, GuideColor.b, 0.12f));
+            StretchBottom(guide, 0f, 0f, 112f);
+            Image guideBar = CreatePanel("Bar", guide, GuideColor).GetComponent<Image>();
+            Place(guideBar.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f));
+            guideBar.rectTransform.pivot = new Vector2(0f, 0.5f);
+            TMP_Text guideText = CreateText("Text", guide, 23f, FontStyles.Normal, Color.white, TextAlignmentOptions.MidlineLeft);
+            Stretch(guideText.rectTransform, new Vector2(28f, 8f), new Vector2(-20f, -8f));
+
             Button restart = CreateButton("RestartButton", panel, Ui("pauseRestart"), ButtonColor);
-            Place((RectTransform)restart.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(340f, 56f));
+            Place((RectTransform)restart.transform, Vector2.zero, Vector2.zero, new Vector2(48f, 32f), new Vector2(250f, 52f));
             Button menu = CreateButton("MenuButton", panel, Ui("menuButton"), ButtonColor);
-            Place((RectTransform)menu.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -240f), new Vector2(340f, 56f));
+            Place((RectTransform)menu.transform, Vector2.zero, Vector2.zero, new Vector2(314f, 32f), new Vector2(200f, 52f));
+            Button next = CreateButton("NextButton", panel, (string)intro["next"], AccentColor);
+            Place((RectTransform)next.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-48f, 32f), new Vector2(260f, 52f));
+            Button resume = CreateButton("ResumeButton", panel, (string)intro["start"], AccentColor);
+            Place((RectTransform)resume.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-48f, 32f), new Vector2(260f, 52f));
+            Button back = CreateButton("BackButton", panel, (string)intro["back"], ButtonColor);
+            Place((RectTransform)back.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-324f, 32f), new Vector2(200f, 52f));
 
             SerializedObject pauseObject = new SerializedObject(pause);
             pauseObject.FindProperty("_runner").objectReferenceValue = runner;
             pauseObject.FindProperty("_actions").objectReferenceValue = AssetDatabase.LoadAssetAtPath<InputActionAsset>(WalkActionsPath);
             pauseObject.FindProperty("_root").objectReferenceValue = root.gameObject;
+            pauseObject.FindProperty("_scenarioPage").objectReferenceValue = scenarioPage.gameObject;
+            pauseObject.FindProperty("_controlsPage").objectReferenceValue = controlsPage.gameObject;
+            pauseObject.FindProperty("_caption").objectReferenceValue = caption;
+            pauseObject.FindProperty("_scenarioTitle").objectReferenceValue = scenarioTitle;
+            pauseObject.FindProperty("_scenarioText").objectReferenceValue = scenarioText;
+            pauseObject.FindProperty("_guideText").objectReferenceValue = guideText;
+            pauseObject.FindProperty("_nextButton").objectReferenceValue = next;
+            pauseObject.FindProperty("_backButton").objectReferenceValue = back;
             pauseObject.FindProperty("_resumeButton").objectReferenceValue = resume;
+            pauseObject.FindProperty("_resumeLabel").objectReferenceValue = resume.GetComponentInChildren<TMP_Text>();
             pauseObject.FindProperty("_restartButton").objectReferenceValue = restart;
             pauseObject.FindProperty("_menuButton").objectReferenceValue = menu;
             pauseObject.FindProperty("_menuScene").stringValue = Path.GetFileNameWithoutExtension(ScenarioMenuBuilder.MenuScenePath());
+            pauseObject.FindProperty("_scenarioCaption").stringValue = (string)intro["scenarioCaption"];
+            pauseObject.FindProperty("_controlsCaption").stringValue = (string)intro["controlsCaption"];
+            pauseObject.FindProperty("_pauseCaption").stringValue = Ui("pauseTitle");
+            pauseObject.FindProperty("_startLabel").stringValue = (string)intro["start"];
+            pauseObject.FindProperty("_resumeText").stringValue = (string)intro["resume"];
+            pauseObject.FindProperty("_guideBeforeStart").stringValue = (string)intro["guideBeforeStart"];
+            pauseObject.FindProperty("_guideRunning").stringValue = (string)intro["guideRunning"];
             pauseObject.ApplyModifiedPropertiesWithoutUndo();
 
             VSMCursorMode cursorMode = Object.FindFirstObjectByType<VSMCursorMode>();
@@ -1418,6 +1470,52 @@ namespace Game.Scenarios.Editor
             }
 
             return pause;
+        }
+
+        // A page between the caption and the button row: a title with the accent stripe under it.
+        private static RectTransform CreateIntroPage(string name, Transform panel, out TMP_Text title)
+        {
+            GameObject page = new GameObject(name, typeof(RectTransform));
+            page.transform.SetParent(panel, false);
+            RectTransform rect = (RectTransform)page.transform;
+            Stretch(rect, new Vector2(48f, 112f), new Vector2(-48f, -68f));
+            title = CreateText("Title", rect, 40f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopLeft);
+            StretchTop(title.rectTransform, 0f, 0f, 0f, 52f);
+            Image stripe = CreatePanel("Stripe", rect, AccentColor).GetComponent<Image>();
+            Place(stripe.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -62f), new Vector2(120f, 4f));
+            stripe.rectTransform.pivot = new Vector2(0f, 1f);
+            return rect;
+        }
+
+        // Key plates with what they do, in two columns filled top to bottom.
+        private static void BuildIntroControls(RectTransform page, JArray controls)
+        {
+            int rows = (controls.Count + 1) / 2;
+            for (int i = 0; i < controls.Count; i++)
+            {
+                JArray entry = (JArray)controls[i];
+                float column = i < rows ? 0f : 0.5f;
+                float top = 88f + (i % rows) * IntroControlRowStep;
+
+                GameObject row = new GameObject("Control" + i, typeof(RectTransform));
+                row.transform.SetParent(page, false);
+                RectTransform rowRect = (RectTransform)row.transform;
+                rowRect.anchorMin = new Vector2(column, 1f);
+                rowRect.anchorMax = new Vector2(column + 0.5f, 1f);
+                rowRect.pivot = new Vector2(0f, 1f);
+                rowRect.offsetMin = new Vector2(0f, -top - IntroControlRowHeight);
+                rowRect.offsetMax = new Vector2(-16f, -top);
+
+                RectTransform key = CreatePanel("Key", rowRect, ButtonColor);
+                Place(key, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(IntroKeyWidth, IntroControlRowHeight));
+                TMP_Text keyText = CreateText("Label", key, 20f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+                keyText.enableWordWrapping = false;
+                keyText.text = (string)entry[0];
+                Stretch(keyText.rectTransform, Vector2.zero, Vector2.zero);
+                TMP_Text action = CreateText("Action", rowRect, 22f, FontStyles.Normal, Color.white, TextAlignmentOptions.MidlineLeft);
+                action.text = (string)entry[1];
+                Stretch(action.rectTransform, new Vector2(IntroKeyWidth + 18f, 0f), Vector2.zero);
+            }
         }
 
         private static void BuildBriefing(Transform canvas, ScenarioRunner runner)
@@ -1443,9 +1541,6 @@ namespace Game.Scenarios.Editor
             Place(summary.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -112f), new Vector2(-80f, 120f));
             TMP_Text status = CreateText("Status", root, 24f, FontStyles.Italic, MutedText, TextAlignmentOptions.TopLeft);
             Place(status.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -240f), new Vector2(-80f, 110f));
-            TMP_Text controls = CreateText("Controls", root, 20f, FontStyles.Normal, MutedText, TextAlignmentOptions.Center);
-            controls.text = Ui("briefingControls");
-            Place(controls.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 22f), new Vector2(-80f, 30f));
             Button menuButton = CreateButton("MenuButton", root, Ui("menuButton"), AccentColor);
             Place((RectTransform)menuButton.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-32f, -28f), new Vector2(200f, 44f));
 
@@ -1485,17 +1580,23 @@ namespace Game.Scenarios.Editor
             hiderObject.ApplyModifiedPropertiesWithoutUndo();
             UnityEventTools.AddPersistentListener(uiOpenChanged, new UnityAction<bool>(hider.SetUiOpen));
 
-            // The scenario reticle replaces the walking crosshair.
-            GameObject walkCrosshair = GameObject.Find(WalkCrosshairPath);
-            if (walkCrosshair != null)
-            {
-                Undo.RecordObject(walkCrosshair, "Build scenario UI");
-                walkCrosshair.SetActive(false);
-            }
+            // The scenario reticle replaces the walking crosshair; the intro screen replaces the controls line.
+            HideWalkPiece(WalkCrosshairPath);
+            HideWalkPiece(WalkHintPath);
 
             LookHighlighter highlighter = BuildLookHighlighter(runner);
             UnityEventTools.AddPersistentListener(uiOpenChanged, new UnityAction<bool>(highlighter.SetUiOpen));
             EditorUtility.SetDirty(runner);
+        }
+
+        private static void HideWalkPiece(string path)
+        {
+            GameObject piece = GameObject.Find(path);
+            if (piece != null)
+            {
+                Undo.RecordObject(piece, "Build scenario UI");
+                piece.SetActive(false);
+            }
         }
 
         // The plain passenger label switched in the inspector survives a rebuild.
@@ -1644,6 +1745,28 @@ namespace Game.Scenarios.Editor
             text.text = label;
             Stretch(text.rectTransform, Vector2.zero, Vector2.zero);
             return button;
+        }
+
+        // One HUD bar group of a fixed width: the name left-aligned, the bar to its right, the change popup after it.
+        private static GameObject CreateHudBarGroup(string name, Transform parent, string labelText, Color color, out Slider bar,
+            out TMP_Text label, out TMP_Text delta)
+        {
+            GameObject group = new GameObject(name, typeof(RectTransform));
+            group.transform.SetParent(parent, false);
+            LayoutElement element = group.AddComponent<LayoutElement>();
+            element.preferredWidth = HudLabelWidth + 12f + HudBarWidth + 8f + HudDeltaWidth;
+            element.preferredHeight = HudRowHeight;
+
+            label = CreateText("Label", group.transform, 20f, FontStyles.Bold, color, TextAlignmentOptions.MidlineLeft);
+            label.enableWordWrapping = false;
+            label.text = labelText;
+            Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(HudLabelWidth, HudRowHeight));
+            bar = CreateSlider("Bar", group.transform, color);
+            Place((RectTransform)bar.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(HudLabelWidth + 12f, 0f),
+                new Vector2(HudBarWidth, 22f));
+            delta = CreateText("Delta", group.transform, 22f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
+            Place(delta.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(HudDeltaWidth, HudRowHeight));
+            return group;
         }
 
         private static Slider CreateSlider(string name, Transform parent, Color fillColor)

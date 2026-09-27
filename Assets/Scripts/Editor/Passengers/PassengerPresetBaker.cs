@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CC;
+using Game.Characters.Appearance;
 using Game.Characters.Passengers;
 using UnityEditor;
 using UnityEngine;
@@ -23,6 +24,8 @@ namespace Game.Editor.Passengers
         private const string PresetsPath = DataFolder + "/Presets_Passengers.asset";
         private const string MaleRandomizerPath = DataFolder + "/Randomizer_Passenger_Male.asset";
         private const string FemaleRandomizerPath = DataFolder + "/Randomizer_Passenger_Female.asset";
+        private const string FemaleOutfitsPath = DataFolder + "/Outfits_Passenger_Female.asset";
+        private const string StandardFemaleOutfitsPath = "Assets/CharacterCustomizer/Characters/Human/Apparel/Scriptable_Objects/Outfits_F.asset";
         private const string BusinessPoolPath = DataFolder + "/PassengerPool_Business.asset";
         private const string AllPoolPath = DataFolder + "/PassengerPool_All.asset";
         private const string StandardRandomizerFolder = "Assets/CharacterCustomizer/Characters/Human/Randomizers";
@@ -56,6 +59,8 @@ namespace Game.Editor.Passengers
         // The female wardrobe has no suit or skirt: shirt, jeans and heels or dress shoes are the closest to formal.
         private static readonly string[] s_femaleBusinessOutfit = { "Shirt_01", "Jeans_01", "High_Heels_01" };
         private const string FemaleBusinessFlatShoes = "Dress_Shoes_01";
+        // A buzzcut reads as bald on a woman; the standard lists allow it for the mixed look.
+        private static readonly string[] s_femaleHairBlacklist = { "Buzzcut_01" };
         // Standard outfits include beachwear, which has no place on a train.
         private static readonly string[] s_excludedApparel = { "Swimming_Trunks_01" };
 
@@ -70,10 +75,11 @@ namespace Game.Editor.Passengers
         public static void Prepare()
         {
             EnsureFolder(DataFolder);
-            scrObj_Randomizer_Standard maleRandomizer = EnsureRandomizer(StandardRandomizerFolder + "/Randomizer_Male.asset", MaleRandomizerPath);
-            scrObj_Randomizer_Standard femaleRandomizer = EnsureRandomizer(StandardRandomizerFolder + "/Randomizer_Female.asset", FemaleRandomizerPath);
-            AssignRandomizer(MalePrefabPath, maleRandomizer);
-            AssignRandomizer(FemalePrefabPath, femaleRandomizer);
+            PassengerRandomizer maleRandomizer = EnsureRandomizer(StandardRandomizerFolder + "/Randomizer_Male.asset", MaleRandomizerPath, new string[0]);
+            PassengerRandomizer femaleRandomizer = EnsureRandomizer(StandardRandomizerFolder + "/Randomizer_Female.asset", FemaleRandomizerPath, s_femaleHairBlacklist);
+            scrObj_Outfits_Standard femaleOutfits = EnsureFemaleOutfits();
+            AssignCustomizerAssets(MalePrefabPath, maleRandomizer, null);
+            AssignCustomizerAssets(FemalePrefabPath, femaleRandomizer, femaleOutfits);
             EnsurePresets();
             AssetDatabase.SaveAssets();
             Debug.Log($"Passenger randomizers and '{PresetsPath}' are ready. Open an empty scene, enter Play Mode and run step 2.");
@@ -294,7 +300,8 @@ namespace Game.Editor.Passengers
             SetApparel(character, UpperBodySlot, outfit[UpperBodySlot]);
             SetApparel(character, LowerBodySlot, outfit[LowerBodySlot]);
             SetApparel(character, FootwearSlot, footwear);
-            SetApparel(character, HeadwearSlot, Random.value < GlassesChance ? GlassesName : DefaultHeadwearName);
+            // Glasses are for men only.
+            SetApparel(character, HeadwearSlot, !isFemale && Random.value < GlassesChance ? GlassesName : DefaultHeadwearName);
         }
 
         private static void SetApparel(CharacterCustomization character, int slot, string name)
@@ -334,27 +341,82 @@ namespace Game.Editor.Passengers
             return variant;
         }
 
-        private static scrObj_Randomizer_Standard EnsureRandomizer(string sourcePath, string path)
+        private static PassengerRandomizer EnsureRandomizer(string sourcePath, string path, string[] hairBlacklist)
         {
-            scrObj_Randomizer_Standard randomizer = AssetDatabase.LoadAssetAtPath<scrObj_Randomizer_Standard>(path);
+            PassengerRandomizer randomizer = AssetDatabase.LoadAssetAtPath<PassengerRandomizer>(path);
             if (randomizer == null)
             {
-                scrObj_Randomizer_Standard source = AssetDatabase.LoadAssetAtPath<scrObj_Randomizer_Standard>(sourcePath);
-                randomizer = Object.Instantiate(source);
+                // A randomizer from before PassengerRandomizer existed is a plain standard one: rebuilt from its own
+                // settings, the prefabs get the new asset right after.
+                scrObj_Randomizer_Standard old = AssetDatabase.LoadAssetAtPath<scrObj_Randomizer_Standard>(path);
+                string settings = JsonUtility.ToJson(old != null ? old : AssetDatabase.LoadAssetAtPath<scrObj_Randomizer_Standard>(sourcePath));
+                if (old != null)
+                {
+                    AssetDatabase.DeleteAsset(path);
+                }
+
+                randomizer = ScriptableObject.CreateInstance<PassengerRandomizer>();
+                JsonUtility.FromJsonOverwrite(settings, randomizer);
                 AssetDatabase.CreateAsset(randomizer, path);
             }
 
             // Passengers of the train: European, Asian and mixed looks, no African ethnicity.
             randomizer.africanWeight = 0f;
+            // The mixed look allows what is not banned for every ethnicity, so the hairstyle goes into all three lists.
+            AddMissing(randomizer.hairBlacklistCaucasian, hairBlacklist);
+            AddMissing(randomizer.hairBlacklistAfrican, hairBlacklist);
+            AddMissing(randomizer.hairBlacklistAsian, hairBlacklist);
             EditorUtility.SetDirty(randomizer);
             return randomizer;
         }
 
-        private static void AssignRandomizer(string prefabPath, scrObj_Randomizer randomizer)
+        private static void AddMissing(List<string> list, string[] items)
+        {
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (!list.Contains(items[i]))
+                {
+                    list.Add(items[i]);
+                }
+            }
+        }
+
+        // A copy of the standard female outfits without glasses: the headwear slot of every outfit holds only glasses.
+        private static scrObj_Outfits_Standard EnsureFemaleOutfits()
+        {
+            scrObj_Outfits_Standard outfits = AssetDatabase.LoadAssetAtPath<scrObj_Outfits_Standard>(FemaleOutfitsPath);
+            if (outfits == null)
+            {
+                scrObj_Outfits_Standard source = AssetDatabase.LoadAssetAtPath<scrObj_Outfits_Standard>(StandardFemaleOutfitsPath);
+                outfits = Object.Instantiate(source);
+                AssetDatabase.CreateAsset(outfits, FemaleOutfitsPath);
+            }
+
+            for (int i = 0; i < outfits.Outfits.Count; i++)
+            {
+                List<scrObj_Outfits_Standard.Outfit_Options> slots = outfits.Outfits[i].OutfitOptions;
+                if (slots.Count > HeadwearSlot)
+                {
+                    // An empty option list always rolls the slot's default apparel.
+                    slots[HeadwearSlot].Options.Clear();
+                }
+            }
+
+            EditorUtility.SetDirty(outfits);
+            return outfits;
+        }
+
+        // A null outfit collection keeps the one the prefab has.
+        private static void AssignCustomizerAssets(string prefabPath, scrObj_Randomizer randomizer, scrObj_Outfits outfits)
         {
             GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
             CharacterCustomization character = root.GetComponent<CharacterCustomization>();
             character.Randomizer = randomizer;
+            if (outfits != null)
+            {
+                character.Outfits = outfits;
+            }
+
             PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             PrefabUtility.UnloadPrefabContents(root);
         }

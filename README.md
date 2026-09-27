@@ -15,6 +15,8 @@ Windows: [docs-dev/Readme-Run-Windows.md](docs-dev/Readme-Run-Windows.md).
 
 Браузер: [docs-dev/Readme-Run-WebGL.md](docs-dev/Readme-Run-WebGL.md).
 
+Видео-демонстрация работы приложения: https://disk.yandex.ru/d/i5YsEhnLjBOb5w
+
 Управление: 
 - `WASD` и мышь, 
 - `Shift` бег, 

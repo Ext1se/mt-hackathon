@@ -18,7 +18,7 @@ namespace Game.Scenarios.Presentation.UI
     /// </summary>
     public sealed class TerminalView : MonoBehaviour
     {
-        private const string RouteSeparator = " \u2014 ";
+        private const string RouteSeparator = " - ";
         private const string TitleSeparator = " \u00b7 ";
 
         [SerializeField] private GameObject _root;

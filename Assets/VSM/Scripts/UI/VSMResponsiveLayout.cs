@@ -12,6 +12,7 @@ namespace VSM.UI
         [Tooltip("Текст подсказки над нижним краем экрана.")] public RectTransform hint;
         [Tooltip("Прозрачная область управления обзором.")] public RectTransform lookArea;
         [Tooltip("Показывать сенсорное управление также в редакторе для проверки.")] public bool previewTouchInEditor = true;
+        [Tooltip("Показывать кнопку действия и без сенсорного управления (на ПК действие - клавиша E).")] public bool desktopActionButton;
         [Tooltip("Масштабирование общего интерфейса.")] public CanvasScaler scaler;
         int width, height;
         Rect previousSafe;
@@ -36,7 +37,7 @@ namespace VSM.UI
             var helpText = hint.GetComponentInChildren<Text>();
             if (helpText && (helpText.text.StartsWith("WASD") || helpText.text.StartsWith("Слева"))) helpText.text = touch ? "Слева: идти   •   справа: обзор   •   кнопка: действие" : "WASD: идти   •   мышь: обзор   •   E: взять / положить   •   F / ПКМ: курсор";
             var buttonText = actionButton.GetComponentInChildren<Text>(); if (buttonText) buttonText.text = touch ? "ДЕЙСТВИЕ" : "ДЕЙСТВИЕ  ·  E";
-            joystick.gameObject.SetActive(touch); lookArea.gameObject.SetActive(touch); actionButton.gameObject.SetActive(!previousXR);
+            joystick.gameObject.SetActive(touch); lookArea.gameObject.SetActive(touch); actionButton.gameObject.SetActive(!previousXR && (touch || desktopActionButton));
             SetRect(joystick, Vector2.zero, new Vector2(portrait ? 125 : 120, portrait ? 170 : 112), new Vector2(164, 164));
             SetRect(actionButton, new Vector2(1, 0), new Vector2(-124, portrait ? 166 : 106), new Vector2(190, 66));
             SetRect(hint, new Vector2(.5f, 0), new Vector2(0, portrait ? 295 : 30), new Vector2(portrait ? 650 : 850, 50));

@@ -93,6 +93,7 @@ namespace Game.Scenarios.Editor
         };
 
         private const string WalkCrosshairPath = "Mobile_Controls/SafeArea/Crosshair";
+        private const string WalkActionButtonPath = "Mobile_Controls/SafeArea/Interact";
         // The walking controls line; the controls are explained on the intro screen (and on Esc) instead.
         private const string WalkHintPath = "Mobile_Controls/SafeArea/Hint";
         private const float DeviceSlotWidth = 96f;
@@ -119,6 +120,13 @@ namespace Game.Scenarios.Editor
             string typewriter = previousDialogue != null ? EditorJsonUtility.ToJson(previousDialogue) : null;
             LookHighlighter previousLook = Object.FindFirstObjectByType<LookHighlighter>();
             bool genericPassengerLabel = previousLook == null || previousLook.GenericPassengerLabel;
+            // The guide trail is tuned by hand (fades, line width...): its settings survive a rebuild too.
+            ScenarioGuide previousGuide = Object.FindFirstObjectByType<ScenarioGuide>();
+            string guideSettings = previousGuide != null ? EditorJsonUtility.ToJson(previousGuide) : null;
+            LineRenderer previousLine = previousGuide != null
+                ? new SerializedObject(previousGuide).FindProperty("_line").objectReferenceValue as LineRenderer
+                : null;
+            string lineSettings = previousLine != null ? EditorJsonUtility.ToJson(previousLine) : null;
 
             // The inspector throws if the selected object is destroyed under it.
             Selection.activeGameObject = null;
@@ -158,6 +166,7 @@ namespace Game.Scenarios.Editor
             WireCursorMode(runner);
             RestoreLookSettings(runner, genericPassengerLabel);
             BuildGuide(runner, quest);
+            RestoreGuideSettings(runner, guideSettings, lineSettings);
 
             // The breathing game covers the whole screen for input, so it goes above every other panel; the pause menu
             // goes above even that.
@@ -675,6 +684,50 @@ namespace Game.Scenarios.Editor
             guideObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        // Everything but the references comes back from the previous build: the guide's tuning and the whole line.
+        private static void RestoreGuideSettings(ScenarioRunner runner, string guideSettings, string lineSettings)
+        {
+            if (!runner.TryGetComponent(out ScenarioGuide guide))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(guideSettings))
+            {
+                ScenarioGuide scratch = new GameObject("GuideSettings").AddComponent<ScenarioGuide>();
+                EditorJsonUtility.FromJsonOverwrite(guideSettings, scratch);
+                CopyValues(scratch, guide);
+                Object.DestroyImmediate(scratch.gameObject);
+            }
+
+            LineRenderer line = new SerializedObject(guide).FindProperty("_line").objectReferenceValue as LineRenderer;
+            if (line != null && !string.IsNullOrEmpty(lineSettings))
+            {
+                EditorJsonUtility.FromJsonOverwrite(lineSettings, line);
+            }
+        }
+
+        // Copies every serialized value that is not a reference to an object.
+        private static void CopyValues(Object source, Object target)
+        {
+            SerializedObject from = new SerializedObject(source);
+            SerializedObject to = new SerializedObject(target);
+            SerializedProperty property = from.GetIterator();
+            bool enterChildren = true;
+            while (property.NextVisible(enterChildren))
+            {
+                enterChildren = false;
+                if (property.propertyType == SerializedPropertyType.ObjectReference || property.name == "m_Script")
+                {
+                    continue;
+                }
+
+                to.CopyFromSerializedProperty(property);
+            }
+
+            to.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         private static Material EnsureGuideMaterial()
         {
             EnsureFolder(MaterialsFolder);
@@ -683,20 +736,20 @@ namespace Game.Scenarios.Editor
             // the stock URP Unlit ignores vertex colour, and URP Particles Unlit ignores texture offset.
             Shader shader = Shader.Find(GuideShader);
             Material material = AssetDatabase.LoadAssetAtPath<Material>(GuideMaterialPath);
-            if (material == null)
+            // An existing material is tuned by hand: it is used as it is.
+            if (material != null)
             {
-                material = new Material(shader);
-                AssetDatabase.CreateAsset(material, GuideMaterialPath);
+                return material;
             }
 
-            material.shader = shader;
+            material = new Material(shader);
             material.shaderKeywords = new string[0];
             material.renderQueue = -1;
             material.SetColor("_BaseColor", GuideColor);
             material.SetFloat("_ScrollSpeed", GuideScrollSpeed);
             material.SetTexture("_BaseMap", chevron);
             material.mainTexture = chevron;
-            EditorUtility.SetDirty(material);
+            AssetDatabase.CreateAsset(material, GuideMaterialPath);
             return material;
         }
 
@@ -704,12 +757,14 @@ namespace Game.Scenarios.Editor
         private static Texture2D EnsureGuideTexture()
         {
             Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GuideTexturePath);
-            bool isNew = texture == null;
-            if (isNew)
+            // An existing texture is kept as it is (it may have been edited).
+            if (texture != null)
             {
-                texture = new Texture2D(GuideTextureSize, GuideTextureSize, TextureFormat.RGBA32, true);
-                texture.name = "GuideChevron";
+                return texture;
             }
+
+            texture = new Texture2D(GuideTextureSize, GuideTextureSize, TextureFormat.RGBA32, true);
+            texture.name = "GuideChevron";
 
             texture.wrapModeU = TextureWrapMode.Repeat;
             texture.wrapModeV = TextureWrapMode.Clamp;
@@ -733,15 +788,7 @@ namespace Game.Scenarios.Editor
 
             texture.SetPixels32(pixels);
             texture.Apply(true);
-            if (isNew)
-            {
-                AssetDatabase.CreateAsset(texture, GuideTexturePath);
-            }
-            else
-            {
-                EditorUtility.SetDirty(texture);
-            }
-
+            AssetDatabase.CreateAsset(texture, GuideTexturePath);
             return texture;
         }
 
@@ -1400,6 +1447,10 @@ namespace Game.Scenarios.Editor
 
             RectTransform root = CreatePanel("Root", holder.transform, new Color(0f, 0f, 0f, 0.7f));
             Stretch(root, Vector2.zero, Vector2.zero);
+            // Touch screens have no Esc: a pause button in the top-right corner, under the HUD, outside the menu itself.
+            Button pauseButton = CreateButton("PauseButton", holder.transform, Ui("pauseButton"), ButtonColor);
+            Place((RectTransform)pauseButton.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -HudHeight - 12f),
+                new Vector2(170f, 56f));
             RectTransform panel = CreatePanel("Panel", root, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.98f));
             Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(IntroWidth, IntroHeight));
             Image stripe = CreatePanel("Accent", panel, AccentColor).GetComponent<Image>();
@@ -1451,6 +1502,7 @@ namespace Game.Scenarios.Editor
             pauseObject.FindProperty("_restartButton").objectReferenceValue = restart;
             pauseObject.FindProperty("_menuButton").objectReferenceValue = menu;
             pauseObject.FindProperty("_menuScene").stringValue = Path.GetFileNameWithoutExtension(ScenarioMenuBuilder.MenuScenePath());
+            pauseObject.FindProperty("_pauseButton").objectReferenceValue = pauseButton;
             pauseObject.FindProperty("_scenarioCaption").stringValue = (string)intro["scenarioCaption"];
             pauseObject.FindProperty("_controlsCaption").stringValue = (string)intro["controlsCaption"];
             pauseObject.FindProperty("_pauseCaption").stringValue = Ui("pauseTitle");
@@ -1525,6 +1577,8 @@ namespace Game.Scenarios.Editor
 
             Button toggle = CreateButton("ToggleButton", holder.transform, Ui("briefingButton"), ButtonColor);
             Place((RectTransform)toggle.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -HudHeight - 12f), new Vector2(220f, 44f));
+            // Tab and Esc open the pause menu with the same description; the button would only cover the screen.
+            toggle.gameObject.SetActive(false);
 
             RectTransform root = CreatePanel("Root", holder.transform, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.97f));
             root.anchorMin = new Vector2(0f, 0.5f);
@@ -1577,6 +1631,7 @@ namespace Game.Scenarios.Editor
             hiderObject.FindProperty("_runner").objectReferenceValue = runner;
             FillObjects(hiderObject.FindProperty("_hiddenWhileOpen"), s_walkHudPaths);
             FillObjects(hiderObject.FindProperty("_hiddenWhileRunning"), s_scenarioHudPaths);
+            FillObjects(hiderObject.FindProperty("_hiddenOnDesktop"), new[] { WalkActionButtonPath });
             hiderObject.ApplyModifiedPropertiesWithoutUndo();
             UnityEventTools.AddPersistentListener(uiOpenChanged, new UnityAction<bool>(hider.SetUiOpen));
 

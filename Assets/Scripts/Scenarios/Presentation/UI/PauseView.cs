@@ -43,6 +43,10 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private Button _menuButton;
         [Tooltip("Main menu scene; the menu button is hidden when empty.")]
         [SerializeField] private string _menuScene = string.Empty;
+        [Tooltip("On-screen pause button for touch screens, where there is no Esc; hidden while the menu is open.")]
+        [SerializeField] private Button _pauseButton;
+        [Tooltip("Shows the pause button on a desktop too, e.g. to check it in the editor.")]
+        [SerializeField] private bool _pauseButtonOnDesktop;
 
         [Header("Content")]
         [Tooltip("Scenario described before one is started; the cast builder sets it.")]
@@ -86,12 +90,18 @@ namespace Game.Scenarios.Presentation.UI
             _resumeButton.onClick.AddListener(Resume);
             _restartButton.onClick.AddListener(OnRestartClicked);
             _menuButton.onClick.AddListener(OnMenuClicked);
+            if (_pauseButton != null)
+            {
+                _pauseButton.onClick.AddListener(Pause);
+            }
+
             // In the pause menu the first page also offers to resume: "Next" steps aside into the back button's slot.
             _nextPrimaryPosition = ((RectTransform)_nextButton.transform).anchoredPosition;
             _nextSecondaryPosition = ((RectTransform)_backButton.transform).anchoredPosition;
             _nextPrimaryColor = _nextButton.image.color;
             _nextSecondaryColor = _backButton.image.color;
             _root.SetActive(false);
+            RefreshPauseButton();
         }
 
         private void Start()
@@ -126,6 +136,11 @@ namespace Game.Scenarios.Presentation.UI
             _resumeButton.onClick.RemoveListener(Resume);
             _restartButton.onClick.RemoveListener(OnRestartClicked);
             _menuButton.onClick.RemoveListener(OnMenuClicked);
+            if (_pauseButton != null)
+            {
+                _pauseButton.onClick.RemoveListener(Pause);
+            }
+
             if (_isPaused)
             {
                 Time.timeScale = _timeScaleBefore;
@@ -147,6 +162,7 @@ namespace Game.Scenarios.Presentation.UI
             _isPaused = false;
             Time.timeScale = _timeScaleBefore;
             _root.SetActive(false);
+            RefreshPauseButton();
             _cursorNeeded.Invoke(_runner != null && _runner.IsUiOpen);
         }
 
@@ -164,7 +180,16 @@ namespace Game.Scenarios.Presentation.UI
             Refresh();
             ShowPage(false);
             _root.SetActive(true);
+            RefreshPauseButton();
             _cursorNeeded.Invoke(true);
+        }
+
+        private void RefreshPauseButton()
+        {
+            if (_pauseButton != null)
+            {
+                _pauseButton.gameObject.SetActive(!_isPaused && (Application.isMobilePlatform || _pauseButtonOnDesktop));
+            }
         }
 
         private void Refresh()

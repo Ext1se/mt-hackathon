@@ -624,6 +624,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &69658223
 GameObject:
   m_ObjectHideFlags: 0
@@ -757,6 +759,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &74680543 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4801923637247895484, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -800,6 +804,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 0
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &77221555
 GameObject:
   m_ObjectHideFlags: 0
@@ -870,9 +876,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "WASD \u2014 \u0438\u0434\u0442\u0438   \u2022   \u043C\u044B\u0448\u044C
-    \u2014 \u043E\u0431\u0437\u043E\u0440   \u2022   E \u2014 \u0432\u0437\u044F\u0442\u044C
-    / \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u044C"
+  m_Text: "WASD: \u0438\u0434\u0442\u0438   \u2022   \u043C\u044B\u0448\u044C: \u043E\u0431\u0437\u043E\u0440  
+    \u2022   E: \u0432\u0437\u044F\u0442\u044C / \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u044C"
 --- !u!222 &77221558
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1951,6 +1956,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &115282821
 GameObject:
   m_ObjectHideFlags: 0
@@ -2080,6 +2087,9 @@ MonoBehaviour:
   lookPad: {fileID: 65107238}
   status: {fileID: 77221557}
   speed: 1.65
+  runSpeed: 3.3
+  allowRunning: 1
+  focusTurnSpeed: 5
 --- !u!4 &116095328
 Transform:
   m_ObjectHideFlags: 0
@@ -2206,6 +2216,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &119529948
 GameObject:
   m_ObjectHideFlags: 0
@@ -2302,6 +2314,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &131404517
 GameObject:
   m_ObjectHideFlags: 0
@@ -2472,6 +2486,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &137365891
 GameObject:
   m_ObjectHideFlags: 0
@@ -2605,6 +2621,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &143524720 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8800540271658190857, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -3018,6 +3036,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &213600534 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7547510533141712535, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -3061,6 +3081,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &214737886
 GameObject:
   m_ObjectHideFlags: 0
@@ -3600,6 +3622,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 0
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &249830111
 GameObject:
   m_ObjectHideFlags: 0
@@ -4132,6 +4156,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &278564362 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5348018901263472013, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -4175,6 +4201,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &291573295 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7592397425706875771, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -4218,6 +4246,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &296523075
 GameObject:
   m_ObjectHideFlags: 0
@@ -5080,6 +5110,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &322421363
 GameObject:
   m_ObjectHideFlags: 0
@@ -5150,7 +5182,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u0412\u0421\u041C  /  \u041C\u041E\u0421\u041A\u0412\u0410 \u2014 \u0421\u0410\u041D\u041A\u0422-\u041F\u0415\u0422\u0415\u0420\u0411\u0423\u0420\u0413"
+  m_Text: "\u0412\u0421\u041C  /  \u041C\u041E\u0421\u041A\u0412\u0410 - \u0421\u0410\u041D\u041A\u0422-\u041F\u0415\u0422\u0415\u0420\u0411\u0423\u0420\u0413"
 --- !u!222 &322421366
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -5550,6 +5582,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &364454333
 GameObject:
   m_ObjectHideFlags: 0
@@ -5699,6 +5733,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &378505746
 GameObject:
   m_ObjectHideFlags: 0
@@ -5985,6 +6021,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &416305444
 GameObject:
   m_ObjectHideFlags: 0
@@ -7194,6 +7232,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &503659780
 GameObject:
   m_ObjectHideFlags: 0
@@ -7800,6 +7840,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &584823926 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -7444122742849953644, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -8276,6 +8318,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &633768698
 GameObject:
   m_ObjectHideFlags: 0
@@ -9644,6 +9688,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &737924083
 GameObject:
   m_ObjectHideFlags: 0
@@ -10133,6 +10179,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &755405355
 GameObject:
   m_ObjectHideFlags: 0
@@ -10255,6 +10303,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &773255802 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -3495819677340668739, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -10298,6 +10348,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 0
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &778793620
 GameObject:
   m_ObjectHideFlags: 0
@@ -11166,6 +11218,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &822262457
 GameObject:
   m_ObjectHideFlags: 0
@@ -11391,6 +11445,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &832692036
 GameObject:
   m_ObjectHideFlags: 0
@@ -12187,6 +12243,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 0
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &899855492
 GameObject:
   m_ObjectHideFlags: 0
@@ -12826,6 +12884,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &935616832
 GameObject:
   m_ObjectHideFlags: 0
@@ -13286,6 +13346,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &958916284
 GameObject:
   m_ObjectHideFlags: 0
@@ -13674,6 +13736,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1001 &967206574
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14086,6 +14150,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1003835622 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2701672064240273576, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -15853,6 +15919,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 0
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1132634117 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5891976227011534326, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -15896,6 +15964,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1139623551 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -3622484296826986832, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -15939,6 +16009,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!114 &1152725078
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16534,6 +16606,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1187750161
 GameObject:
   m_ObjectHideFlags: 0
@@ -16757,6 +16831,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1189352262
 GameObject:
   m_ObjectHideFlags: 0
@@ -17397,6 +17473,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1232704001 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -3880822136898792889, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -30496,6 +30574,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1001 &1404439506
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -31170,6 +31250,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1434606165
 GameObject:
   m_ObjectHideFlags: 0
@@ -32182,6 +32264,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1518779623 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3548437490032293706, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -32225,6 +32309,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1526111368
 GameObject:
   m_ObjectHideFlags: 0
@@ -32951,6 +33037,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1572102392
 GameObject:
   m_ObjectHideFlags: 0
@@ -33121,6 +33209,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1589433431
 GameObject:
   m_ObjectHideFlags: 0
@@ -33198,6 +33288,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1594868135 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -4904313574894941013, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -33241,6 +33333,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1595710278
 GameObject:
   m_ObjectHideFlags: 0
@@ -35872,6 +35966,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1764529288
 GameObject:
   m_ObjectHideFlags: 0
@@ -36039,6 +36135,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1783831149 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -4129400279450355665, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -36082,6 +36180,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1787202485 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5783805642206363912, guid: d46a6025e650f044297c5c5341a9b355, type: 3}
@@ -36125,6 +36225,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1001 &1792962957
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -37489,6 +37591,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1001 &1896903549
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -37681,6 +37785,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1924327256
 GameObject:
   m_ObjectHideFlags: 0
@@ -38356,6 +38462,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VSM.Presentation.VSMTrainMotion
   passenger: {fileID: 116095328}
+  swayEnabled: 0
   rollDegrees: 0.22
   turnDegrees: 0.38
   turnPeriod: 55
@@ -38960,6 +39067,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 0
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &1997669168
 GameObject:
   m_ObjectHideFlags: 0
@@ -39061,6 +39170,8 @@ MonoBehaviour:
   passenger: {fileID: 116095328}
   automatic: 1
   speed: 1.1
+  movementClip: {fileID: 0}
+  soundVolume: 0.55
 --- !u!1 &2006551470
 GameObject:
   m_ObjectHideFlags: 0

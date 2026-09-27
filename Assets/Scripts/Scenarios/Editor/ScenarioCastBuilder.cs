@@ -70,6 +70,8 @@ namespace Game.Scenarios.Editor
                 Undo.DestroyObjectImmediate(existing);
             }
 
+            ReleaseExtras();
+
             GameObject root = new GameObject(CastRootName);
             Undo.RegisterCreatedObjectUndo(root, "Setup scenario cast");
             VSMTrainMotion train = Object.FindFirstObjectByType<VSMTrainMotion>();
@@ -105,6 +107,27 @@ namespace Game.Scenarios.Editor
                 ConfigureActor(instance, actor, runner, scenario, forcedVariant);
                 ConfigureHeadLook(instance, (JObject)cast["headLook"], (JObject)actor["headLook"]);
                 actors[(string)actor["id"]] = instance;
+            }
+
+            // "extras": passengers already placed in the wagon become speakers where they sit, keeping their looks.
+            JArray extras = (JArray)cast["extras"];
+            if (extras != null)
+            {
+                foreach (JObject extra in extras)
+                {
+                    GameObject instance = FindPlacedOn((string)extra["seat"]);
+                    if (instance == null)
+                    {
+                        Debug.LogWarning($"Extra '{(string)extra["id"]}': nobody is placed on '{(string)extra["seat"]}'.");
+                        continue;
+                    }
+
+                    JObject data = (JObject)extra.DeepClone();
+                    data["randomize"] = false;
+                    ConfigureActor(instance, data, runner, scenario, forcedVariant);
+                    ConfigureHeadLook(instance, (JObject)cast["headLook"], (JObject)extra["headLook"]);
+                    actors[(string)extra["id"]] = instance;
+                }
             }
 
             JArray objects = (JArray)cast["objects"];
@@ -181,6 +204,54 @@ namespace Game.Scenarios.Editor
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Selection.activeGameObject = root;
             Debug.Log($"Scenario cast built from {castPath}.");
+        }
+
+        private static GameObject FindPlacedOn(string seatName)
+        {
+            foreach (PlacedPassenger placed in Object.FindObjectsByType<PlacedPassenger>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (placed.Spot != null && placed.Spot.name == seatName)
+                {
+                    return placed.gameObject;
+                }
+            }
+
+            return null;
+        }
+
+        // Placed passengers made speakers by an earlier build lose what it added, so a rebuild starts clean.
+        private static void ReleaseExtras()
+        {
+            foreach (PlacedPassenger placed in Object.FindObjectsByType<PlacedPassenger>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                GameObject extra = placed.gameObject;
+                if (!extra.TryGetComponent(out ScenarioActor actor))
+                {
+                    continue;
+                }
+
+                DestroyIfPresent<ScenarioInteractable>(extra);
+                DestroyIfPresent<ScenarioProximity>(extra);
+                DestroyIfPresent<PassengerHeadLook>(extra);
+                DestroyIfPresent<CapsuleCollider>(extra);
+                Undo.DestroyObjectImmediate(actor);
+                for (int i = extra.transform.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = extra.transform.GetChild(i);
+                    if (child.name == "StandPoint" || child.GetComponent<ScenarioMarker>() != null)
+                    {
+                        Undo.DestroyObjectImmediate(child.gameObject);
+                    }
+                }
+            }
+        }
+
+        private static void DestroyIfPresent<T>(GameObject host) where T : Component
+        {
+            if (host.TryGetComponent(out T component))
+            {
+                Undo.DestroyObjectImmediate(component);
+            }
         }
 
         // "male" / "female" pick a random-looking passenger; a prefab path gives a fixed look (a preset variant).
@@ -282,6 +353,21 @@ namespace Game.Scenarios.Editor
             }
 
             actorObject.ApplyModifiedPropertiesWithoutUndo();
+
+            // Optional "proximity": { "signal", "radius" } - a circle around the actor that is a state key while the
+            // player stands in it (see ScenarioProximity). It moves with the actor when she changes seats.
+            JObject proximity = (JObject)data["proximity"];
+            if (proximity != null)
+            {
+                ScenarioProximity proximityComponent = instance.AddComponent<ScenarioProximity>();
+                SerializedObject proximityObject = new SerializedObject(proximityComponent);
+                proximityObject.FindProperty("_runner").objectReferenceValue = runner;
+                VSMWalkController player = Object.FindFirstObjectByType<VSMWalkController>();
+                proximityObject.FindProperty("_player").objectReferenceValue = player != null ? player.transform : null;
+                proximityObject.FindProperty("_signal").stringValue = (string)proximity["signal"] ?? string.Empty;
+                proximityObject.FindProperty("_radius").floatValue = (float?)proximity["radius"] ?? 1.6f;
+                proximityObject.ApplyModifiedPropertiesWithoutUndo();
+            }
 
             string target = (string)data["target"];
             bool isStarter = (bool?)data["starter"] ?? false;

@@ -29,7 +29,7 @@ namespace VSM.Interaction
             if (door) { door.Toggle(); Hint(door.IsOpen ? "Дверь открывается" : "Дверь закрывается"); return; }
             var prop = hit.collider.GetComponentInParent<VSMTaskProp>();
             if (!prop) return;
-            if (!prop.portable) { Hint(prop.displayName + " — объект задания"); return; }
+            if (!prop.portable) { Hint(prop.displayName + ": объект задания"); return; }
             PickUp(prop);
         }
         /// <summary>Ищет ближайший объект сценария вдоль луча сквозь мебель: сидящий пассажир скрыт коллайдером кресла.</summary>
@@ -52,7 +52,7 @@ namespace VSM.Interaction
             for (int i = 0; i < heldColliders.Length; i++) { colliderStates[i] = heldColliders[i].enabled; heldColliders[i].enabled = false; }
             prop.transform.SetParent(view.transform, true); prop.transform.localPosition = new Vector3(.18f, -.26f, .65f); prop.transform.localRotation = Quaternion.identity;
             var mop = prop.GetComponent<VSMMopPose>(); if (mop) mop.Begin(view.transform);
-            Hint(prop.displayName + " · поверхность + действие — положить");
+            Hint(prop.displayName + " · поверхность + действие: положить");
         }
         /// <summary>Проверяет свободное место и размещает предмет в иерархии того вагона, куда его принесли.</summary>
         void Place(RaycastHit hit)

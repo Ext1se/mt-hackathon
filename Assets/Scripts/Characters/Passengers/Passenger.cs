@@ -116,6 +116,22 @@ namespace Game.Characters.Passengers
             _face = GetComponent<FaceController>();
         }
 
+        /// <summary>
+        /// Where the root of a passenger goes on <paramref name="spot"/> in <paramref name="pose"/>: the spot itself, moved
+        /// forward by the seated offset of the clips in use (the seat's own set, else <paramref name="ownSet"/>) when sitting.
+        /// </summary>
+        public static Vector3 RootPosition(PassengerSpot spot, PassengerPose pose, PassengerAnimationSet ownSet)
+        {
+            Transform spotTransform = spot.transform;
+            PassengerAnimationSet set = spot.AnimationSet != null ? spot.AnimationSet : ownSet;
+            if (set == null || pose == PassengerPose.Standing)
+            {
+                return spotTransform.position;
+            }
+
+            return spotTransform.position + spotTransform.forward * set.SeatedForwardOffset;
+        }
+
         /// <summary>Moves the passenger onto <paramref name="spot"/> and starts <paramref name="pose"/> there.</summary>
         public void TakeSpot(PassengerSpot spot, PassengerPose pose)
         {
@@ -126,7 +142,7 @@ namespace Game.Characters.Passengers
 
             _spot = spot;
             _spot.SetOccupant(this);
-            transform.SetPositionAndRotation(spot.transform.position, spot.transform.rotation);
+            transform.SetPositionAndRotation(RootPosition(spot, pose, _animationSet), spot.transform.rotation);
             SetPose(pose);
         }
 

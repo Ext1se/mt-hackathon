@@ -22,9 +22,15 @@ namespace Game.Characters.Passengers
         [Tooltip("Per-passenger playback speed, so a full wagon does not breathe in unison.")]
         [SerializeField] private Vector2 _speedRange = new Vector2(0.9f, 1.1f);
 
+        [Header("Placement")]
+        [Tooltip("Metres a sitting or sleeping passenger is moved forward from the seat spot (away from the backrest); "
+            + "negative moves back.")]
+        [SerializeField, Range(-0.15f, 0.15f)] private float _seatedForwardOffset = 0.03f;
+
         public Vector2 SwitchInterval => _switchInterval;
         public float CrossFadeTime => _crossFadeTime;
         public Vector2 SpeedRange => _speedRange;
+        public float SeatedForwardOffset => _seatedForwardOffset;
 
         public AnimationClip[] GetClips(PassengerPose pose)
         {

@@ -27,6 +27,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("look")] private List<LookStepData> _look = new List<LookStepData>();
         [JsonProperty("card")] private CardData _card;
         [JsonProperty("terminal")] private bool _showsTerminal = false;
+        [JsonProperty("breathing")] private BreathingData _breathing;
 
         public string Id => _id;
         public string Kind => _kind;
@@ -68,5 +69,8 @@ namespace Game.Scenarios.Core.Data
         /// options chooses it, and the one option not bound to a seat closes the terminal.
         /// </summary>
         public bool ShowsTerminal => _showsTerminal;
+
+        /// <summary>Optional box-breathing mini-game shown instead of the dialogue; its score chooses an option.</summary>
+        public BreathingData Breathing => _breathing;
     }
 }

@@ -119,7 +119,7 @@ namespace Game.Scenarios.Presentation.UI
             {
                 if (variant.Id == variantId)
                 {
-                    return $"{variant.Id} — {variant.Title}";
+                    return $"{variant.Id}: {variant.Title}";
                 }
             }
 
@@ -132,7 +132,7 @@ namespace Game.Scenarios.Presentation.UI
             {
                 try
                 {
-                    _sceneScenario = ScenarioLoader.Parse(_scenario.text);
+                    _sceneScenario = ScenarioSource.Parse(_scenario);
                 }
                 catch (ScenarioFormatException exception)
                 {

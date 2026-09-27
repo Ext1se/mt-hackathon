@@ -83,6 +83,23 @@ namespace Game.Scenarios.Tests
   ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
 }";
 
+        private const string BreathingBrokenJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""nodes"": [ { ""id"": ""a"", ""timeLimit"": 5, ""timeoutOption"": ""good"",
+    ""breathing"": { ""cycles"": 0, ""passScore"": 1.5, ""success"": ""good"", ""fail"": ""missing"" },
+    ""options"": [ { ""id"": ""good"", ""text"": ""Good"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
+        private const string BreathingHiddenResultJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""nodes"": [ { ""id"": ""a"", ""card"": { ""sections"": [ { ""title"": ""Card"", ""text"": ""Text"" } ] },
+    ""breathing"": { ""success"": ""good"", ""fail"": ""poor"" },
+    ""options"": [ { ""id"": ""good"", ""text"": ""Good"", ""next"": ""@end"" },
+      { ""id"": ""poor"", ""hidden"": true, ""text"": ""Poor"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
         [Test]
         public void Fixture_HasNoErrors()
         {
@@ -104,6 +121,12 @@ namespace Game.Scenarios.Tests
         [TestCase(TerminalWithoutCloseJson, "not bound to a seat")]
         [TestCase(TerminalMissingJson, "the scenario has none")]
         [TestCase(TerminalWithoutCloseJson, "default car '9' does not exist")]
+        [TestCase(BreathingBrokenJson, "a breathing node cannot be timed")]
+        [TestCase(BreathingBrokenJson, "cycles >= 1")]
+        [TestCase(BreathingBrokenJson, "passScore in (0, 1]")]
+        [TestCase(BreathingBrokenJson, "breathing result option 'missing' does not exist")]
+        [TestCase(BreathingHiddenResultJson, "breathing result option 'poor' must be visible")]
+        [TestCase(BreathingHiddenResultJson, "without a card or the terminal")]
         public void BrokenScenario_IsReported(string json, string expectedFragment)
         {
             List<string> errors = ScenarioValidator.Validate(ScenarioLoader.Deserialize(json));

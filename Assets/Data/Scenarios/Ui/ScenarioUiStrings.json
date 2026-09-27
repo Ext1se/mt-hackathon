@@ -26,14 +26,20 @@
     "briefingButton": "Сценарий",
     "briefingNotStarted": "Не начат",
     "briefingRunning": "В процессе",
-    "briefingControls": "Tab — описание сценария   ·   Shift — бег   ·   E — действие   ·   G — путь к цели   ·   1 — ММТ   ·   2 — рация   ·   F / ПКМ — курсор",
-    "questGuideHint": "G — путь к другой цели или выключить",
+    "briefingControls": "Tab: описание сценария   ·   Shift: бег   ·   E: действие   ·   G: путь к цели   ·   1: ММТ   ·   2: рация   ·   F / ПКМ: курсор",
+    "questGuideHint": "G: путь к другой цели или выключить",
     "menuButton": "В меню",
+    "pauseTitle": "Пауза",
+    "pauseResume": "Продолжить",
+    "pauseRestart": "Начать заново",
     "playerName": "Проводник",
-    "radioButton": "2  ·  Рация",
-    "terminalButton": "1  ·  ММТ",
+    "radioButton": "Рация",
+    "radioKey": "2",
+    "terminalButton": "ММТ",
+    "terminalKey": "1",
     "lookStart": "Начать сценарий",
-    "lookKeyHint": "   ·   E"
+    "lookPassenger": "Говорить с пассажиром",
+    "lookKey": "E"
   },
   "terminal": {
     "seat": "Место {0}",
@@ -57,7 +63,20 @@
     "legendSelected": "выбрано",
     "tabSeats": "Места",
     "tabRoute": "Маршрут",
-    "close": "Убрать ММТ  ·  1"
+    "close": "Закрыть",
+    "study": "Изучить"
+  },
+  "breathing": {
+    "phases": [ "Вдох", "Пауза", "Выдох", "Пауза" ],
+    "prompts": [ "Нажмите пробел", "Удерживайте", "Отпустите", "Не нажимайте" ],
+    "cycle": "Цикл {0} из {1}",
+    "getReady": "Приготовьтесь",
+    "leadIn": "Начнём со вдоха",
+    "passed": "Ритм выдержан",
+    "failed": "Сбились с ритма",
+    "score": "{0}%",
+    "rhythm": "Ритм",
+    "controls": "Вдох: нажмите пробел   ·   пауза: удерживайте   ·   выдох: отпустите   ·   вторая пауза: не нажимайте"
   },
   "seatNumbers": {
     "letters": "АБВГДЕ"

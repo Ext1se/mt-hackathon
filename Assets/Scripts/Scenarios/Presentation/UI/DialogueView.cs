@@ -34,12 +34,19 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField, Range(0f, 200f)] private float _charactersPerSecond = 45f;
         [Tooltip("Extra pause after . ! ? and an ellipsis, in seconds.")]
         [SerializeField, Range(0f, 1f)] private float _sentencePause = 0.25f;
-        [Tooltip("Extra pause after , ; : and a dash, in seconds.")]
+        [Tooltip("Extra pause after , ; and :, in seconds.")]
         [SerializeField, Range(0f, 0.5f)] private float _commaPause = 0.08f;
         [Tooltip("A click, Space or Enter while typing shows the whole line.")]
         [SerializeField] private bool _skipOnInput = true;
         [Tooltip("Fade-in of the answers after the line is typed, in seconds.")]
         [SerializeField, Range(0f, 1f)] private float _optionsFadeSeconds = 0.2f;
+
+        [Header("Actions")]
+        [Tooltip("Colour of actions and descriptions (italics in the scenario texts) in lines and answers, "
+            + "so they stand apart from speech.")]
+        [SerializeField] private Color _actionColor = new Color(0.96f, 0.80f, 0.45f, 1f);
+        [Tooltip("Colour of answers already chosen in a hub menu: they stay listed so the player can hear them again.")]
+        [SerializeField] private Color _seenColor = new Color(0.55f, 0.58f, 0.63f, 1f);
 
         private readonly List<OptionButton> _buttons = new List<OptionButton>();
         private int _visibleCharacters;
@@ -100,6 +107,14 @@ namespace Game.Scenarios.Presentation.UI
             StartTyping(view.Text);
         }
 
+        /// <summary>
+        /// Shows the hint button on a node line while the node has a hint to show or repeat; never on a response.
+        /// </summary>
+        public void SetHintAvailable(bool isAvailable)
+        {
+            _hintButton.gameObject.SetActive(isAvailable && !_isResponse && _root.activeSelf);
+        }
+
         public void ShowResponse(string speaker, string text)
         {
             _root.SetActive(true);
@@ -150,7 +165,6 @@ namespace Game.Scenarios.Presentation.UI
                 case ',':
                 case ';':
                 case ':':
-                case '—':
                     return _commaPause;
                 default:
                     return 0f;
@@ -159,7 +173,7 @@ namespace Game.Scenarios.Presentation.UI
 
         private void StartTyping(string text)
         {
-            _text.text = text;
+            _text.text = ActionMarkup.Highlight(text, _actionColor);
             _text.maxVisibleCharacters = 0;
             _text.ForceMeshUpdate();
             _totalCharacters = _text.textInfo.characterCount;
@@ -241,6 +255,9 @@ namespace Game.Scenarios.Presentation.UI
                 if (isUsed)
                 {
                     _buttons[i].Bind(options[i], OnOptionClicked);
+                    _buttons[i].SetLabel(options[i].IsSeen
+                        ? ActionMarkup.Tint(options[i].Text, _seenColor)
+                        : ActionMarkup.Highlight(options[i].Text, _actionColor));
                 }
             }
 

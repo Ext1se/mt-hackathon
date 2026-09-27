@@ -28,6 +28,8 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private TMP_Text _subtitle;
         [SerializeField] private TMP_Text _clock;
         [SerializeField] private Button _closeButton;
+        [Tooltip("Shown next to the close button for a seat the scenario wants studied (e.g. 3B); leads to the conclusion.")]
+        [SerializeField] private Button _studyButton;
 
         [Header("Tabs")]
         [SerializeField] private Button _seatsTab;
@@ -109,8 +111,11 @@ namespace Game.Scenarios.Presentation.UI
         private Vector2 _panelHome;
         private Coroutine _slide;
 
-        /// <summary>The player opened a sold seat; the runner may apply the seat's bound option.</summary>
+        /// <summary>The player opened a sold seat; the runner may offer to study it.</summary>
         public event Action<TerminalSeatData> SeatOpened;
+
+        /// <summary>The study button was pressed for the open seat; the runner applies the seat's bound option.</summary>
+        public event Action<TerminalSeatData> StudyRequested;
 
         /// <summary>The close button was pressed; the runner decides how the terminal closes.</summary>
         public event Action CloseRequested;
@@ -127,6 +132,12 @@ namespace Game.Scenarios.Presentation.UI
             _stretchTemplate.SetActive(false);
             _panelHome = _panel.anchoredPosition;
             _closeButton.onClick.AddListener(OnCloseClicked);
+            if (_studyButton != null)
+            {
+                _studyButton.onClick.AddListener(OnStudyClicked);
+                _studyButton.gameObject.SetActive(false);
+            }
+
             _seatsTab.onClick.AddListener(OnSeatsTabClicked);
             _routeTab.onClick.AddListener(OnRouteTabClicked);
             _root.SetActive(false);
@@ -135,6 +146,11 @@ namespace Game.Scenarios.Presentation.UI
         private void OnDestroy()
         {
             _closeButton.onClick.RemoveListener(OnCloseClicked);
+            if (_studyButton != null)
+            {
+                _studyButton.onClick.RemoveListener(OnStudyClicked);
+            }
+
             _seatsTab.onClick.RemoveListener(OnSeatsTabClicked);
             _routeTab.onClick.RemoveListener(OnRouteTabClicked);
         }
@@ -190,6 +206,16 @@ namespace Game.Scenarios.Presentation.UI
             _panel.anchoredPosition = _panelHome;
             _root.SetActive(false);
             _selectedSeat = null;
+            SetStudyAvailable(false);
+        }
+
+        /// <summary>Shows or hides the study button for the seat that is open now.</summary>
+        public void SetStudyAvailable(bool isAvailable)
+        {
+            if (_studyButton != null)
+            {
+                _studyButton.gameObject.SetActive(isAvailable);
+            }
         }
 
         private static void Deselect()
@@ -214,6 +240,16 @@ namespace Game.Scenarios.Presentation.UI
         {
             Deselect();
             CloseRequested?.Invoke();
+        }
+
+        private void OnStudyClicked()
+        {
+            Deselect();
+            TerminalSeatData seat = string.IsNullOrEmpty(_selectedSeat) || _car == null ? null : _car.FindSeat(_selectedSeat);
+            if (seat != null)
+            {
+                StudyRequested?.Invoke(seat);
+            }
         }
 
         private void OnSeatsTabClicked()
@@ -326,6 +362,7 @@ namespace Game.Scenarios.Presentation.UI
         {
             _car = car;
             _selectedSeat = null;
+            SetStudyAvailable(false);
             BuildMap();
             for (int i = 0; i < _carButtons.Count; i++)
             {
@@ -451,6 +488,7 @@ namespace Game.Scenarios.Presentation.UI
             _selectedSeat = seatId;
             ShowDetails();
             PaintSeats();
+            SetStudyAvailable(false);
 
             TerminalSeatData seat = _car.FindSeat(seatId);
             if (seat != null && FindRecord(seat) != null)

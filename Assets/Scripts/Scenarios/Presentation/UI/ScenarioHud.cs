@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using Game.Scenarios.Core;
 using TMPro;
 using UnityEngine;
@@ -10,9 +11,9 @@ using UnityEngine.UI;
 namespace Game.Scenarios.Presentation.UI
 {
     /// <summary>
-    /// Scenario title, both scales with change popups, the decision timer, an optional segmented meter for one
-    /// scenario variable (e.g. panic in the wagon) that pulses when it grows, and the devices the conductor carries
-    /// (ticket terminal, radio) with their keys.
+    /// Scenario title, both scales with change popups, the decision timer, an optional meter for one scenario variable
+    /// (e.g. panic in the wagon) drawn like the scales, and the devices the conductor carries (ticket terminal, radio)
+    /// with their keys. Bars move smoothly and their labels pulse on a change.
     /// </summary>
     public sealed class ScenarioHud : MonoBehaviour
     {
@@ -24,6 +25,8 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private TMP_Text _title;
         [SerializeField] private Slider _loyalty;
         [SerializeField] private Slider _safety;
+        [SerializeField] private TMP_Text _loyaltyLabel;
+        [SerializeField] private TMP_Text _safetyLabel;
         [SerializeField] private TMP_Text _loyaltyDelta;
         [SerializeField] private TMP_Text _safetyDelta;
         [SerializeField] private GameObject _timerRoot;
@@ -36,30 +39,46 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private Button _terminalButton;
         [Tooltip("The radio; enabled while the scenario offers it.")]
         [SerializeField] private Button _radioButton;
+        [Tooltip("The device slots in the bottom-left corner; shown with the HUD, hidden while a dialogue is open.")]
+        [SerializeField] private GameObject _devicesRoot;
+        [SerializeField] private CanvasGroup _terminalSlot;
+        [SerializeField] private CanvasGroup _radioSlot;
+        [SerializeField, Range(0f, 1f)] private float _unavailableAlpha = 0.35f;
+        [Tooltip("After the briefing both slots pulse until the player uses each device once.")]
+        [SerializeField, Range(1f, 1.3f)] private float _pulseScale = 1.08f;
+        [SerializeField, Range(0.2f, 2f)] private float _pulseSeconds = 0.6f;
         [SerializeField] private Color _gainColor = new Color(0.3f, 0.8f, 0.4f);
         [SerializeField] private Color _lossColor = new Color(0.9f, 0.3f, 0.3f);
+
+        [Header("Bar animation")]
+        [Tooltip("How long a bar takes to reach a new value.")]
+        [SerializeField, Range(0.1f, 2f)] private float _barSeconds = 0.6f;
+        [Tooltip("How much a bar's label and change popup swell when the value changes.")]
+        [SerializeField, Range(0f, 1f)] private float _labelPunch = 0.25f;
+        [SerializeField, Range(0.1f, 2f)] private float _labelPunchSeconds = 0.45f;
 
         [Header("Meter")]
         [SerializeField] private GameObject _meterRoot;
         [SerializeField] private TMP_Text _meterLabel;
-        [Tooltip("As many segments as the longest meter; unused ones are hidden.")]
-        [SerializeField] private Image[] _meterSegments = new Image[0];
-        [SerializeField] private Color _meterEmptyColor = new Color(1f, 1f, 1f, 0.2f);
-        [Tooltip("Colour of the filled segments by how full the meter is: first for low, last for full.")]
+        [SerializeField] private Slider _meterBar;
+        [SerializeField] private Image _meterFill;
+        [Tooltip("Colour of the bar by how full the meter is: first for low, last for full.")]
         [SerializeField] private Color[] _meterLevelColors =
         {
             new Color(0.98f, 0.82f, 0.25f), new Color(0.98f, 0.55f, 0.15f), new Color(0.9f, 0.25f, 0.2f)
         };
-        [SerializeField, Range(0.05f, 2f)] private float _meterPulseSeconds = 0.5f;
-        [SerializeField, Range(1f, 2f)] private float _meterPulseScale = 1.4f;
 
         private int _shownSeconds = -1;
         private float _hideDeltaAt;
         private int _meterSteps;
         private int _meterValue;
-        private float _meterPulseLeft;
+        private bool _isShown;
+        private bool _isUiOpen;
+        private bool _hasScales;
         private InputAction _terminalAction;
         private InputAction _radioAction;
+        private Tween _terminalPulse;
+        private Tween _radioPulse;
 
         /// <summary>The terminal button or key was used while the terminal can be opened or closed.</summary>
         public event Action TerminalRequested;
@@ -82,6 +101,7 @@ namespace Game.Scenarios.Presentation.UI
             _safety.minValue = ScenarioKeys.ScaleMin;
             _safety.maxValue = ScenarioKeys.ScaleMax;
             _root.SetActive(false);
+            RefreshDevicesShown();
             HideMeter();
         }
 
@@ -99,16 +119,6 @@ namespace Game.Scenarios.Presentation.UI
                 }
             }
 
-            if (_meterPulseLeft > 0f)
-            {
-                _meterPulseLeft = Mathf.Max(0f, _meterPulseLeft - Time.unscaledDeltaTime);
-                float scale = Mathf.Lerp(1f, _meterPulseScale, Mathf.Sin(_meterPulseLeft / _meterPulseSeconds * Mathf.PI));
-                for (int i = 0; i < _meterSteps; i++)
-                {
-                    _meterSegments[i].rectTransform.localScale = i < _meterValue ? new Vector3(scale, scale, 1f) : Vector3.one;
-                }
-            }
-
             if (_hideDeltaAt > 0f && Time.time >= _hideDeltaAt)
             {
                 _hideDeltaAt = 0f;
@@ -121,6 +131,8 @@ namespace Game.Scenarios.Presentation.UI
         {
             _terminalButton.onClick.RemoveListener(OnTerminalClicked);
             _radioButton.onClick.RemoveListener(OnRadioClicked);
+            StopPulses();
+            KillBarTweens();
         }
 
         /// <summary>Both devices stay on screen for the whole scenario; unavailable ones are dimmed and ignore their key.</summary>
@@ -128,11 +140,32 @@ namespace Game.Scenarios.Presentation.UI
         {
             _terminalButton.interactable = isTerminalAvailable;
             _radioButton.interactable = isRadioAvailable;
+            SetAlpha(_terminalSlot, isTerminalAvailable);
+            SetAlpha(_radioSlot, isRadioAvailable);
+        }
+
+        /// <summary>Wired from the runner: the device slots step aside while a dialogue or a panel is open.</summary>
+        public void SetUiOpen(bool isOpen)
+        {
+            _isUiOpen = isOpen;
+            RefreshDevicesShown();
+        }
+
+        /// <summary>Draws the player's eye to the devices: each slot pulses until its device is used.</summary>
+        public void PulseDevices()
+        {
+            StopPulses();
+            _terminalPulse = StartPulse(_terminalSlot);
+            _radioPulse = StartPulse(_radioSlot);
         }
 
         public void Show(string title)
         {
             _root.SetActive(true);
+            _isShown = true;
+            _hasScales = false;
+            RefreshDevicesShown();
+            StopPulses();
             _title.text = title;
             _loyaltyDelta.gameObject.SetActive(false);
             _safetyDelta.gameObject.SetActive(false);
@@ -142,12 +175,19 @@ namespace Game.Scenarios.Presentation.UI
         public void Hide()
         {
             _root.SetActive(false);
+            _isShown = false;
+            RefreshDevicesShown();
+            StopPulses();
+            KillBarTweens();
         }
 
+        /// <summary>Moves both bars to the new values; the first call of a scenario sets them at once.</summary>
         public void SetScales(int loyalty, int safety)
         {
-            _loyalty.value = loyalty;
-            _safety.value = safety;
+            bool isAnimated = _hasScales;
+            _hasScales = true;
+            MoveBar(_loyalty, loyalty, _loyaltyLabel, isAnimated);
+            MoveBar(_safety, safety, _safetyLabel, isAnimated);
         }
 
         public void ShowDeltas(IReadOnlyList<AppliedEffect> effects)
@@ -171,7 +211,7 @@ namespace Game.Scenarios.Presentation.UI
             _hideDeltaAt = Time.time + DeltaVisibleSeconds;
         }
 
-        /// <summary>Shows the meter with <paramref name="steps"/> segments, all empty.</summary>
+        /// <summary>Shows the meter as an empty bar with <paramref name="steps"/> steps.</summary>
         public void ShowMeter(string label, int steps)
         {
             if (_meterRoot == null)
@@ -181,15 +221,12 @@ namespace Game.Scenarios.Presentation.UI
 
             _meterRoot.SetActive(true);
             _meterLabel.text = label;
-            _meterSteps = Mathf.Clamp(steps, 0, _meterSegments.Length);
-            for (int i = 0; i < _meterSegments.Length; i++)
-            {
-                _meterSegments[i].gameObject.SetActive(i < _meterSteps);
-                _meterSegments[i].rectTransform.localScale = Vector3.one;
-            }
-
+            _meterSteps = Mathf.Max(0, steps);
             _meterValue = 0;
-            _meterPulseLeft = 0f;
+            _meterBar.DOKill();
+            _meterBar.minValue = 0f;
+            _meterBar.maxValue = Mathf.Max(1, _meterSteps);
+            _meterBar.value = 0f;
             PaintMeter();
         }
 
@@ -203,7 +240,7 @@ namespace Game.Scenarios.Presentation.UI
             _meterSteps = 0;
         }
 
-        /// <summary>Fills <paramref name="value"/> segments; a rise makes the filled ones pulse.</summary>
+        /// <summary>Moves the meter to <paramref name="value"/>; its label pulses on any change.</summary>
         public void SetMeter(int value)
         {
             if (_meterSteps == 0)
@@ -217,13 +254,9 @@ namespace Game.Scenarios.Presentation.UI
                 return;
             }
 
-            if (value > _meterValue)
-            {
-                _meterPulseLeft = _meterPulseSeconds;
-            }
-
             _meterValue = value;
             PaintMeter();
+            MoveBar(_meterBar, value, _meterLabel, true);
         }
 
         /// <summary>Called every frame; rewrites the seconds text only when the number changes.</summary>
@@ -260,31 +293,119 @@ namespace Game.Scenarios.Presentation.UI
             }
         }
 
+        private static void StopPulse(ref Tween pulse, CanvasGroup slot)
+        {
+            if (pulse != null)
+            {
+                pulse.Kill();
+                pulse = null;
+            }
+
+            if (slot != null)
+            {
+                slot.transform.localScale = Vector3.one;
+            }
+        }
+
         private void OnTerminalClicked()
         {
             Deselect();
+            StopPulse(ref _terminalPulse, _terminalSlot);
             TerminalRequested?.Invoke();
         }
 
         private void OnRadioClicked()
         {
             Deselect();
+            StopPulse(ref _radioPulse, _radioSlot);
             RadioRequested?.Invoke();
+        }
+
+        private Tween StartPulse(CanvasGroup slot)
+        {
+            if (slot == null)
+            {
+                return null;
+            }
+
+            // Unscaled: the scenario pauses time in places, the hint should not freeze with it.
+            return slot.transform.DOScale(_pulseScale, _pulseSeconds).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo)
+                .SetUpdate(true);
+        }
+
+        private void StopPulses()
+        {
+            StopPulse(ref _terminalPulse, _terminalSlot);
+            StopPulse(ref _radioPulse, _radioSlot);
+        }
+
+        private void RefreshDevicesShown()
+        {
+            if (_devicesRoot != null)
+            {
+                _devicesRoot.SetActive(_isShown && !_isUiOpen);
+            }
+        }
+
+        private void SetAlpha(CanvasGroup slot, bool isAvailable)
+        {
+            if (slot != null)
+            {
+                slot.alpha = isAvailable ? 1f : _unavailableAlpha;
+            }
+        }
+
+        private void MoveBar(Slider bar, float value, TMP_Text label, bool isAnimated)
+        {
+            if (bar == null)
+            {
+                return;
+            }
+
+            bar.DOKill();
+            if (!isAnimated || Mathf.Approximately(bar.value, value))
+            {
+                bar.value = value;
+                return;
+            }
+
+            DOTween.To(() => bar.value, current => bar.value = current, value, _barSeconds).SetEase(Ease.OutCubic)
+                .SetUpdate(true).SetTarget(bar);
+            Punch(label);
+        }
+
+        private void Punch(TMP_Text label)
+        {
+            if (label == null || _labelPunch <= 0f)
+            {
+                return;
+            }
+
+            Transform target = label.transform;
+            target.DOKill(true);
+            target.localScale = Vector3.one;
+            target.DOPunchScale(Vector3.one * _labelPunch, _labelPunchSeconds, 6, 0.6f).SetUpdate(true);
+        }
+
+        private void KillBarTweens()
+        {
+            _loyalty.DOKill();
+            _safety.DOKill();
+            if (_meterBar != null)
+            {
+                _meterBar.DOKill();
+            }
         }
 
         private void PaintMeter()
         {
-            Color filled = _meterEmptyColor;
-            if (_meterValue > 0 && _meterLevelColors.Length > 0)
+            if (_meterFill == null || _meterLevelColors.Length == 0)
             {
-                int level = Mathf.CeilToInt((float)_meterValue / _meterSteps * _meterLevelColors.Length) - 1;
-                filled = _meterLevelColors[Mathf.Clamp(level, 0, _meterLevelColors.Length - 1)];
+                return;
             }
 
-            for (int i = 0; i < _meterSteps; i++)
-            {
-                _meterSegments[i].color = i < _meterValue ? filled : _meterEmptyColor;
-            }
+            int level = _meterValue == 0 ? 0 : Mathf.CeilToInt((float)_meterValue / _meterSteps * _meterLevelColors.Length) - 1;
+            _meterFill.color = _meterLevelColors[Mathf.Clamp(level, 0, _meterLevelColors.Length - 1)];
         }
 
         private void ShowDelta(TMP_Text label, int delta)
@@ -298,6 +419,7 @@ namespace Game.Scenarios.Presentation.UI
 
             label.text = delta > 0 ? "+" + delta : delta.ToString();
             label.color = delta > 0 ? _gainColor : _lossColor;
+            Punch(label);
         }
     }
 }

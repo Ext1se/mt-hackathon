@@ -18,6 +18,9 @@ namespace Game.Scenarios.Presentation.World
 
         public string TargetId => _targetId;
 
+        /// <summary>Where the player stands to use this object; null when the player uses it from anywhere.</summary>
+        public Transform StandPoint => _standPoint;
+
         /// <summary>Where the camera should look at this object: the middle of what is rendered, else the pivot.</summary>
         public Vector3 FocusPoint
         {

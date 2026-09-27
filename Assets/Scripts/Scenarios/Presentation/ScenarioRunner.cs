@@ -39,10 +39,14 @@ namespace Game.Scenarios.Presentation
         [SerializeField] private CardView _card;
         [Tooltip("Ticket terminal (MMT) screen: seat map, passenger records, route.")]
         [SerializeField] private TerminalView _terminal;
+        [Tooltip("Box-breathing mini-game for nodes with a breathing block.")]
+        [SerializeField] private BreathingView _breathing;
         [Tooltip("Optional: black layer behind the panels for scene changes (ScenarioWorldStates).")]
         [SerializeField] private ScreenFader _fader;
         [Tooltip("Off: decisions are never timed out (for demos and content review).")]
         [SerializeField] private bool _timersEnabled = true;
+        [Tooltip("Off: options that open the box-breathing mini-game are hidden (they depend on setting.breathing_game).")]
+        [SerializeField] private bool _breathingGameEnabled = true;
         [Tooltip("Speaker name shown above the player's own line after a choice.")]
         [SerializeField] private string _playerName = string.Empty;
         [Header("Approach")]
@@ -54,6 +58,8 @@ namespace Game.Scenarios.Presentation
 
         private readonly List<ScenarioActor> _actors = new List<ScenarioActor>();
         private readonly List<ScenarioInteractable> _targets = new List<ScenarioInteractable>();
+        // The last hint shown per node: the hint button repeats it once the node has no new hint left.
+        private readonly Dictionary<string, string> _lastHints = new Dictionary<string, string>();
         private IScenarioResultSink _resultSink;
         private Func<TerminalSeatData, TerminalRecordData> _resolveRecord;
         private IViewFocus _viewFocus;
@@ -71,12 +77,16 @@ namespace Game.Scenarios.Presentation
         private bool _isTerminalCheck;
         // The terminal was opened from the HUD outside a terminal node: read-only, closed without a scenario choice.
         private bool _isBrowsingTerminal;
+        private bool _hasPulsedDevices;
 
         /// <summary>Raised when a scenario starts and when its debrief is closed.</summary>
         public event Action RunningChanged;
 
         /// <summary>True from start until the debrief is closed.</summary>
         public bool IsRunning => _session != null;
+
+        /// <summary>A dialogue, card, terminal or other scenario panel is open over the world.</summary>
+        public bool IsUiOpen { get; private set; }
 
         /// <summary>The scenario being played, or null.</summary>
         public ScenarioData CurrentScenario => _session != null ? _session.Data : null;
@@ -102,6 +112,13 @@ namespace Game.Scenarios.Presentation
             }
         }
 
+        /// <summary>Read when a scenario starts: switching it mid-playthrough does not change the running one.</summary>
+        public bool BreathingGameEnabled
+        {
+            get => _breathingGameEnabled;
+            set => _breathingGameEnabled = value;
+        }
+
         private void Awake()
         {
             _resultSink = new LocalResultSink(Path.Combine(Application.persistentDataPath, ResultsFolder));
@@ -113,6 +130,8 @@ namespace Game.Scenarios.Presentation
             _card.OptionChosen += OnOptionChosen;
             _terminal.CloseRequested += OnTerminalCloseRequested;
             _terminal.SeatOpened += OnTerminalSeatOpened;
+            _terminal.StudyRequested += OnTerminalStudyRequested;
+            _breathing.Finished += OnBreathingFinished;
             _hud.TerminalRequested += OnTerminalRequested;
             _hud.RadioRequested += OnRadioRequested;
             _debrief.Closed += OnDebriefClosed;
@@ -153,6 +172,8 @@ namespace Game.Scenarios.Presentation
             _card.OptionChosen -= OnOptionChosen;
             _terminal.CloseRequested -= OnTerminalCloseRequested;
             _terminal.SeatOpened -= OnTerminalSeatOpened;
+            _terminal.StudyRequested -= OnTerminalStudyRequested;
+            _breathing.Finished -= OnBreathingFinished;
             _hud.TerminalRequested -= OnTerminalRequested;
             _hud.RadioRequested -= OnRadioRequested;
             _debrief.Closed -= OnDebriefClosed;
@@ -169,7 +190,7 @@ namespace Game.Scenarios.Presentation
             ScenarioData data;
             try
             {
-                data = ScenarioLoader.Parse(scenario.text);
+                data = ScenarioSource.Parse(scenario);
             }
             catch (ScenarioFormatException exception)
             {
@@ -180,11 +201,13 @@ namespace Game.Scenarios.Presentation
             _session = new ScenarioSession(data, new System.Random(),
                 string.IsNullOrEmpty(forcedVariantId) ? null : forcedVariantId);
             _session.TimersEnabled = _timersEnabled;
+            _session.State.Set(ScenarioKeys.BreathingGame, _breathingGameEnabled ? 1 : 0);
             _session.NodeEntered += OnNodeEntered;
             _session.ChoiceResolved += OnChoiceResolved;
-            _session.HintShown += _hint.Show;
+            _session.HintShown += OnHintShown;
             _session.Ended += OnEnded;
             _hud.Show(data.Title);
+            _hasPulsedDevices = false;
             _quest.ResetSelection();
 
             try
@@ -266,6 +289,15 @@ namespace Game.Scenarios.Presentation
             if (_session != null && _session.IsRunning)
             {
                 _session.Signal(key);
+            }
+        }
+
+        /// <summary>Ends a world condition raised by <see cref="Signal"/>, e.g. the player left a passenger's proximity.</summary>
+        public void ClearSignal(string key)
+        {
+            if (_session != null && _session.IsRunning)
+            {
+                _session.ClearSignal(key);
             }
         }
 
@@ -386,6 +418,7 @@ namespace Game.Scenarios.Presentation
 
             _quest.Clear(_targets);
             _card.Hide();
+            _breathing.Hide();
             _isBrowsingTerminal = false;
             _terminal.Hide();
             _dialogue.ShowResponse(speakerName, text);
@@ -431,12 +464,30 @@ namespace Game.Scenarios.Presentation
             }
         }
 
-        // Opening a seat bound to an option (e.g. the ticket of 3B) applies that check once it is available.
+        // Opening a seat bound to an option (e.g. the ticket of 3B) offers to study it while that check is available.
         private void OnTerminalSeatOpened(TerminalSeatData seat)
         {
-            if (_session == null || !_session.IsRunning || _isShowingResponse || string.IsNullOrEmpty(seat.Option))
+            _terminal.SetStudyAvailable(CanStudy(seat));
+        }
+
+        // Studying applies the seat's check; its conclusion comes as the next node.
+        private void OnTerminalStudyRequested(TerminalSeatData seat)
+        {
+            if (!CanStudy(seat))
             {
                 return;
+            }
+
+            _isTerminalCheck = true;
+            _session.Choose(seat.Option);
+            _isTerminalCheck = false;
+        }
+
+        private bool CanStudy(TerminalSeatData seat)
+        {
+            if (_session == null || !_session.IsRunning || _isShowingResponse || seat == null || string.IsNullOrEmpty(seat.Option))
+            {
+                return false;
             }
 
             IReadOnlyList<OptionView> options = _session.Current.Options;
@@ -444,11 +495,27 @@ namespace Game.Scenarios.Presentation
             {
                 if (options[i].Id == seat.Option)
                 {
-                    _isTerminalCheck = true;
-                    _session.Choose(seat.Option);
-                    _isTerminalCheck = false;
-                    return;
+                    return true;
                 }
+            }
+
+            return false;
+        }
+
+        // The mini-game picks the node's result option itself; the validator guarantees both are always visible.
+        private void OnBreathingFinished(bool passed)
+        {
+            _breathing.Hide();
+            if (_session == null || !_session.IsRunning || _isShowingResponse || _session.Current.Node.Breathing == null)
+            {
+                return;
+            }
+
+            BreathingData breathing = _session.Current.Node.Breathing;
+            string optionId = passed ? breathing.Success : breathing.Fail;
+            if (!_session.Choose(optionId))
+            {
+                Debug.LogError($"Breathing result '{optionId}' of node '{_session.Current.Node.Id}' could not be chosen.");
             }
         }
 
@@ -540,12 +607,33 @@ namespace Game.Scenarios.Presentation
             }
         }
 
+        // A new hint if the node has one, else the last one again, so the button always answers.
         private void OnHintRequested()
         {
-            if (_session != null)
+            if (_session == null || !_session.IsRunning || _session.RequestHint() != null)
             {
-                _session.RequestHint();
+                return;
             }
+
+            if (_lastHints.TryGetValue(_session.Current.Node.Id, out string last))
+            {
+                _hint.Show(last);
+            }
+        }
+
+        // Hints come on request and on their own timer; both are remembered for the node they belong to.
+        private void OnHintShown(string text)
+        {
+            _lastHints[_session.Current.Node.Id] = text;
+            _hint.Show(text);
+            RefreshHintButton();
+        }
+
+        private void RefreshHintButton()
+        {
+            bool isAvailable = _session != null && _session.IsRunning
+                && (_session.HasHint || _lastHints.ContainsKey(_session.Current.Node.Id));
+            _dialogue.SetHintAvailable(isAvailable);
         }
 
         private void OnDebriefClosed()
@@ -570,8 +658,36 @@ namespace Game.Scenarios.Presentation
 
         private void ShowNode(NodeView view)
         {
+            // An interrupt (e.g. 5B panicking) puts the player in front of the speaker, as if the player had come up.
+            // A scene change that places the player itself (e.g. 2B getting up at the bag) wins over the approach.
+            bool isPlacedByWorld = _world != null && _world.IsPlacingPlayer;
+            if (_session.IsInterrupt && !_isApproaching && !isPlacedByWorld && TryGetStandPoint(view.Node.Speaker, out Transform standPoint, out ScenarioInteractable target))
+            {
+                Approach(standPoint, target, () => ShowNodeNow(view));
+                return;
+            }
+
+            ShowNodeNow(view);
+        }
+
+        private void ShowNodeNow(NodeView view)
+        {
             ShowNodeView(view);
             RefreshDevices();
+        }
+
+        private bool TryGetStandPoint(string actorId, out Transform standPoint, out ScenarioInteractable target)
+        {
+            standPoint = null;
+            target = null;
+            ScenarioActor actor = FindActor(actorId);
+            if (actor == null || !actor.TryGetComponent(out target) || target.StandPoint == null)
+            {
+                return false;
+            }
+
+            standPoint = target.StandPoint;
+            return true;
         }
 
         private void ShowNodeView(NodeView view)
@@ -585,6 +701,29 @@ namespace Game.Scenarios.Presentation
 
             _quest.Show(view.Options, _targets);
             _isBrowsingTerminal = false;
+            if (view.Node.Breathing != null)
+            {
+                _dialogue.Hide();
+                _hint.Hide();
+                _card.Hide();
+                _terminal.Hide();
+                _breathing.Show(view.Node.Breathing);
+                SetUiOpen(true);
+                // The panel stays at the side, so the passenger the player breathes with remains in view.
+                if (speaker != null)
+                {
+                    FocusOn(speaker);
+                }
+                else
+                {
+                    ClearFocus();
+                }
+
+                _isClockRunning = true;
+                return;
+            }
+
+            _breathing.Hide();
             if (view.Node.Card != null)
             {
                 _dialogue.Hide();
@@ -616,6 +755,13 @@ namespace Game.Scenarios.Presentation
                 _dialogue.Hide();
                 SetUiOpen(false);
                 ClearFocus();
+                // The first time the player is free to act (after the briefing), the devices ask for attention.
+                if (!_hasPulsedDevices)
+                {
+                    _hasPulsedDevices = true;
+                    _hud.PulseDevices();
+                }
+
                 if (!string.IsNullOrEmpty(view.Text))
                 {
                     _hint.Show(view.Text);
@@ -625,6 +771,7 @@ namespace Game.Scenarios.Presentation
             {
                 _hint.Hide();
                 _dialogue.ShowNode(SpeakerName(speaker), view);
+                RefreshHintButton();
                 SetUiOpen(true);
                 if (speaker != null)
                 {
@@ -662,6 +809,7 @@ namespace Game.Scenarios.Presentation
             _isClockRunning = false;
             _dialogue.Hide();
             _card.Hide();
+            _breathing.Hide();
             _isBrowsingTerminal = false;
             _terminal.Hide();
             _hint.Hide();
@@ -698,9 +846,10 @@ namespace Game.Scenarios.Presentation
 
             _session.NodeEntered -= OnNodeEntered;
             _session.ChoiceResolved -= OnChoiceResolved;
-            _session.HintShown -= _hint.Show;
+            _session.HintShown -= OnHintShown;
             _session.Ended -= OnEnded;
             _session = null;
+            _lastHints.Clear();
             _meterVariable = null;
             _pendingNode = null;
             _pendingResult = null;
@@ -940,6 +1089,8 @@ namespace Game.Scenarios.Presentation
 
         private void SetUiOpen(bool isOpen)
         {
+            IsUiOpen = isOpen;
+            _hud.SetUiOpen(isOpen);
             _uiOpenChanged.Invoke(isOpen);
         }
     }

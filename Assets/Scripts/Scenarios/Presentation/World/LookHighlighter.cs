@@ -28,8 +28,12 @@ namespace Game.Scenarios.Presentation.World
         [SerializeField] private TMP_Text _label;
         [Tooltip("Label for a scenario starter; the words live in ScenarioUiStrings.json.")]
         [SerializeField] private string _startLabel = string.Empty;
-        [Tooltip("Appended on platforms with a keyboard, e.g. ' · E'.")]
-        [SerializeField] private string _keyHint = string.Empty;
+        [Tooltip("Passengers get one plain label instead of the objective, so the label never hints at what to ask.")]
+        [SerializeField] private bool _genericPassengerLabel = true;
+        [Tooltip("Label for any passenger when the plain label is on; the words live in ScenarioUiStrings.json.")]
+        [SerializeField] private string _passengerLabel = string.Empty;
+        [Tooltip("Key badge in front of the label; hidden on touch platforms, where the action is a button.")]
+        [SerializeField] private GameObject _keyBadge;
         [Header("Object tint")]
         [SerializeField] private Color _tint = new Color(1.25f, 1.1f, 0.8f, 1f);
 
@@ -40,6 +44,8 @@ namespace Game.Scenarios.Presentation.World
         private GameObject _current;
         private ScenarioMarker _currentMarker;
         private bool _isUiOpen;
+
+        public bool GenericPassengerLabel => _genericPassengerLabel;
 
         private void Awake()
         {
@@ -61,13 +67,22 @@ namespace Game.Scenarios.Presentation.World
             SetHover(null);
         }
 
-        /// <summary>Wired to ScenarioRunner's Ui Open Changed event: nothing is highlighted behind a dialogue.</summary>
+        /// <summary>
+        /// Wired to ScenarioRunner's Ui Open Changed event: nothing is highlighted behind a dialogue, and the reticle
+        /// is hidden, since there is nothing to aim at.
+        /// </summary>
         public void SetUiOpen(bool isOpen)
         {
             _isUiOpen = isOpen;
             if (isOpen)
             {
                 SetHover(null);
+            }
+
+            // The whole object: the reticle has a dark ring as a child image.
+            if (_reticle != null)
+            {
+                _reticle.gameObject.SetActive(!isOpen);
             }
         }
 
@@ -154,12 +169,22 @@ namespace Game.Scenarios.Presentation.World
 
             if (_label != null)
             {
-                _label.text = LabelFor(target) + (Application.isMobilePlatform ? string.Empty : _keyHint);
+                _label.text = LabelFor(target);
+            }
+
+            if (_keyBadge != null)
+            {
+                _keyBadge.SetActive(!Application.isMobilePlatform);
             }
         }
 
         private string LabelFor(GameObject target)
         {
+            if (_genericPassengerLabel && !string.IsNullOrEmpty(_passengerLabel) && target.TryGetComponent(out ScenarioActor _))
+            {
+                return _passengerLabel;
+            }
+
             if (target.TryGetComponent(out ScenarioInteractable interactable) && _runner != null
                 && _runner.TryGetObjective(interactable.TargetId, out string objective))
             {

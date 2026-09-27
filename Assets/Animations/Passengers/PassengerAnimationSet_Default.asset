@@ -37,3 +37,4 @@ MonoBehaviour:
   _switchInterval: {x: 8, y: 20}
   _crossFadeTime: 0.4
   _speedRange: {x: 0.9, y: 1.1}
+  _seatedForwardOffset: 0.03

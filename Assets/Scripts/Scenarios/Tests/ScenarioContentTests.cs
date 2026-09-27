@@ -27,7 +27,7 @@ namespace Game.Scenarios.Tests
             {
                 try
                 {
-                    ScenarioLoader.Parse(File.ReadAllText(path));
+                    ScenarioLoader.Parse(File.ReadAllText(path), TestScenarios.ReadScenarioPart);
                 }
                 catch (ScenarioFormatException exception)
                 {
@@ -41,7 +41,7 @@ namespace Game.Scenarios.Tests
         {
             foreach (string path in ScenarioFiles())
             {
-                ScenarioData data = ScenarioLoader.Parse(File.ReadAllText(path));
+                ScenarioData data = ScenarioLoader.Parse(File.ReadAllText(path), TestScenarios.ReadScenarioPart);
                 List<string> variants = new List<string>();
                 foreach (VariantData variant in data.Variants)
                 {
@@ -63,10 +63,101 @@ namespace Game.Scenarios.Tests
             }
         }
 
+        [TestCase(0)]
+        [TestCase(1)]
+        public void UnattendedItem_BreathingOffer_FollowsTheSetting(int isEnabled)
+        {
+            ScenarioSession session = StartUnattendedItemAtPanic(isEnabled);
+
+            Assert.That(HasOption(session, "breathe"), Is.EqualTo(isEnabled == 1));
+        }
+
+        [TestCase("good")]
+        [TestCase("poor")]
+        public void UnattendedItem_Breathing_GoesThroughTheCardAndBackToTheHub(string result)
+        {
+            ScenarioSession session = StartUnattendedItemAtPanic(1);
+
+            Assert.That(session.Choose("breathe"), Is.True);
+            Assert.That(session.Current.Node.Id, Is.EqualTo("V5_breath_intro"));
+            Assert.That(session.Current.Node.Card, Is.Not.Null);
+            Assert.That(session.Choose("understood"), Is.True);
+            Assert.That(session.Current.Node.Breathing, Is.Not.Null);
+            Assert.That(session.Choose(result), Is.True);
+            Assert.That(session.Current.Node.Id, Is.EqualTo("V2"));
+        }
+
+        [Test]
+        public void UnattendedItem_Panic_WaitsForThePlayerNearFiveB()
+        {
+            ScenarioSession session = StartUnattendedItemAtHub(0);
+
+            session.Signal("flag.near_5b");
+            session.ClearSignal("flag.near_5b");
+            session.Signal("flag.said_bomb");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("V2"), "5B is far away: she must not interrupt.");
+
+            session.Signal("flag.near_5b");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("V5"));
+        }
+
+        // Plays the reference (else the first) answers up to the roam hub, then raises the panic of 5B next to her.
+        private static ScenarioSession StartUnattendedItemAtPanic(int breathingGame)
+        {
+            ScenarioSession session = StartUnattendedItemAtHub(breathingGame);
+            session.Signal("flag.said_bomb");
+            session.Signal("flag.near_5b");
+            Assert.That(session.Current.Node.Id, Is.EqualTo("V5"));
+            return session;
+        }
+
+        private static ScenarioSession StartUnattendedItemAtHub(int breathingGame)
+        {
+            string path = Path.Combine(Application.dataPath, ScenariosFolder, "UnattendedItem.json");
+            ScenarioSession session = new ScenarioSession(ScenarioLoader.Parse(File.ReadAllText(path), TestScenarios.ReadScenarioPart), new System.Random(0), "A");
+            session.State.Set(ScenarioKeys.BreathingGame, breathingGame);
+            session.Start();
+            for (int step = 0; step < MaxSteps && !session.Current.IsRoam; step++)
+            {
+                string pick = session.Current.Options[0].Id;
+                foreach (OptionData option in session.Current.Node.Options)
+                {
+                    if (option.Reference)
+                    {
+                        pick = option.Id;
+                        break;
+                    }
+                }
+
+                session.Choose(pick);
+            }
+
+            Assert.That(session.Current.Node.Id, Is.EqualTo("V2"));
+            return session;
+        }
+
+        private static bool HasOption(ScenarioSession session, string optionId)
+        {
+            foreach (OptionView option in session.Current.Options)
+            {
+                if (option.Id == optionId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void PlayRandomly(ScenarioData data, string variantId, int seed, string fileName)
         {
             System.Random random = new System.Random(seed);
             ScenarioSession session = new ScenarioSession(data, random, variantId);
+            // Half of the runs switch the breathing mini-game on, so the branches behind it are played too.
+            session.State.Set(ScenarioKeys.BreathingGame, seed % 2);
+            // Keys raised by the scene (the player next to 5B) never come from a choice; set them in half of the runs,
+            // so the triggers behind them are played too.
+            session.State.Set("flag.near_5b", seed % 2);
             session.Start();
             for (int step = 0; step < MaxSteps && session.IsRunning; step++)
             {

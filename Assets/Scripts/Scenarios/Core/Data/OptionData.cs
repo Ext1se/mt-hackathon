@@ -11,6 +11,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("text")] private string _text = string.Empty;
         [JsonProperty("hidden")] private bool _hidden = false;
         [JsonProperty("repeatable")] private bool _repeatable = false;
+        [JsonProperty("revisit")] private bool _revisit = false;
         [JsonProperty("free")] private bool _free = false;
         [JsonProperty("reference")] private bool _reference = false;
         [JsonProperty("speaker")] private string _speaker = string.Empty;
@@ -18,6 +19,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("objective")] private string _objective = string.Empty;
         [JsonProperty("quiet")] private bool _quiet = false;
         [JsonProperty("conditions")] private List<ConditionData> _conditions = new List<ConditionData>();
+        [JsonProperty("done")] private List<ConditionData> _done = new List<ConditionData>();
         [JsonProperty("effects")] private List<EffectData> _effects = new List<EffectData>();
         [JsonProperty("lines")] private List<LineData> _lines = new List<LineData>();
         [JsonProperty("next")] private string _next = string.Empty;
@@ -32,6 +34,12 @@ namespace Game.Scenarios.Core.Data
 
         /// <summary>In a hub, stays available after being chosen.</summary>
         public bool Repeatable => _repeatable;
+
+        /// <summary>
+        /// In a hub, stays listed after being chosen, marked as seen, even if its conditions no longer hold. Choosing it
+        /// again only repeats the response: no effects, no hub action, no new decision.
+        /// </summary>
+        public bool Revisit => _revisit;
 
         /// <summary>Navigation inside a hub (open an object's menu, step back): does not count as a hub action.</summary>
         public bool Free => _free;
@@ -50,6 +58,10 @@ namespace Game.Scenarios.Core.Data
         /// <summary>A world option that works but is not listed in the tracker and has no marker (nothing to give away).</summary>
         public bool Quiet => _quiet;
         public IReadOnlyList<ConditionData> Conditions => _conditions;
+
+        /// <summary>A world objective counts as done once these hold (it stays usable); empty means never done.</summary>
+        public IReadOnlyList<ConditionData> Done => _done;
+
         public IReadOnlyList<EffectData> Effects => _effects;
 
         /// <summary>The NPC response shown after the choice.</summary>

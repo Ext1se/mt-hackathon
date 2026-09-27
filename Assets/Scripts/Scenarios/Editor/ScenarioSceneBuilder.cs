@@ -60,6 +60,7 @@ namespace Game.Scenarios.Editor
         private static readonly Color LoyaltyColor = new Color(0.30f, 0.65f, 0.95f, 1f);
         private static readonly Color SafetyColor = new Color(0.35f, 0.80f, 0.45f, 1f);
         private static readonly Color MutedText = new Color(0.75f, 0.78f, 0.83f, 1f);
+        private static readonly Color PanicColor = new Color(0.98f, 0.62f, 0.22f, 1f);
         private static readonly Color TrackColor = new Color(0f, 0f, 0f, 0.45f);
         private static readonly Color GuideColor = new Color(0.98f, 0.78f, 0.22f, 1f);
         private static readonly Color TerminalSoldColor = new Color(0.20f, 0.42f, 0.66f, 1f);
@@ -83,6 +84,8 @@ namespace Game.Scenarios.Editor
         };
 
         private const string WalkCrosshairPath = "Mobile_Controls/SafeArea/Crosshair";
+        private const float DeviceSlotWidth = 96f;
+        private const float DeviceSlotHeight = 126f;
 
         private static TMP_FontAsset s_font;
         private static TMP_FontAsset s_fontBold;
@@ -100,8 +103,11 @@ namespace Game.Scenarios.Editor
             // Settings toggled by hand on the runner survive a rebuild.
             ScenarioRunner previous = Object.FindFirstObjectByType<ScenarioRunner>();
             bool timersEnabled = previous == null || previous.TimersEnabled;
+            bool breathingGameEnabled = previous == null || previous.BreathingGameEnabled;
             DialogueView previousDialogue = Object.FindFirstObjectByType<DialogueView>();
             string typewriter = previousDialogue != null ? EditorJsonUtility.ToJson(previousDialogue) : null;
+            LookHighlighter previousLook = Object.FindFirstObjectByType<LookHighlighter>();
+            bool genericPassengerLabel = previousLook == null || previousLook.GenericPassengerLabel;
 
             // The inspector throws if the selected object is destroyed under it.
             Selection.activeGameObject = null;
@@ -117,6 +123,7 @@ namespace Game.Scenarios.Editor
             DebriefView debrief = BuildDebrief(canvas.transform, rowPrefab);
             CardView card = BuildCard(canvas.transform, optionPrefab);
             TerminalView terminal = BuildTerminal(canvas.transform);
+            BreathingView breathing = BuildBreathing(canvas.transform);
 
             GameObject system = new GameObject(SystemName);
             Undo.RegisterCreatedObjectUndo(system, "Build scenario UI");
@@ -130,13 +137,21 @@ namespace Game.Scenarios.Editor
             runnerObject.FindProperty("_debrief").objectReferenceValue = debrief;
             runnerObject.FindProperty("_card").objectReferenceValue = card;
             runnerObject.FindProperty("_terminal").objectReferenceValue = terminal;
+            runnerObject.FindProperty("_breathing").objectReferenceValue = breathing;
             runnerObject.FindProperty("_fader").objectReferenceValue = BuildFader(canvas.transform);
             runnerObject.FindProperty("_playerName").stringValue = Ui("playerName");
             runnerObject.FindProperty("_timersEnabled").boolValue = timersEnabled;
+            runnerObject.FindProperty("_breathingGameEnabled").boolValue = breathingGameEnabled;
             runnerObject.ApplyModifiedPropertiesWithoutUndo();
             BuildBriefing(canvas.transform, runner);
             WireCursorMode(runner);
+            RestoreLookSettings(runner, genericPassengerLabel);
             BuildGuide(runner, quest);
+
+            // The breathing game covers the whole screen for input, so it goes above every other panel; the pause menu
+            // goes above even that.
+            breathing.transform.SetAsLastSibling();
+            BuildPause(canvas.transform, runner).transform.SetAsLastSibling();
 
             // The fade layer goes under every panel (the look reticle included), so text stays readable on black.
             canvas.transform.Find("Fader").SetAsFirstSibling();
@@ -259,6 +274,8 @@ namespace Game.Scenarios.Editor
             // The label's preferred height drives the button height, so long answers wrap instead of clipping.
             VerticalLayoutGroup group = root.AddComponent<VerticalLayoutGroup>();
             group.padding = new RectOffset(18, 18, 8, 8);
+            // A one-line answer is shorter than the button's minimum height: keep it in the middle, not at the top.
+            group.childAlignment = TextAnchor.MiddleLeft;
             group.childControlHeight = true;
             group.childControlWidth = true;
             group.childForceExpandHeight = false;
@@ -389,43 +406,32 @@ namespace Game.Scenarios.Editor
             GameObject meter = new GameObject("Meter", typeof(RectTransform));
             meter.transform.SetParent(root, false);
             // Its own row under the title, so it never overlaps the scales on a narrow screen.
-            Place((RectTransform)meter.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(360f, 28f));
-            HorizontalLayoutGroup meterLayout = meter.AddComponent<HorizontalLayoutGroup>();
-            meterLayout.spacing = 6f;
-            meterLayout.childAlignment = TextAnchor.MiddleCenter;
-            meterLayout.childControlWidth = true;
-            meterLayout.childControlHeight = true;
-            meterLayout.childForceExpandWidth = false;
-            meterLayout.childForceExpandHeight = false;
-            TMP_Text meterLabel = CreateText("Label", meter.transform, 20f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineRight);
+            Place((RectTransform)meter.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(360f, 30f));
+            // Drawn like the scales: a label and a bar of the same height; the bar's colour follows the level.
+            TMP_Text meterLabel = CreateText("Label", meter.transform, 20f, FontStyles.Bold, PanicColor, TextAlignmentOptions.MidlineRight);
             meterLabel.enableWordWrapping = false;
-            LayoutElement meterLabelElement = meterLabel.gameObject.AddComponent<LayoutElement>();
-            meterLabelElement.preferredWidth = 180f;
-            meterLabelElement.preferredHeight = 30f;
-            Image[] segments = new Image[ScenarioValidator.MaxHudSteps];
-            for (int i = 0; i < segments.Length; i++)
-            {
-                RectTransform segment = CreatePanel("Segment" + i, meter.transform, TrackColor);
-                LayoutElement segmentElement = segment.gameObject.AddComponent<LayoutElement>();
-                segmentElement.preferredWidth = 34f;
-                segmentElement.preferredHeight = 14f;
-                segments[i] = segment.GetComponent<Image>();
-            }
+            Place(meterLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(170f, 30f));
+            Slider meterBar = CreateSlider("Bar", meter.transform, PanicColor);
+            Place((RectTransform)meterBar.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(180f, 22f));
+            Image meterFill = meterBar.fillRect.GetComponent<Image>();
 
-            // The devices the conductor carries, always on screen during a scenario; unavailable ones are dimmed.
+            // The devices the conductor carries: slots in the bottom-left corner, always on screen during a scenario;
+            // unavailable ones are dimmed.
             GameObject devices = new GameObject("Devices", typeof(RectTransform));
-            devices.transform.SetParent(root, false);
-            Place((RectTransform)devices.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -14f), new Vector2(440f, 50f));
-            ((RectTransform)devices.transform).pivot = new Vector2(0.5f, 1f);
+            devices.transform.SetParent(holder.transform, false);
+            Place((RectTransform)devices.transform, Vector2.zero, Vector2.zero, new Vector2(24f, 24f),
+                new Vector2(2f * DeviceSlotWidth + 16f, DeviceSlotHeight));
             HorizontalLayoutGroup devicesLayout = devices.AddComponent<HorizontalLayoutGroup>();
-            devicesLayout.spacing = 12f;
-            devicesLayout.childAlignment = TextAnchor.MiddleCenter;
-            devicesLayout.childControlWidth = true;
-            devicesLayout.childControlHeight = true;
+            devicesLayout.spacing = 16f;
+            devicesLayout.childAlignment = TextAnchor.LowerLeft;
+            devicesLayout.childControlWidth = false;
+            devicesLayout.childControlHeight = false;
             devicesLayout.childForceExpandWidth = false;
             devicesLayout.childForceExpandHeight = false;
-            Button terminalButton = CreateDeviceButton("TerminalButton", devices.transform, Ui("terminalButton"), TerminalSoldColor);
-            Button radio = CreateDeviceButton("RadioButton", devices.transform, Ui("radioButton"), AccentColor);
+            Button terminalButton = CreateDeviceSlot("TerminalSlot", devices.transform, Ui("terminalKey"), Ui("terminalButton"),
+                LoyaltyColor, out CanvasGroup terminalSlot);
+            Button radio = CreateDeviceSlot("RadioSlot", devices.transform, Ui("radioKey"), Ui("radioButton"), AccentColor,
+                out CanvasGroup radioSlot);
 
             SerializedObject hudObject = new SerializedObject(hud);
             hudObject.FindProperty("_root").objectReferenceValue = root.gameObject;
@@ -439,15 +445,16 @@ namespace Game.Scenarios.Editor
             hudObject.FindProperty("_timerSeconds").objectReferenceValue = seconds;
             hudObject.FindProperty("_radioButton").objectReferenceValue = radio;
             hudObject.FindProperty("_terminalButton").objectReferenceValue = terminalButton;
+            hudObject.FindProperty("_devicesRoot").objectReferenceValue = devices;
+            hudObject.FindProperty("_terminalSlot").objectReferenceValue = terminalSlot;
+            hudObject.FindProperty("_radioSlot").objectReferenceValue = radioSlot;
             hudObject.FindProperty("_actions").objectReferenceValue = AssetDatabase.LoadAssetAtPath<InputActionAsset>(WalkActionsPath);
             hudObject.FindProperty("_meterRoot").objectReferenceValue = meter;
             hudObject.FindProperty("_meterLabel").objectReferenceValue = meterLabel;
-            SerializedProperty segmentList = hudObject.FindProperty("_meterSegments");
-            segmentList.arraySize = segments.Length;
-            for (int i = 0; i < segments.Length; i++)
-            {
-                segmentList.GetArrayElementAtIndex(i).objectReferenceValue = segments[i];
-            }
+            hudObject.FindProperty("_meterBar").objectReferenceValue = meterBar;
+            hudObject.FindProperty("_meterFill").objectReferenceValue = meterFill;
+            hudObject.FindProperty("_loyaltyLabel").objectReferenceValue = loyaltyLabel;
+            hudObject.FindProperty("_safetyLabel").objectReferenceValue = safetyLabel;
             hudObject.ApplyModifiedPropertiesWithoutUndo();
             return hud;
         }
@@ -482,6 +489,8 @@ namespace Game.Scenarios.Editor
             TMP_Text text = CreateText("Text", root, 24f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
 
             RectTransform optionsContainer = CreateScrollList("Options", root, Vector2.zero, Vector2.zero, 6f);
+            // A small gap between the line and the answers under it.
+            optionsContainer.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(0, 0, 10, 0);
             GameObject optionsHolder = optionsContainer.parent.parent.gameObject;
             CanvasGroup optionsGroup = optionsHolder.AddComponent<CanvasGroup>();
             LayoutElement optionsElement = optionsHolder.AddComponent<LayoutElement>();
@@ -535,7 +544,8 @@ namespace Game.Scenarios.Editor
             EditorJsonUtility.FromJsonOverwrite(previousJson, scratch);
             SerializedObject from = new SerializedObject(scratch);
             SerializedObject to = new SerializedObject(dialogue);
-            string[] properties = { "_charactersPerSecond", "_sentencePause", "_commaPause", "_skipOnInput", "_optionsFadeSeconds" };
+            string[] properties = { "_charactersPerSecond", "_sentencePause", "_commaPause", "_skipOnInput", "_optionsFadeSeconds", "_actionColor",
+                "_seenColor" };
             foreach (string property in properties)
             {
                 to.CopyFromSerializedProperty(from.FindProperty(property));
@@ -852,6 +862,14 @@ namespace Game.Scenarios.Editor
             Place((RectTransform)close.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-pad, 24f), new Vector2(360f, 52f));
             close.GetComponentInChildren<TMP_Text>().fontSize = 22f;
 
+            // Yellow, left of the close button: shown only for a seat the scenario wants studied.
+            Button study = CreateButton("StudyButton", screen, TerminalText("study"), GuideColor);
+            Place((RectTransform)study.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-pad - 360f - 16f, 24f),
+                new Vector2(240f, 52f));
+            TMP_Text studyLabel = study.GetComponentInChildren<TMP_Text>();
+            studyLabel.fontSize = 22f;
+            studyLabel.color = PanelColor;
+
             // Seats page: the map on a plate on the left, the passenger record on the right.
             RectTransform seatsPage = new GameObject("SeatsPage", typeof(RectTransform)).GetComponent<RectTransform>();
             seatsPage.SetParent(screen, false);
@@ -985,6 +1003,7 @@ namespace Game.Scenarios.Editor
             terminalObject.FindProperty("_subtitle").objectReferenceValue = subtitle;
             terminalObject.FindProperty("_clock").objectReferenceValue = clock;
             terminalObject.FindProperty("_closeButton").objectReferenceValue = close;
+            terminalObject.FindProperty("_studyButton").objectReferenceValue = study;
             terminalObject.FindProperty("_seatsTab").objectReferenceValue = seatsTab;
             terminalObject.FindProperty("_routeTab").objectReferenceValue = routeTab;
             terminalObject.FindProperty("_seatsPage").objectReferenceValue = seatsPage.gameObject;
@@ -1025,15 +1044,46 @@ namespace Game.Scenarios.Editor
             return terminal;
         }
 
-        private static Button CreateDeviceButton(string name, Transform devices, string label, Color color)
+        // A hotbar slot: a framed square with the key in the corner and the device's colour inside, its name below.
+        private static Button CreateDeviceSlot(string name, Transform devices, string key, string label, Color color,
+            out CanvasGroup slot)
         {
-            Button button = CreateButton(name, devices, label, color);
+            const float frame = 4f;
+            GameObject slotObject = new GameObject(name, typeof(RectTransform));
+            slotObject.transform.SetParent(devices, false);
+            RectTransform slotRect = (RectTransform)slotObject.transform;
+            slotRect.sizeDelta = new Vector2(DeviceSlotWidth, DeviceSlotHeight);
+            slotRect.pivot = new Vector2(0.5f, 0.5f);
+            slot = slotObject.AddComponent<CanvasGroup>();
+
+            RectTransform border = CreatePanel("Frame", slotRect, color);
+            Place(border, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(DeviceSlotWidth, DeviceSlotWidth));
+            Button button = border.gameObject.AddComponent<Button>();
             ColorBlock colors = button.colors;
-            colors.disabledColor = new Color(0.45f, 0.45f, 0.45f, 0.45f);
+            colors.highlightedColor = new Color(1f, 1f, 1f, 0.85f);
+            colors.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+            colors.disabledColor = Color.white;
             button.colors = colors;
-            LayoutElement layout = button.gameObject.AddComponent<LayoutElement>();
-            layout.preferredWidth = 210f;
-            layout.preferredHeight = 50f;
+
+            RectTransform face = CreatePanel("Face", border, PanelColor);
+            face.GetComponent<Image>().raycastTarget = false;
+            Stretch(face, new Vector2(frame, frame), new Vector2(-frame, -frame));
+
+            RectTransform icon = CreatePanel("Icon", face, new Color(color.r, color.g, color.b, 0.85f));
+            icon.GetComponent<Image>().raycastTarget = false;
+            Place(icon, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(6f, -6f), new Vector2(44f, 44f));
+
+            TMP_Text keyText = CreateText("Key", face, 30f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopLeft);
+            Place(keyText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(8f, -2f), new Vector2(40f, 40f));
+            keyText.text = key;
+            keyText.raycastTarget = false;
+
+            TMP_Text labelText = CreateText("Label", slotRect, 18f, FontStyles.Bold, color, TextAlignmentOptions.Center);
+            Place(labelText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero,
+                new Vector2(DeviceSlotWidth + 40f, DeviceSlotHeight - DeviceSlotWidth));
+            labelText.text = label;
+            labelText.enableWordWrapping = false;
+            labelText.raycastTarget = false;
             return button;
         }
 
@@ -1108,6 +1158,181 @@ namespace Game.Scenarios.Editor
             return (string)s_strings["terminal"][key];
         }
 
+        // The box-breathing panel sits at the right edge, so the passenger in the middle of the view stays visible:
+        // title and cycle on top, the square with its side labels, the inner "lungs", phase and count in the middle,
+        // then the prompt, the rhythm bar and the controls.
+        private static BreathingView BuildBreathing(Transform canvas)
+        {
+            const float squareSize = 300f;
+            const float sideThickness = 8f;
+            const float labelWidth = 120f;
+            const float labelHeight = 30f;
+            const float squareTop = -170f;
+
+            GameObject holder = CreateHolder("Breathing", canvas);
+            BreathingView view = holder.AddComponent<BreathingView>();
+
+            // A clear full-screen layer takes every click and touch while the game runs: holding the mouse button is the
+            // input, and releasing it over a HUD button must not press that button.
+            RectTransform blocker = CreatePanel("Root", holder.transform, Color.clear);
+            Stretch(blocker, Vector2.zero, Vector2.zero);
+            RectTransform root = CreatePanel("Panel", blocker, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.96f));
+            Place(root, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-40f, -20f), new Vector2(580f, 720f));
+            Image accent = CreatePanel("Accent", root, AccentColor).GetComponent<Image>();
+            Place(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(8f, 0f));
+            accent.rectTransform.pivot = new Vector2(0f, 0.5f);
+
+            TMP_Text title = CreateText("Title", root, 32f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -28f), new Vector2(-48f, 44f));
+            TMP_Text cycle = CreateText("Cycle", root, 22f, FontStyles.Normal, MutedText, TextAlignmentOptions.Center);
+            Place(cycle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -76f), new Vector2(-48f, 30f));
+
+            GameObject squareObject = new GameObject("Square", typeof(RectTransform));
+            squareObject.transform.SetParent(root, false);
+            RectTransform square = (RectTransform)squareObject.transform;
+            Place(square, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, squareTop), new Vector2(squareSize, squareSize));
+
+            RectTransform lungs = CreatePanel("Lungs", square, new Color(LoyaltyColor.r, LoyaltyColor.g, LoyaltyColor.b, 0.28f));
+            Place(lungs, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(squareSize - 4f * sideThickness, squareSize - 4f * sideThickness));
+
+            // Phase order: left (inhale, going up), top (hold), right (exhale, going down), bottom (pause).
+            Image[] sides =
+            {
+                CreateSide("SideInhale", square, new Vector2(0f, 0f), new Vector2(0f, 1f), sideThickness),
+                CreateSide("SideHoldFull", square, new Vector2(0f, 1f), new Vector2(1f, 1f), sideThickness),
+                CreateSide("SideExhale", square, new Vector2(1f, 0f), new Vector2(1f, 1f), sideThickness),
+                CreateSide("SideHoldEmpty", square, new Vector2(0f, 0f), new Vector2(1f, 0f), sideThickness)
+            };
+
+            float half = squareSize * 0.5f;
+            float labelGap = labelWidth * 0.5f + 16f;
+            TMP_Text[] sideLabels =
+            {
+                CreateSideLabel("LabelInhale", square, new Vector2(-half - labelGap, 0f), labelWidth, labelHeight),
+                CreateSideLabel("LabelHoldFull", square, new Vector2(0f, half + labelHeight * 0.5f + 8f), labelWidth, labelHeight),
+                CreateSideLabel("LabelExhale", square, new Vector2(half + labelGap, 0f), labelWidth, labelHeight),
+                CreateSideLabel("LabelHoldEmpty", square, new Vector2(0f, -half - labelHeight * 0.5f - 8f), labelWidth, labelHeight)
+            };
+
+            TMP_Text phase = CreateText("Phase", square, 34f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            Place(phase.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f),
+                new Vector2(squareSize - 40f, 44f));
+            phase.enableAutoSizing = true;
+            phase.fontSizeMin = 20f;
+            phase.fontSizeMax = 34f;
+            TMP_Text counter = CreateText("Counter", square, 72f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            Place(counter.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -30f),
+                new Vector2(squareSize - 40f, 84f));
+
+            GameObject dotObject = new GameObject("Dot", typeof(RectTransform));
+            dotObject.transform.SetParent(square, false);
+            Image dot = dotObject.AddComponent<Image>();
+            dot.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>(BuiltinKnob);
+            dot.color = GuideColor;
+            dot.raycastTarget = false;
+            Place(dot.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-half, -half), new Vector2(34f, 34f));
+
+            float belowSquare = squareTop - squareSize - labelHeight - 28f;
+            TMP_Text prompt = CreateText("Prompt", root, 28f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            Place(prompt.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, belowSquare), new Vector2(-48f, 40f));
+
+            TMP_Text rhythm = CreateText("RhythmLabel", root, 20f, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineRight);
+            rhythm.text = BreathingText("rhythm");
+            Place(rhythm.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, belowSquare - 58f),
+                new Vector2(110f, 26f));
+            Slider scoreBar = CreateSlider("RhythmBar", root, SafetyColor);
+            RectTransform scoreBarRect = (RectTransform)scoreBar.transform;
+            scoreBarRect.anchorMin = new Vector2(0f, 1f);
+            scoreBarRect.anchorMax = new Vector2(1f, 1f);
+            scoreBarRect.pivot = new Vector2(0.5f, 1f);
+            scoreBarRect.offsetMin = new Vector2(166f, belowSquare - 80f);
+            scoreBarRect.offsetMax = new Vector2(-48f, belowSquare - 62f);
+
+            TMP_Text controls = CreateText("Controls", root, 19f, FontStyles.Normal, MutedText, TextAlignmentOptions.Center);
+            controls.text = BreathingText("controls");
+            Place(controls.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 22f), new Vector2(-64f, 56f));
+
+            JArray phaseNames = (JArray)s_strings["breathing"]["phases"];
+            JArray phasePrompts = (JArray)s_strings["breathing"]["prompts"];
+            SerializedObject viewObject = new SerializedObject(view);
+            viewObject.FindProperty("_root").objectReferenceValue = blocker.gameObject;
+            viewObject.FindProperty("_title").objectReferenceValue = title;
+            viewObject.FindProperty("_cycleLabel").objectReferenceValue = cycle;
+            viewObject.FindProperty("_phaseLabel").objectReferenceValue = phase;
+            viewObject.FindProperty("_counter").objectReferenceValue = counter;
+            viewObject.FindProperty("_prompt").objectReferenceValue = prompt;
+            viewObject.FindProperty("_square").objectReferenceValue = square;
+            viewObject.FindProperty("_dot").objectReferenceValue = dot.rectTransform;
+            viewObject.FindProperty("_lungs").objectReferenceValue = lungs;
+            viewObject.FindProperty("_scoreBar").objectReferenceValue = scoreBar;
+            SerializedProperty sidesProperty = viewObject.FindProperty("_sides");
+            SerializedProperty labelsProperty = viewObject.FindProperty("_sideLabels");
+            SerializedProperty namesProperty = viewObject.FindProperty("_phaseNames");
+            SerializedProperty promptsProperty = viewObject.FindProperty("_phasePrompts");
+            sidesProperty.arraySize = sides.Length;
+            labelsProperty.arraySize = sideLabels.Length;
+            namesProperty.arraySize = phaseNames.Count;
+            promptsProperty.arraySize = phasePrompts.Count;
+            for (int i = 0; i < sides.Length; i++)
+            {
+                sidesProperty.GetArrayElementAtIndex(i).objectReferenceValue = sides[i];
+                labelsProperty.GetArrayElementAtIndex(i).objectReferenceValue = sideLabels[i];
+            }
+
+            for (int i = 0; i < phaseNames.Count; i++)
+            {
+                namesProperty.GetArrayElementAtIndex(i).stringValue = (string)phaseNames[i];
+            }
+
+            for (int i = 0; i < phasePrompts.Count; i++)
+            {
+                promptsProperty.GetArrayElementAtIndex(i).stringValue = (string)phasePrompts[i];
+            }
+
+            viewObject.FindProperty("_sideActiveColor").colorValue = GuideColor;
+            viewObject.FindProperty("_labelIdleColor").colorValue = MutedText;
+            viewObject.FindProperty("_matchColor").colorValue = SafetyColor;
+            viewObject.FindProperty("_missColor").colorValue = AccentColor;
+            viewObject.FindProperty("_cycleFormat").stringValue = BreathingText("cycle");
+            viewObject.FindProperty("_getReadyText").stringValue = BreathingText("getReady");
+            viewObject.FindProperty("_leadInPrompt").stringValue = BreathingText("leadIn");
+            viewObject.FindProperty("_passedText").stringValue = BreathingText("passed");
+            viewObject.FindProperty("_failedText").stringValue = BreathingText("failed");
+            viewObject.FindProperty("_scoreFormat").stringValue = BreathingText("score");
+            viewObject.ApplyModifiedPropertiesWithoutUndo();
+            return view;
+        }
+
+        // A side stretched along one edge of the square; sizeDelta adds the thickness across it and overlaps the corners.
+        private static Image CreateSide(string name, Transform square, Vector2 anchorMin, Vector2 anchorMax, float thickness)
+        {
+            GameObject side = new GameObject(name, typeof(RectTransform));
+            side.transform.SetParent(square, false);
+            Image image = side.AddComponent<Image>();
+            image.raycastTarget = false;
+            RectTransform rect = image.rectTransform;
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(thickness, thickness);
+            return image;
+        }
+
+        private static TMP_Text CreateSideLabel(string name, Transform square, Vector2 position, float width, float height)
+        {
+            TMP_Text label = CreateText(name, square, 22f, FontStyles.Bold, MutedText, TextAlignmentOptions.Center);
+            label.enableWordWrapping = false;
+            Place(label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position, new Vector2(width, height));
+            return label;
+        }
+
+        private static string BreathingText(string key)
+        {
+            return (string)s_strings["breathing"][key];
+        }
+
         private static DebriefView BuildDebrief(Transform canvas, DecisionRow rowPrefab)
         {
             GameObject holder = CreateHolder("Debrief", canvas);
@@ -1147,6 +1372,52 @@ namespace Game.Scenarios.Editor
             debriefObject.FindProperty("_scalesFormat").stringValue = Ui("scales");
             debriefObject.ApplyModifiedPropertiesWithoutUndo();
             return debrief;
+        }
+
+        // Esc: stops time, frees the cursor, offers to resume, restart the scene or go to the menu.
+        private static PauseView BuildPause(Transform canvas, ScenarioRunner runner)
+        {
+            GameObject holder = CreateHolder("Pause", canvas);
+            PauseView pause = holder.AddComponent<PauseView>();
+
+            RectTransform root = CreatePanel("Root", holder.transform, new Color(0f, 0f, 0f, 0.6f));
+            Stretch(root, Vector2.zero, Vector2.zero);
+            RectTransform panel = CreatePanel("Panel", root, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.98f));
+            Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(460f, 340f));
+            Image stripe = CreatePanel("Accent", panel, AccentColor).GetComponent<Image>();
+            Place(stripe.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f));
+            stripe.rectTransform.pivot = new Vector2(0f, 0.5f);
+            TMP_Text title = CreateText("Title", panel, 34f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            title.text = Ui("pauseTitle");
+            Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(400f, 48f));
+
+            Button resume = CreateButton("ResumeButton", panel, Ui("pauseResume"), AccentColor);
+            Place((RectTransform)resume.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(340f, 56f));
+            Button restart = CreateButton("RestartButton", panel, Ui("pauseRestart"), ButtonColor);
+            Place((RectTransform)restart.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(340f, 56f));
+            Button menu = CreateButton("MenuButton", panel, Ui("menuButton"), ButtonColor);
+            Place((RectTransform)menu.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -240f), new Vector2(340f, 56f));
+
+            SerializedObject pauseObject = new SerializedObject(pause);
+            pauseObject.FindProperty("_runner").objectReferenceValue = runner;
+            pauseObject.FindProperty("_actions").objectReferenceValue = AssetDatabase.LoadAssetAtPath<InputActionAsset>(WalkActionsPath);
+            pauseObject.FindProperty("_root").objectReferenceValue = root.gameObject;
+            pauseObject.FindProperty("_resumeButton").objectReferenceValue = resume;
+            pauseObject.FindProperty("_restartButton").objectReferenceValue = restart;
+            pauseObject.FindProperty("_menuButton").objectReferenceValue = menu;
+            pauseObject.FindProperty("_menuScene").stringValue = Path.GetFileNameWithoutExtension(ScenarioMenuBuilder.MenuScenePath());
+            pauseObject.ApplyModifiedPropertiesWithoutUndo();
+
+            VSMCursorMode cursorMode = Object.FindFirstObjectByType<VSMCursorMode>();
+            if (cursorMode != null)
+            {
+                FieldInfo field = typeof(PauseView).GetField("_cursorNeeded", BindingFlags.Instance | BindingFlags.NonPublic);
+                UnityEvent<bool> cursorNeeded = (UnityEvent<bool>)field.GetValue(pause);
+                UnityEventTools.AddPersistentListener(cursorNeeded, new UnityAction<bool>(cursorMode.SetUIOpen));
+                EditorUtility.SetDirty(pause);
+            }
+
+            return pause;
         }
 
         private static void BuildBriefing(Transform canvas, ScenarioRunner runner)
@@ -1227,6 +1498,19 @@ namespace Game.Scenarios.Editor
             EditorUtility.SetDirty(runner);
         }
 
+        // The plain passenger label switched in the inspector survives a rebuild.
+        private static void RestoreLookSettings(ScenarioRunner runner, bool genericPassengerLabel)
+        {
+            if (!runner.TryGetComponent(out LookHighlighter highlighter))
+            {
+                return;
+            }
+
+            SerializedObject highlighterObject = new SerializedObject(highlighter);
+            highlighterObject.FindProperty("_genericPassengerLabel").boolValue = genericPassengerLabel;
+            highlighterObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         private static void FillObjects(SerializedProperty list, string[] paths)
         {
             list.ClearArray();
@@ -1264,11 +1548,36 @@ namespace Game.Scenarios.Editor
             ring.raycastTarget = false;
             Place(ring.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(24f, 24f));
 
+            // The plate hugs its content: the key on a white badge first, then what the action does.
             RectTransform labelRoot = CreatePanel("LabelRoot", holder.transform, PlateColor);
             labelRoot.GetComponent<Image>().raycastTarget = false;
-            Place(labelRoot, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -60f), new Vector2(720f, 44f));
-            TMP_Text label = CreateText("Label", labelRoot, 22f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
-            Stretch(label.rectTransform, new Vector2(16f, 4f), new Vector2(-16f, -4f));
+            Place(labelRoot, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -60f), new Vector2(200f, 46f));
+            labelRoot.pivot = new Vector2(0.5f, 0.5f);
+            HorizontalLayoutGroup labelLayout = labelRoot.gameObject.AddComponent<HorizontalLayoutGroup>();
+            labelLayout.padding = new RectOffset(8, 18, 6, 6);
+            labelLayout.spacing = 12f;
+            labelLayout.childAlignment = TextAnchor.MiddleLeft;
+            labelLayout.childControlWidth = true;
+            labelLayout.childControlHeight = true;
+            labelLayout.childForceExpandWidth = false;
+            labelLayout.childForceExpandHeight = false;
+            ContentSizeFitter labelFitter = labelRoot.gameObject.AddComponent<ContentSizeFitter>();
+            labelFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            labelFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            RectTransform keyBadge = CreatePanel("KeyBadge", labelRoot, Color.white);
+            keyBadge.GetComponent<Image>().raycastTarget = false;
+            LayoutElement keyLayout = keyBadge.gameObject.AddComponent<LayoutElement>();
+            keyLayout.preferredWidth = 34f;
+            keyLayout.preferredHeight = 34f;
+            keyLayout.minWidth = 34f;
+            TMP_Text key = CreateText("Key", keyBadge, 22f, FontStyles.Bold, PanelColor, TextAlignmentOptions.Center);
+            key.text = Ui("lookKey");
+            key.enableWordWrapping = false;
+            Stretch(key.rectTransform, Vector2.zero, Vector2.zero);
+
+            TMP_Text label = CreateText("Label", labelRoot, 22f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
+            label.enableWordWrapping = false;
 
             Camera view = Camera.main;
             LookHighlighter highlighter = runner.gameObject.AddComponent<LookHighlighter>();
@@ -1279,7 +1588,8 @@ namespace Game.Scenarios.Editor
             highlighterObject.FindProperty("_labelRoot").objectReferenceValue = labelRoot.gameObject;
             highlighterObject.FindProperty("_label").objectReferenceValue = label;
             highlighterObject.FindProperty("_startLabel").stringValue = Ui("lookStart");
-            highlighterObject.FindProperty("_keyHint").stringValue = Ui("lookKeyHint");
+            highlighterObject.FindProperty("_passengerLabel").stringValue = Ui("lookPassenger");
+            highlighterObject.FindProperty("_keyBadge").objectReferenceValue = keyBadge.gameObject;
             highlighterObject.ApplyModifiedPropertiesWithoutUndo();
             return highlighter;
         }

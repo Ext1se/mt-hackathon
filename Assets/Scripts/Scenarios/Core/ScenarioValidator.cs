@@ -77,6 +77,11 @@ namespace Game.Scenarios.Core
                 ValidateCard(node, where, errors);
             }
 
+            if (node.Breathing != null)
+            {
+                ValidateBreathing(node, where, errors);
+            }
+
             for (int i = 0; i < node.Look.Count; i++)
             {
                 LookStepData step = node.Look[i];
@@ -124,6 +129,7 @@ namespace Game.Scenarios.Core
                 CheckTarget(option.Next, nodes, optionWhere, errors);
                 ValidateRules(option.NextRules, nodes, optionWhere, errors);
                 ValidateConditions(option.Conditions, optionWhere, errors);
+                ValidateConditions(option.Done, optionWhere + ", done", errors);
                 ValidateEffects(option.Effects, optionWhere, errors);
                 ValidateLines(option.Lines, optionWhere, errors);
             }
@@ -278,6 +284,55 @@ namespace Game.Scenarios.Core
                     errors.Add($"{where}: a card section needs a title and a text or items.");
                 }
             }
+        }
+
+        // The mini-game ends by choosing one of two options itself, so both must be pickable whatever the state is,
+        // and no clock may end the node while the player is still breathing.
+        private static void ValidateBreathing(NodeData node, string where, List<string> errors)
+        {
+            BreathingData breathing = node.Breathing;
+            if (node.Kind != NodeKinds.Choice || node.Card != null || node.ShowsTerminal)
+            {
+                errors.Add($"{where}: a breathing game belongs on a choice node without a card or the terminal.");
+            }
+
+            if (node.TimeLimit > 0f)
+            {
+                errors.Add($"{where}: a breathing node cannot be timed.");
+            }
+
+            if (breathing.Cycles < 1 || breathing.PhaseSeconds <= 0f)
+            {
+                errors.Add($"{where}: a breathing game needs cycles >= 1 and phaseSeconds > 0.");
+            }
+
+            if (breathing.PassScore <= 0f || breathing.PassScore > 1f)
+            {
+                errors.Add($"{where}: a breathing game needs passScore in (0, 1].");
+            }
+
+            CheckBreathingResult(node, breathing.Success, where, errors);
+            CheckBreathingResult(node, breathing.Fail, where, errors);
+        }
+
+        private static void CheckBreathingResult(NodeData node, string optionId, string where, List<string> errors)
+        {
+            foreach (OptionData option in node.Options)
+            {
+                if (option.Id != optionId)
+                {
+                    continue;
+                }
+
+                if (option.Hidden || option.Conditions.Count > 0)
+                {
+                    errors.Add($"{where}: breathing result option '{optionId}' must be visible and unconditional.");
+                }
+
+                return;
+            }
+
+            errors.Add($"{where}: breathing result option '{optionId}' does not exist.");
         }
 
         private static void ValidateTerminal(ScenarioData data, List<string> errors)

@@ -34,9 +34,13 @@ namespace Game.Scenarios.Presentation.World
             new Dictionary<Passenger, (PassengerSpot Spot, PassengerPose Pose, string HeldClip)>();
         private ScreenFader _fader;
         private Coroutine _transition;
+        private bool _isPlacingPlayer;
 
         /// <summary>True while the screen is fading for a change.</summary>
         public bool IsTransitioning => _transition != null;
+
+        /// <summary>True while a change under way puts the player somewhere itself (a "player" action).</summary>
+        public bool IsPlacingPlayer => _transition != null && _isPlacingPlayer;
 
         private void Awake()
         {
@@ -75,6 +79,7 @@ namespace Game.Scenarios.Presentation.World
                 if (_states[i].Fade && fader != null)
                 {
                     _pending.Add(i);
+                    _isPlacingPlayer |= MovesPlayer(_states[i]);
                 }
                 else
                 {
@@ -132,6 +137,7 @@ namespace Game.Scenarios.Presentation.World
             _originalActive.Clear();
             _applied.Clear();
             _pending.Clear();
+            _isPlacingPlayer = false;
         }
 
         private IEnumerator Transition()
@@ -152,6 +158,21 @@ namespace Game.Scenarios.Presentation.World
             }
 
             _transition = null;
+            _isPlacingPlayer = false;
+        }
+
+        private static bool MovesPlayer(WorldState state)
+        {
+            IReadOnlyList<WorldAction> actions = state.Actions;
+            for (int i = 0; i < actions.Count; i++)
+            {
+                if (actions[i].Kind == WorldActionKind.MovePlayer)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void Apply(WorldState state)

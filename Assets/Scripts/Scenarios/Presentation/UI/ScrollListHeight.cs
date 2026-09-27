@@ -26,11 +26,25 @@ namespace Game.Scenarios.Presentation.UI
                 return;
             }
 
-            float height = Mathf.Min(LayoutUtility.GetPreferredHeight(_content), _maxHeight);
+            // An empty list takes no room: the content's own padding would otherwise leave a gap under a response.
+            float height = HasActiveChild() ? Mathf.Min(LayoutUtility.GetPreferredHeight(_content), _maxHeight) : 0f;
             if (!Mathf.Approximately(_element.preferredHeight, height))
             {
                 _element.preferredHeight = height;
             }
+        }
+
+        private bool HasActiveChild()
+        {
+            for (int i = 0; i < _content.childCount; i++)
+            {
+                if (_content.GetChild(i).gameObject.activeSelf)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

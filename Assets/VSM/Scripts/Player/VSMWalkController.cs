@@ -19,7 +19,7 @@ namespace VSM.Player
         [Tooltip("Поле подсказок игроку.")] public Text status;
         [SerializeField, Tooltip("Скорость ходьбы, метры в секунду.")] float speed = 1.65f;
         [SerializeField, Tooltip("Скорость бега при зажатом Shift, метры в секунду.")] float runSpeed = 3.3f;
-        [Tooltip("Разрешить бег по Shift (левый стик геймпада — нажатие).")] public bool allowRunning = true;
+        [Tooltip("Разрешить бег по Shift (левый стик геймпада: нажатие).")] public bool allowRunning = true;
         [SerializeField, Tooltip("Скорость поворота взгляда к собеседнику в диалоге.")] float focusTurnSpeed = 5f;
         CharacterController motor;
         InputAction move, look, interact, sprint;

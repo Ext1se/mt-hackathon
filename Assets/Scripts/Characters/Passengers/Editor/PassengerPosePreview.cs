@@ -22,7 +22,8 @@ namespace Game.Characters.Passengers.Editor
             }
 
             Undo.RegisterFullObjectHierarchyUndo(passenger.gameObject, UndoName);
-            passenger.transform.SetPositionAndRotation(spot.transform.position, spot.transform.rotation);
+            passenger.transform.SetPositionAndRotation(Passenger.RootPosition(spot, pose, passenger.AnimationSet),
+                spot.transform.rotation);
 
             if (!passenger.TryGetComponent(out Animator animator) || animator.runtimeAnimatorController == null)
             {

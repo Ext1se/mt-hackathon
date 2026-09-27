@@ -1,4 +1,4 @@
-# Исправления геометрии — 26.09.2026
+# Исправления геометрии - 26.09.2026
 
 Исходник: VSM_Interiors_Reviewed.blend. В Unity используется Models/Train/VSM_Consist_Reviewed.fbx; прежний FBX сохранён для сравнения.
 

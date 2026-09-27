@@ -39,6 +39,12 @@ namespace Game.Scenarios.Presentation.UI
             _clicked = clicked;
         }
 
+        /// <summary>Replaces the label with a formatted version of the option text.</summary>
+        public void SetLabel(string text)
+        {
+            _label.text = text;
+        }
+
         private void OnClicked()
         {
             _clicked?.Invoke(_optionId);

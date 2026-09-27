@@ -21,6 +21,26 @@ namespace Game.Scenarios.Tests
   ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
 }";
 
+        private const string RevisitJson = @"{
+  ""id"": ""revisit"", ""start"": ""hub"",
+  ""nodes"": [
+    { ""id"": ""hub"", ""kind"": ""hub"", ""maxActions"": 5, ""exitNext"": ""@end"",
+      ""options"": [ { ""id"": ""open"", ""text"": ""Open menu"", ""free"": true, ""repeatable"": true, ""next"": ""menu"",
+                       ""done"": [ { ""key"": ""flag.asked"" } ] } ] },
+    { ""id"": ""menu"",
+      ""options"": [ { ""id"": ""ask"", ""text"": ""Ask"", ""revisit"": true, ""next"": ""menu"",
+                       ""conditions"": [ { ""key"": ""flag.asked"", ""op"": ""eq"", ""value"": 0 } ],
+                       ""lines"": [ { ""text"": ""Answer"" } ],
+                       ""effects"": [ { ""key"": ""loyalty"", ""value"": 10 }, { ""key"": ""flag.asked"", ""op"": ""set"", ""value"": 1 } ] },
+                     { ""id"": ""shout"", ""text"": ""Shout"", ""revisit"": true, ""next"": ""menu"",
+                       ""conditions"": [ { ""key"": ""flag.asked"", ""op"": ""eq"", ""value"": 0 } ],
+                       ""effects"": [ { ""key"": ""flag.asked"", ""op"": ""set"", ""value"": 1 } ] },
+                     { ""id"": ""act"", ""text"": ""Act"", ""next"": ""menu"" },
+                     { ""id"": ""back"", ""text"": ""Back"", ""free"": true, ""repeatable"": true, ""next"": ""@hub"" } ] }
+  ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
         [TestCase("A", "Intro A")]
         [TestCase("B", "Intro B")]
         public void Start_ForcedVariant_EntersStartNodeWithVariantText(string variant, string expectedText)
@@ -322,6 +342,55 @@ namespace Game.Scenarios.Tests
 
             Assert.That(session.Result.EndingId, Is.EqualTo("panic"));
             Assert.That(session.Result.SafetyGrade, Is.EqualTo(ScaleGrade.Fail));
+        }
+
+        [Test]
+        public void Revisit_ChosenOptionStaysListedAsSeen_OthersFollowTheirRules()
+        {
+            ScenarioSession session = StartJson(RevisitJson);
+            session.Choose("open");
+
+            session.Choose("ask");
+            session.Choose("act");
+
+            CollectionAssert.AreEqual(new[] { "ask", "back" }, OptionIds(session));
+            Assert.That(session.Current.Options[0].IsSeen, Is.True);
+            Assert.That(session.Current.Options[1].IsSeen, Is.False);
+        }
+
+        [Test]
+        public void Revisit_ChoosingASeenOption_RepeatsTheAnswerWithoutEffectsOrActions()
+        {
+            ScenarioSession session = StartJson(RevisitJson);
+            session.Choose("open");
+            session.Choose("ask");
+            int decisions = session.Decisions.Count;
+            ChoiceOutcome outcome = null;
+            session.ChoiceResolved += result => outcome = result;
+
+            Assert.That(session.Choose("ask"), Is.True);
+
+            Assert.That(outcome.ResponseText, Is.EqualTo("Answer"));
+            Assert.That(outcome.Effects, Is.Empty);
+            Assert.That(outcome.IsFree, Is.True);
+            Assert.That(session.State.Get(ScenarioKeys.Loyalty), Is.EqualTo(60));
+            Assert.That(session.State.Get(ScenarioKeys.HubActions), Is.EqualTo(1));
+            Assert.That(session.Decisions.Count, Is.EqualTo(decisions));
+            Assert.That(session.Current.Node.Id, Is.EqualTo("menu"));
+        }
+
+        [Test]
+        public void Done_OptionIsMarkedDoneOnceItsConditionsHold()
+        {
+            ScenarioSession session = StartJson(RevisitJson);
+            Assert.That(session.Current.Options[0].IsDone, Is.False);
+
+            session.Choose("open");
+            session.Choose("ask");
+            session.Choose("back");
+
+            Assert.That(session.Current.Node.Id, Is.EqualTo("hub"));
+            Assert.That(session.Current.Options[0].IsDone, Is.True);
         }
 
         [TestCase(79, ScaleGrade.Good)]

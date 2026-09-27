@@ -69,6 +69,9 @@ namespace Game.Scenarios.Core
         public string VariantId => _variantId;
         public ScenarioResult Result => _result;
         public bool IsRunning => _current != null && _result == null;
+
+        /// <summary>The current node belongs to a trigger interrupt: it was not opened by the player and will return.</summary>
+        public bool IsInterrupt => _returnStack.Count > 0;
         public IReadOnlyList<DecisionRecord> Decisions => _decisions;
 
         /// <summary>When false, timed nodes and hubs never time out; time is still tracked for hints and records.</summary>
@@ -205,6 +208,41 @@ namespace Game.Scenarios.Core
             return IsInActiveHub && _returnStack.Count == 0 && TryFireTrigger(NextTargets.Hub);
         }
 
+        /// <summary>
+        /// Ends a world condition raised by <see cref="Signal"/>, e.g. the player stepped away from a passenger: sets
+        /// <paramref name="key"/> back to 0. Nothing fires.
+        /// </summary>
+        public void ClearSignal(string key)
+        {
+            if (IsRunning && !string.IsNullOrEmpty(key))
+            {
+                _state.Set(key, 0);
+            }
+        }
+
+        /// <summary>True when <see cref="RequestHint"/> would show a hint of the current node now.</summary>
+        public bool HasHint
+        {
+            get
+            {
+                if (!IsRunning)
+                {
+                    return false;
+                }
+
+                _hintProgress.TryGetValue(_current.Id, out int index);
+                for (int i = index; i < _current.Hints.Count; i++)
+                {
+                    if (ConditionEvaluator.IsMet(_current.Hints[i].Conditions, _state))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         /// <summary>Shows the next hint of the current node on the player's request. Null when there is none.</summary>
         public string RequestHint()
         {
@@ -230,29 +268,35 @@ namespace Game.Scenarios.Core
             NodeData node = _current;
             // Anything chosen while a hub is active belongs to it (its menus included), except trigger interrupts.
             bool isInsideHub = _activeHub != null && _returnStack.Count == 0;
+            // A seen option only repeats its answer: the decision was already made and scored.
+            bool isReplay = IsSeen(node, option);
             List<AppliedEffect> applied = new List<AppliedEffect>();
-            EffectApplier.Apply(option.Effects, _state, applied);
-            ApplySpeedRule(node, option, timedOut, applied);
-
-            if (isInsideHub)
+            if (!isReplay)
             {
-                if (!option.Repeatable)
+                EffectApplier.Apply(option.Effects, _state, applied);
+                ApplySpeedRule(node, option, timedOut, applied);
+
+                if (isInsideHub)
                 {
-                    _takenHubOptions.Add(TakenKey(node, option));
+                    if (!option.Repeatable)
+                    {
+                        _takenHubOptions.Add(TakenKey(node, option));
+                    }
+
+                    if (!option.Free)
+                    {
+                        _state.Add(ScenarioKeys.HubActions, 1);
+                    }
                 }
 
-                if (!option.Free)
-                {
-                    _state.Add(ScenarioKeys.HubActions, 1);
-                }
+                _timeInNode.TryGetValue(node.Id, out float seconds);
+                _decisions.Add(new DecisionRecord(node.Id, _currentView.Text, option.Id, option.Text, option.Feedback,
+                    option.Reference, timedOut, applied, seconds));
             }
 
-            _timeInNode.TryGetValue(node.Id, out float seconds);
-            _decisions.Add(new DecisionRecord(node.Id, _currentView.Text, option.Id, option.Text, option.Feedback,
-                option.Reference, timedOut, applied, seconds));
             string speaker = string.IsNullOrEmpty(option.Speaker) ? node.Speaker : option.Speaker;
             ChoiceResolved?.Invoke(new ChoiceOutcome(node.Id, option.Id, option.Text, speaker, ResolveText(option.Lines),
-                timedOut, option.Free, applied));
+                timedOut, option.Free || isReplay, applied));
 
             string next = ResolveNext(option.NextRules, option.Next);
             if (string.IsNullOrEmpty(next))
@@ -466,7 +510,9 @@ namespace Game.Scenarios.Core
             {
                 if (IsVisible(node, option))
                 {
-                    options.Add(new OptionView(option.Id, option.Text, option.Target, option.Objective, option.Quiet));
+                    bool isDone = option.Done.Count > 0 && ConditionEvaluator.IsMet(option.Done, _state);
+                    options.Add(new OptionView(option.Id, option.Text, option.Target, option.Objective, option.Quiet,
+                        IsSeen(node, option), isDone));
                 }
             }
 
@@ -476,12 +522,28 @@ namespace Game.Scenarios.Core
 
         private bool IsVisible(NodeData node, OptionData option)
         {
-            if (option.Hidden || !ConditionEvaluator.IsMet(option.Conditions, _state))
+            if (option.Hidden)
+            {
+                return false;
+            }
+
+            // A seen option stays even when its own choice has since closed its conditions (e.g. "not asked yet").
+            if (IsSeen(node, option))
+            {
+                return true;
+            }
+
+            if (!ConditionEvaluator.IsMet(option.Conditions, _state))
             {
                 return false;
             }
 
             return _activeHub == null || !_takenHubOptions.Contains(TakenKey(node, option));
+        }
+
+        private bool IsSeen(NodeData node, OptionData option)
+        {
+            return option.Revisit && _activeHub != null && _takenHubOptions.Contains(TakenKey(node, option));
         }
 
         private static string TakenKey(NodeData node, OptionData option)

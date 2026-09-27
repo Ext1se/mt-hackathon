@@ -34,7 +34,7 @@ namespace VSM.UI
             if (scaler) { scaler.referenceResolution = portrait ? new Vector2(720, 1280) : new Vector2(1280, 720); scaler.matchWidthOrHeight = .5f; }
             bool touch = !previousXR && (Application.isMobilePlatform || (Application.isEditor && previewTouchInEditor));
             var helpText = hint.GetComponentInChildren<Text>();
-            if (helpText && (helpText.text.StartsWith("WASD") || helpText.text.StartsWith("Слева"))) helpText.text = touch ? "Слева — идти   •   справа — обзор   •   кнопка — действие" : "WASD — идти   •   мышь — обзор   •   E — взять / положить   •   F / ПКМ — курсор";
+            if (helpText && (helpText.text.StartsWith("WASD") || helpText.text.StartsWith("Слева"))) helpText.text = touch ? "Слева: идти   •   справа: обзор   •   кнопка: действие" : "WASD: идти   •   мышь: обзор   •   E: взять / положить   •   F / ПКМ: курсор";
             var buttonText = actionButton.GetComponentInChildren<Text>(); if (buttonText) buttonText.text = touch ? "ДЕЙСТВИЕ" : "ДЕЙСТВИЕ  ·  E";
             joystick.gameObject.SetActive(touch); lookArea.gameObject.SetActive(touch); actionButton.gameObject.SetActive(!previousXR);
             SetRect(joystick, Vector2.zero, new Vector2(portrait ? 125 : 120, portrait ? 170 : 112), new Vector2(164, 164));

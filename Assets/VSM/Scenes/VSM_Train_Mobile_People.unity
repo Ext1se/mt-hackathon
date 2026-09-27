@@ -4487,9 +4487,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "WASD \u2014 \u0438\u0434\u0442\u0438   \u2022   \u043C\u044B\u0448\u044C
-    \u2014 \u043E\u0431\u0437\u043E\u0440   \u2022   E \u2014 \u0432\u0437\u044F\u0442\u044C
-    / \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u044C"
+  m_Text: "WASD: \u0438\u0434\u0442\u0438   \u2022   \u043C\u044B\u0448\u044C: \u043E\u0431\u0437\u043E\u0440  
+    \u2022   E: \u0432\u0437\u044F\u0442\u044C / \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u044C"
 --- !u!222 &77221558
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7347,6 +7346,7 @@ MonoBehaviour:
   speed: 1.65
   runSpeed: 3.3
   allowRunning: 1
+  focusTurnSpeed: 5
 --- !u!4 &116095328
 Transform:
   m_ObjectHideFlags: 0
@@ -31502,7 +31502,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u0412\u0421\u041C  /  \u041C\u041E\u0421\u041A\u0412\u0410 \u2014 \u0421\u0410\u041D\u041A\u0422-\u041F\u0415\u0422\u0415\u0420\u0411\u0423\u0420\u0413"
+  m_Text: "\u0412\u0421\u041C  /  \u041C\u041E\u0421\u041A\u0412\u0410 - \u0421\u0410\u041D\u041A\u0422-\u041F\u0415\u0422\u0415\u0420\u0411\u0423\u0420\u0413"
 --- !u!222 &322421366
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -180497,6 +180497,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VSM.Presentation.VSMTrainMotion
   passenger: {fileID: 116095328}
+  swayEnabled: 0
   rollDegrees: 0.22
   turnDegrees: 0.38
   turnPeriod: 55

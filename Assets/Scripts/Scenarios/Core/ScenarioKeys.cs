@@ -12,6 +12,12 @@ namespace Game.Scenarios.Core
 
         /// <summary>"visited.NODE" is set to 1 when a node is entered for the first time; never recorded as an effect.</summary>
         public const string VisitedPrefix = "visited.";
+
+        /// <summary>
+        /// 1 when the box-breathing mini-game is switched on for the playthrough (set by the presentation before start);
+        /// options that open it use it as a condition.
+        /// </summary>
+        public const string BreathingGame = "setting.breathing_game";
         public const int ScaleMin = 0;
         public const int ScaleMax = 100;
     }

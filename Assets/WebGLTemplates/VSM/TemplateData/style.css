@@ -1,0 +1,39 @@
+@font-face { font-family: "MoscowSans"; src: url("MoscowSans-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "MoscowSans"; src: url("MoscowSans-ExtraBold.otf") format("opentype"); font-weight: 800; font-display: swap; }
+
+:root { --bg: #12161d; --panel: #1b212b; --text: #f5f6f8; --muted: #9aa3b2; --accent: #d9282f; }
+
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+body { font-family: "MoscowSans", "Segoe UI", Arial, sans-serif; color: var(--text); -webkit-tap-highlight-color: transparent; }
+
+#unity-container { position: fixed; inset: 0; background: var(--bg); }
+#unity-canvas { display: block; width: 100%; height: 100%; background: var(--bg); outline: none; touch-action: none; }
+
+/* Loading and start screens share one overlay over the canvas. */
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; padding: 24px; box-sizing: border-box; background: var(--bg); text-align: center; transition: opacity .3s ease; }
+.overlay.hidden { opacity: 0; pointer-events: none; }
+.logo { width: clamp(96px, 14vh, 160px); height: auto; margin-bottom: 8px; }
+.title { font-weight: 800; font-size: clamp(26px, 4.4vw, 48px); line-height: 1.1; }
+.rule { width: 72px; height: 4px; background: var(--accent); }
+.subtitle { font-size: clamp(14px, 1.8vw, 20px); color: var(--muted); }
+
+#progress { width: min(360px, 70vw); height: 6px; margin-top: 18px; background: var(--panel); border-radius: 3px; overflow: hidden; }
+#progress-fill { width: 0%; height: 100%; background: var(--accent); transition: width .2s linear; }
+#progress-label { font-size: 14px; color: var(--muted); min-height: 18px; }
+
+#start-button { margin-top: 18px; padding: 16px 44px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+  font: 800 clamp(16px, 2vw, 22px) "MoscowSans", "Segoe UI", Arial, sans-serif; cursor: pointer; display: none; }
+#start-button:hover { filter: brightness(1.1); }
+#start-button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+#start-hint { font-size: 14px; color: var(--muted); display: none; }
+.ready #start-button, .ready #start-hint { display: block; }
+.ready #progress, .ready #progress-label { display: none; }
+
+#error { display: none; max-width: 560px; padding: 14px 18px; border-radius: 8px; background: #3a1417; color: #ffd7d9; font-size: 15px; }
+.failed #error { display: block; }
+.failed #progress, .failed #progress-label { display: none; }
+
+/* Non-critical Unity warnings. */
+#unity-warning { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); z-index: 2; display: none; max-width: 90vw; }
+#unity-warning div { padding: 10px 14px; border-radius: 6px; background: #f2c94c; color: #111; font-size: 14px; }

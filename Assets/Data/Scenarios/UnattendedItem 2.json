@@ -1,0 +1,4259 @@
+{
+  "id": "unattended_item",
+  "title": "Бесхозная вещь",
+  "summary": "Безопасность, управление паникой, поиск владельца, работа с фактами.",
+  "loyalty": 50,
+  "safety": 50,
+  "variables": [
+    {
+      "key": "var.panic",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "hud": true
+    }
+  ],
+  "variants": [
+    {
+      "id": "A",
+      "weight": 35,
+      "title": "Ушёл в бистро"
+    },
+    {
+      "id": "B",
+      "weight": 25,
+      "title": "Забыл"
+    },
+    {
+      "id": "C",
+      "weight": 15,
+      "title": "Оставил нарочно"
+    },
+    {
+      "id": "D",
+      "weight": 25,
+      "title": "Соседка перепутала"
+    }
+  ],
+  "include": ["UnattendedItem.terminal"],
+  "start": "V1_hello",
+  "nodes": [
+    {
+      "id": "V1_hello",
+      "speaker": "passenger_3G",
+      "emotion": "fear",
+      "lines": [
+        {
+          "text": "Здравствуйте, мне нужна помощь!"
+        }
+      ],
+      "options": [
+        {
+          "id": "ask",
+          "text": "Что у вас случилось?",
+          "free": true,
+          "next": "V1_bag"
+        }
+      ]
+    },
+    {
+      "id": "V1_bag",
+      "speaker": "passenger_3G",
+      "emotion": "fear",
+      "lines": [
+        {
+          "text": "Меня беспокоит эта чёрная сумка."
+        }
+      ],
+      "look": [
+        {
+          "target": "bag",
+          "hold": true
+        }
+      ],
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "free": true,
+          "next": "V1"
+        }
+      ]
+    },
+    {
+      "id": "V1",
+      "speaker": "passenger_3G",
+      "emotion": "fear",
+      "lines": [
+        {
+          "text": "Мне кажется, это сумка моего соседа. На остановке в Твери он встал и ушёл, больше я его не видела. А сумка осталась тут."
+        }
+      ],
+      "timeLimit": 10,
+      "timeoutOption": "timeout",
+      "hints": [
+        {
+          "afterSeconds": 5,
+          "text": "Любое сообщение о бесхозной вещи отрабатывается по алгоритму: поблагодарить, выяснить принадлежность и не трогать предмет."
+        }
+      ],
+      "options": [
+        {
+          "id": "thank",
+          "text": "Благодарю за бдительность, сейчас я уточню, кому принадлежит оставленная вещь.",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Эталонная реплика (№41): вы благодарите за бдительность и берёте ситуацию на себя.",
+          "next": "V1_card",
+          "lines": [
+            {
+              "text": "Спасибо. Я просто не знала, к кому обратиться."
+            }
+          ]
+        },
+        {
+          "id": "dismiss",
+          "text": "Наверное, он скоро вернётся. Не переживайте.",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "safety",
+              "value": -15
+            },
+            {
+              "key": "flag.ignored",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Любое сообщение о бесхозной вещи отрабатывается по алгоритму, без исключений. Слова «кажется, соседа» принадлежность ещё не подтверждают.",
+          "next": "VI",
+          "lines": [
+            {
+              "text": "Но его уже давно нет… Ну, как скажете. <i>Она отворачивается к окну, но то и дело косится на сумку.</i>"
+            }
+          ]
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: не ответили",
+          "effects": [
+            {
+              "key": "var.panic",
+              "value": 1
+            }
+          ],
+          "feedback": "Пассажирка повторила громче, соседи обернулись. Отвечать на сообщение о вещи нужно сразу.",
+          "next": "V1_card"
+        }
+      ]
+    },
+    {
+      "id": "V1_card",
+      "card": {
+        "title": "Бесхозная вещь",
+        "sections": [
+          {
+            "title": "Ситуация",
+            "text": "Пассажирка 3Г сообщила о чёрной сумке на кресле через проход. Она думает, что это сумка соседа с места 3Б, который сошёл в Твери, но это не подтверждено. Пока владелец не найден, вещь считается бесхозной."
+          },
+          {
+            "title": "Сразу",
+            "items": [
+              "Не трогать, не переставлять и не открывать сумку.",
+              "Доложить начальнику поезда и ПТБ по рации.",
+              "Говорить спокойно, без догадок о содержимом."
+            ]
+          },
+          {
+            "title": "Выяснить, чья сумка",
+            "items": [
+              "Расспросить соседей и осмотреть место 3Б.",
+              "Проверить билет пассажира 3Б в ММТ.",
+              "Найти владельца по описанию (пассажиры часто отходят в бистро, вагон 6) или попросить объявить о вещи, не называя фамилию."
+            ]
+          },
+          {
+            "title": "Если ситуация не проясняется или ухудшается",
+            "items": [
+              "Попросить пассажиров рядом отсесть и не подходить к сумке.",
+              "Сообщить по рации, что осмотр закончен, и передать ситуацию ПТБ."
+            ]
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "start",
+          "text": "Приступить",
+          "free": true,
+          "next": "V2"
+        }
+      ]
+    },
+    {
+      "id": "VI",
+      "lines": [
+        {
+          "text": "<i>Проходит пять минут. Пассажир 2Б поднимается с места и идёт к сумке.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "effects": [
+            {
+              "key": "flag.five_minutes",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "next": "VI2"
+        }
+      ]
+    },
+    {
+      "id": "VI2",
+      "speaker": "chief",
+      "lines": [
+        {
+          "text": "<i>По рации:</i> Мне сообщили пассажиры о вещи в вашем вагоне. Почему не доложили?"
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "comp.escalation",
+          "value": -1
+        }
+      ],
+      "feedback": "О вещи узнали от пассажиров, а не от проводника.",
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "next": "V2"
+        }
+      ]
+    },
+    {
+      "id": "V2",
+      "kind": "hub",
+      "roam": true,
+      "lines": [
+        {
+          "text": "<i>Осмотритесь: с кем поговорить, что проверить, кому сообщить. Сумку пока не трогайте.</i>"
+        }
+      ],
+      "timeLimit": 60,
+      "maxActions": 6,
+      "leave": [
+        {
+          "conditions": [
+            {
+              "key": "flag.owner_found"
+            },
+            {
+              "key": "variant.A"
+            }
+          ],
+          "node": "V6A_found"
+        },
+        {
+          "conditions": [
+            {
+              "key": "flag.announced"
+            },
+            {
+              "key": "variant.A"
+            }
+          ],
+          "node": "V6A"
+        },
+        {
+          "conditions": [
+            {
+              "key": "flag.owner_found"
+            },
+            {
+              "key": "variant.D"
+            }
+          ],
+          "node": "V6D"
+        },
+        {
+          "conditions": [
+            {
+              "key": "flag.done"
+            },
+            {
+              "key": "variant.A"
+            }
+          ],
+          "node": "V6A_chief"
+        },
+        {
+          "conditions": [
+            {
+              "key": "flag.done"
+            },
+            {
+              "key": "variant.D"
+            }
+          ],
+          "node": "V6D"
+        },
+        {
+          "conditions": [
+            {
+              "key": "flag.done"
+            }
+          ],
+          "node": "V6B"
+        }
+      ],
+      "exit": [
+        {
+          "conditions": [
+            {
+              "key": "variant.A"
+            }
+          ],
+          "node": "V6A_chief"
+        },
+        {
+          "conditions": [
+            {
+              "key": "variant.D"
+            }
+          ],
+          "node": "V6D"
+        }
+      ],
+      "exitNext": "V6B",
+      "hints": [
+        {
+          "afterSeconds": 10,
+          "conditions": [
+            {
+              "key": "flag.reported",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "text": "Начальник поезда и ПТБ ещё не знают о вещи."
+        },
+        {
+          "afterSeconds": 25,
+          "conditions": [
+            {
+              "key": "flag.ticket_3b",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "text": "Место известно: по билету в ММТ видно, до какой станции едет пассажир."
+        },
+        {
+          "text": "Не трогайте сумку и оградите зону, прежде чем уходить из вагона."
+        }
+      ],
+      "options": [
+        {
+          "id": "go_3g",
+          "text": "Расспросить пассажирку 3Г",
+          "target": "passenger_3G",
+          "objective": "Расспросить пассажирку 3Г",
+          "free": true,
+          "repeatable": true,
+          "next": "V2_3G"
+        },
+        {
+          "id": "go_4v",
+          "text": "Опросить соседа 4В",
+          "target": "passenger_4V",
+          "objective": "Опросить соседа 4В",
+          "free": true,
+          "repeatable": true,
+          "next": "V2_4V"
+        },
+        {
+          "id": "go_bag",
+          "text": "Осмотреть сумку",
+          "target": "bag",
+          "objective": "Осмотреть сумку",
+          "free": true,
+          "repeatable": true,
+          "next": "V2_bag"
+        },
+        {
+          "id": "go_seat",
+          "text": "Осмотреть место 3Б",
+          "target": "seat_3b",
+          "objective": "Осмотреть место 3Б",
+          "free": true,
+          "repeatable": true,
+          "next": "V2_seat"
+        },
+        {
+          "id": "go_terminal",
+          "text": "Открыть ММТ",
+          "target": "mmt",
+          "objective": "Проверить билет в ММТ (клавиша 1)",
+          "free": true,
+          "repeatable": true,
+          "next": "V2_terminal"
+        },
+        {
+          "id": "go_radio",
+          "text": "Связаться по рации",
+          "target": "radio",
+          "objective": "Связаться с начальником поезда по рации (клавиша 2)",
+          "free": true,
+          "repeatable": true,
+          "next": "V2_radio"
+        },
+        {
+          "id": "go_5b",
+          "text": "Попросить соседей пересесть",
+          "target": "passenger_5B",
+          "objective": "Попросить соседей отсесть от сумки",
+          "free": true,
+          "repeatable": true,
+          "conditions": [
+            {
+              "key": "flag.zone",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.panicker_left",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "next": "V2_5B"
+        },
+        {
+          "id": "go_car8",
+          "text": "Пройти в сторону бистро",
+          "target": "door_car8",
+          "objective": "Поискать владельца по описанию (бистро в вагоне 6)",
+          "conditions": [
+            {
+              "key": "flag.description"
+            },
+            {
+              "key": "flag.search_empty",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": ""
+            },
+            {
+              "text": "<i>Ни в бистро, ни в соседних вагонах пассажира по описанию нет. Вы возвращаетесь.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.search_empty",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.A",
+                  "op": "eq",
+                  "value": 0
+                }
+              ]
+            }
+          ],
+          "feedback": "Искать владельца по описанию правильно, но только когда вещь под контролем: НП и ПТБ в курсе, пассажиры отсажены.",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "node": "V3A"
+            }
+          ],
+          "next": "@hub"
+        },
+        {
+          "id": "go_car6",
+          "text": "Пройти в вагон 2",
+          "target": "door_car6",
+          "objective": "Поискать владельца по описанию (бистро в вагоне 6)",
+          "conditions": [
+            {
+              "key": "flag.description"
+            },
+            {
+              "key": "flag.search_empty",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Во втором вагоне пассажира по описанию нет. Вы возвращаетесь.</i>"
+            },
+            {
+              "text": "<i>Ни в соседних вагонах, ни в бистро пассажира по описанию нет. Вы возвращаетесь.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.search_empty",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.A",
+                  "op": "eq",
+                  "value": 0
+                }
+              ]
+            }
+          ],
+          "feedback": "Свидетель мог подсказать направление и сэкономить действие.",
+          "next": "@hub"
+        },
+        {
+          "id": "find_owner",
+          "text": "Высокий лысый мужчина в очках, в розовой кофте и камуфляжных штанах, у стойки бистро.",
+          "target": "candidate_owner",
+          "objective": "Найти пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны",
+          "reference": true,
+          "effects": [
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "flag.owner_found",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Все приметы сошлись: это владелец.",
+          "next": "@hub",
+          "free": true,
+          "conditions": [
+            {
+              "key": "variant.A"
+            },
+            {
+              "key": "flag.description"
+            }
+          ]
+        },
+        {
+          "id": "find_bald",
+          "text": "Высокий лысый мужчина в очках, но в куртке и джинсах.",
+          "target": "candidate_bald",
+          "objective": "Найти пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны",
+          "lines": [
+            {
+              "text": "<i>Мужчина поднимает глаза:</i> Сумка? Нет, моя при мне."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "flag.first_try",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Совпали не все приметы: одежда другая. Сверяйте описание целиком.",
+          "next": "@hub",
+          "free": true,
+          "conditions": [
+            {
+              "key": "variant.A"
+            },
+            {
+              "key": "flag.description"
+            }
+          ]
+        },
+        {
+          "id": "find_hoodie",
+          "text": "Мужчина в розовой кофте и камуфляжных штанах, но со стрижкой и без очков.",
+          "target": "candidate_hoodie",
+          "objective": "Найти пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны",
+          "lines": [
+            {
+              "text": "<i>Молодой человек снимает наушник:</i> Сумка? Не моя, я из пятого вагона."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "flag.first_try",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Совпала одежда, но не внешность. Сверяйте описание целиком.",
+          "next": "@hub",
+          "free": true,
+          "conditions": [
+            {
+              "key": "variant.A"
+            },
+            {
+              "key": "flag.description"
+            }
+          ]
+        },
+        {
+          "id": "find_owner_blind",
+          "text": "Высокий лысый мужчина в очках, в розовой кофте и камуфляжных штанах, у стойки бистро.",
+          "target": "candidate_owner",
+          "objective": "Поговорить с пассажиром",
+          "effects": [
+            {
+              "key": "flag.owner_found",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Владелец нашёлся случайно: описание у соседки 3Г помогло бы искать его целенаправленно.",
+          "next": "@hub",
+          "free": true,
+          "conditions": [
+            {
+              "key": "variant.A"
+            },
+            {
+              "key": "flag.description",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "quiet": true
+        }
+      ]
+    },
+    {
+      "id": "V2_3G",
+      "speaker": "passenger_3G",
+      "emotion": "fear",
+      "lines": [
+        {
+          "text": "Чем могу помочь?"
+        }
+      ],
+      "options": [
+        {
+          "id": "describe",
+          "text": "Опишите, пожалуйста, соседа.",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "text": "Высокий лысый мужчина в очках. На нём розовая кофта с капюшоном и камуфляжные штаны."
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "flag.description",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Описание нужно, чтобы искать человека, а не вещь.",
+          "next": "V2_3G",
+          "revisit": true
+        },
+        {
+          "id": "saw_placing",
+          "text": "Вы уверены, что эта сумка вашего соседа?",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "text": "Да. Он входил с ней в поезд."
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "flag.saw_placing",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Уверенность соседки ещё не доказательство: её слова нужно сверить с билетом в ММТ и с тем, что видели другие пассажиры.",
+          "next": "V2_3G",
+          "revisit": true
+        },
+        {
+          "id": "back",
+          "text": "<i>Завершить диалог</i>",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_4V",
+      "speaker": "passenger_4V",
+      "lines": [
+        {
+          "text": "Чем могу помочь?"
+        }
+      ],
+      "options": [
+        {
+          "id": "ask_around",
+          "text": "<i>Тихо:</i> Не видели, куда ушёл пассажир с 3Б и кто клал эту сумку?",
+          "speaker": "passenger_4V",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "Мне кажется, я видел, как он ушёл в соседний вагон или в сторону бистро."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "Точно не скажу… Кажется, он выходил на станции с чемоданом, торопился. Может, сумку и забыл."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "Не уверен, но, по-моему, перед станцией он сам переложил сумку на соседнее кресло. А вышел вроде налегке."
+            },
+            {
+              "text": "Не уверен… Мужчина, кажется, вышел со своим чемоданом. А сумку, по-моему, положила девушка с первого ряда."
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "flag.asked_around",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Тихий опрос даёт факты и не поднимает вагон.",
+          "conditions": [
+            {
+              "key": "flag.asked_around",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "next": "V2_4V",
+          "revisit": true
+        },
+        {
+          "id": "ask_loud",
+          "text": "<i>Громко на весь вагон:</i> Чья сумка?!",
+          "speaker": "passenger_4V",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Пассажиры оборачиваются.</i> Мне кажется, я видел, как он ушёл в соседний вагон или в сторону бистро."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "<i>Пассажиры оборачиваются.</i> Точно не скажу… Кажется, он выходил на станции с чемоданом, торопился. Может, сумку и забыл."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "<i>Пассажиры оборачиваются.</i> Не уверен, но, по-моему, перед станцией он сам переложил сумку на соседнее кресло. А вышел вроде налегке."
+            },
+            {
+              "text": "<i>Пассажиры оборачиваются.</i> Не уверен… Мужчина, кажется, вышел со своим чемоданом. А сумку, по-моему, положила девушка с первого ряда."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "var.panic",
+              "value": 1
+            },
+            {
+              "key": "comp.composure",
+              "value": -1
+            },
+            {
+              "key": "flag.asked_around",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Факты те же, что при тихом опросе, но теперь весь вагон насторожен.",
+          "conditions": [
+            {
+              "key": "flag.asked_around",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "next": "V2_4V",
+          "revisit": true
+        },
+        {
+          "id": "back",
+          "text": "<i>Завершить диалог</i>",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_bag",
+      "lines": [
+        {
+          "text": "<i>Чёрная сумка лежит на кресле у окна.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "inspect",
+          "text": "<i>Осмотреть, не трогая.</i>",
+          "reference": true,
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "<i>Сумка новая, на ручке ещё висит бирка магазина. Молния застёгнута до конца, внутри что-то плотное, по форме не понять.</i>"
+            },
+            {
+              "text": "<i>Молния застёгнута, бирок и надписей нет. Внутри что-то мягкое, по форме не понять.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "flag.bag_inspected",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Осмотр без прикосновения соответствует регламенту (№41).",
+          "next": "V2_bag",
+          "revisit": true
+        },
+        {
+          "id": "move_bag",
+          "text": "<i>Переставить сумку, «чтобы не мешала».</i>",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -30
+            },
+            {
+              "key": "flag.touched_by_player",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Вещь нельзя трогать и перемещать (№41).",
+          "next": "@hub",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "text": "<i>Вы переносите сумку на соседнее кресло, она тяжелее, чем казалась. Пассажирка 3Г вздрагивает:</i> Вы что, её трогаете?!"
+            }
+          ]
+        },
+        {
+          "id": "open_bag",
+          "text": "<i>Открыть и поискать документы владельца.</i>",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Внутри бутерброды и книга. Документов нет.</i>"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "<i>Внутри одежда и зарядка. Документов нет.</i>"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "<i>Внутри плотно упакованный свёрток. Вы закрываете сумку.</i>"
+            },
+            {
+              "text": "<i>Внутри косметичка и ноутбук. Документов нет.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -35
+            },
+            {
+              "key": "flag.touched_by_player",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.opened",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Желание найти владельца понятно, но вскрывать чужую бесхозную вещь опасно. Даже если внутри бутерброды, это случайность, а не правильное решение.",
+          "next": "@hub",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "node": "V2_bag_security"
+            }
+          ]
+        },
+        {
+          "id": "back",
+          "text": "<i>Отойти.</i>",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_bag_security",
+      "speaker": "security",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "flag.reported"
+            }
+          ],
+          "text": "<i>По рации:</i> Проводник, отойдите от предмета и никого к нему не подпускайте. Иду к вам."
+        },
+        {
+          "text": "<i>Пассажиры видели, как вы открыли сумку, и вызвали ПТБ. По рации:</i> Проводник, отойдите от предмета и никого к нему не подпускайте. Иду к вам."
+        }
+      ],
+      "feedback": "Внутри оказался плотный свёрток, и осмотр закончился: теперь предметом занимается ПТБ, а вы успели оставить на нём свои следы.",
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "free": true,
+          "effects": [
+            {
+              "key": "flag.done",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_seat",
+      "lines": [
+        {
+          "text": "<i>Кроме сумки, никаких других вещей обнаружить не удалось.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "next",
+          "text": "Далее",
+          "free": true,
+          "repeatable": true,
+          "conditions": [
+            {
+              "key": "flag.ticket_3b",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "next": "V2_seat_terminal"
+        },
+        {
+          "id": "back",
+          "text": "<i>Отойти.</i>",
+          "free": true,
+          "repeatable": true,
+          "conditions": [
+            {
+              "key": "flag.ticket_3b"
+            }
+          ],
+          "next": "@hub"
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "flag.seat_checked",
+          "op": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "V2_seat_terminal",
+      "lines": [
+        {
+          "text": "Мне следует изучить билет пассажира. \n<i>ММТ всегда при мне: чтобы открыть его и изучить билеты, необходимо нажать кнопку 1.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "close",
+          "text": "<i>Завершить диалог</i>",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_terminal",
+      "lines": [
+        {
+          "text": "ММТ: проверка билетов по местам."
+        }
+      ],
+      "terminal": true,
+      "options": [
+        {
+          "id": "ticket_3b",
+          "text": "Проверить место 3Б в ММТ: до какой станции следует пассажир.",
+          "effects": [
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "flag.ticket_3b",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Зная место, пассажира можно найти по билету. Одна проверка в ММТ сразу отвечает, должен ли он ещё быть в поезде.",
+          "next": "V2_terminal"
+        },
+        {
+          "id": "ticket_1a",
+          "text": "Проверить место 1А в ММТ.",
+          "conditions": [
+            {
+              "key": "variant.D"
+            },
+            {
+              "key": "flag.asked_around"
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "flag.ticket_1a",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Вы проверили версию свидетеля по билету, а не на слово.",
+          "next": "V2_terminal"
+        },
+        {
+          "id": "back",
+          "text": "Убрать ММТ",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "flag.ticket_3b"
+                },
+                {
+                  "key": "visited.V2_ticket_3b",
+                  "op": "eq",
+                  "value": 0
+                }
+              ],
+              "node": "V2_ticket_3b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_ticket_3b",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "variant.A"
+            }
+          ],
+          "text": "Место 3Б: мужчина, билет Москва - Санкт-Петербург, посадка подтверждена. Значит, скорее всего, он ещё в поезде. Надо его найти."
+        },
+        {
+          "text": "Место 3Б: мужчина, билет Москва - Тверь, поездка завершена. Значит, в поезде его, скорее всего, уже нет. Надо понять, чья это сумка и почему она здесь."
+        }
+      ],
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_radio",
+      "speaker": "chief",
+      "lines": [
+        {
+          "text": "<i>Рация. Начальник поезда на связи.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "report",
+          "text": "<i>Не трогая, сообщить НП и ПТБ по поездной радиосвязи:</i> Вагон 3, третий ряд, на кресле вещь без владельца, выясняю принадлежность.",
+          "speaker": "chief",
+          "lines": [
+            {
+              "text": "Принял, ПТБ в курсе."
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 15
+            },
+            {
+              "key": "comp.escalation",
+              "value": 1
+            },
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "flag.reported",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Начальник поезда и ПТБ узнали о вещи от вас и сразу.",
+          "next": "V2_radio"
+        },
+        {
+          "id": "announce",
+          "text": "<i>Попросить НП сделать объявление.</i>",
+          "conditions": [
+            {
+              "key": "flag.reported"
+            }
+          ],
+          "next": "V2_announce"
+        },
+        {
+          "id": "finish",
+          "text": "Осмотр закончил, передаю ситуацию ПТБ.",
+          "conditions": [
+            {
+              "key": "flag.reported"
+            }
+          ],
+          "effects": [
+            {
+              "key": "flag.done",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Вы закончили осмотр и передали ситуацию службе безопасности.",
+          "next": "@hub",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "Принял."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.D"
+                }
+              ],
+              "text": "Принял."
+            },
+            {
+              "text": "Принял. ПТБ идёт к вам, до его прихода никого к вещи не подпускайте."
+            }
+          ]
+        },
+        {
+          "id": "back",
+          "text": "<i>Завершить диалог</i>",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_5B",
+      "speaker": "passenger_5B",
+      "lines": [
+        {
+          "text": "<i>Пассажирка 5Б косится на сумку.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "zone",
+          "text": "Просьба пересесть подальше и не приближаться к предмету, мы уточняем принадлежность.",
+          "effects": [
+            {
+              "key": "safety",
+              "value": 10
+            },
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "flag.zone",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Зона вокруг вещи ограждена: никто к ней не подойдёт, пока вы заняты.",
+          "speaker": "passenger_5B",
+          "lines": [
+            {
+              "text": "<i>Соседи пересаживаются на два ряда дальше.</i>"
+            }
+          ],
+          "next": "@hub"
+        },
+        {
+          "id": "back",
+          "text": "<i>Завершить диалог</i>",
+          "free": true,
+          "repeatable": true,
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V2_announce",
+      "lines": [
+        {
+          "text": "<i>Что объявить?</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "general",
+          "text": "Пассажира, оставившего чёрную сумку на кресле в вагоне 3, просим вернуться к своим вещам.",
+          "reference": true,
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.D"
+                }
+              ],
+              "text": "<i>Через минуту в вагон возвращается девушка со стаканом кофе и идёт к сумке.</i>"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Объявление прозвучало по всему поезду.</i>"
+            },
+            {
+              "text": "<i>Объявление прозвучало по всему поезду. Никто не откликается.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "flag.announced",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.owner_found",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.D"
+                }
+              ]
+            }
+          ],
+          "feedback": "Объявление про вещь, а не про конкретного пассажира: откликнется настоящий владелец.",
+          "next": "@hub"
+        },
+        {
+          "id": "by_seat",
+          "text": "Пассажира с места 3Б вагона 3 просим вернуться к своему месту.",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Объявление прозвучало по всему поезду.</i>"
+            },
+            {
+              "text": "<i>Объявление прозвучало по всему поезду. Никто не откликается.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "flag.announced",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ]
+            }
+          ],
+          "feedback": "Объявление строилось на неподтверждённой версии, что сумка принадлежит пассажиру с 3Б.",
+          "next": "@hub"
+        },
+        {
+          "id": "by_name",
+          "text": "<i>Объявить пассажира по фамилии из билета.</i>",
+          "conditions": [
+            {
+              "key": "flag.ticket_3b"
+            }
+          ],
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Фамилия прозвучала по всему поезду.</i>"
+            },
+            {
+              "text": "<i>Фамилия прозвучала по всему поезду. Никто не откликается.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -5
+            },
+            {
+              "key": "comp.rules",
+              "value": -1
+            },
+            {
+              "key": "flag.announcement_pd",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.announced",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ]
+            }
+          ],
+          "feedback": "Данные из билета используются для работы, но вслух не объявляются (по аналогии с №30).",
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V3A",
+      "lines": [
+        {
+          "text": "<i>Вы проходите в бистро, вагон 6. У стойки и в салоне пассажиры. Как ищете владельца?</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "by_description",
+          "text": "<i>Искать по описанию.</i>",
+          "effects": [
+            {
+              "key": "flag.first_try",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "next": "V3",
+          "free": true
+        },
+        {
+          "id": "loud",
+          "text": "<i>Громко на весь вагон:</i> Кто оставил сумку в третьем вагоне?",
+          "speaker": "passenger_3B",
+          "lines": [
+            {
+              "text": "<i>Высокий лысый мужчина у стойки поднимает руку:</i> Моя!"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "comp.composure",
+              "value": -1
+            },
+            {
+              "key": "flag.owner_found",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Вы нашли бы его и так: описание было достаточно точным. Теперь всё бистро в курсе.",
+          "next": "@hub"
+        }
+      ]
+    },
+    {
+      "id": "V3",
+      "kind": "roam",
+      "lines": [
+        {
+          "text": "<i>Найдите пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "bald",
+          "text": "Высокий лысый мужчина в очках, но в куртке и джинсах.",
+          "target": "candidate_bald",
+          "objective": "Найти пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны",
+          "lines": [
+            {
+              "text": "<i>Мужчина поднимает глаза:</i> Сумка? Нет, моя при мне."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "flag.first_try",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Совпали не все приметы: одежда другая. Сверяйте описание целиком.",
+          "next": "V3",
+          "free": true
+        },
+        {
+          "id": "hoodie",
+          "text": "Мужчина в розовой кофте и камуфляжных штанах, но со стрижкой и без очков.",
+          "target": "candidate_hoodie",
+          "objective": "Найти пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны",
+          "lines": [
+            {
+              "text": "<i>Молодой человек снимает наушник:</i> Сумка? Не моя, я из пятого вагона."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "flag.first_try",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Совпала одежда, но не внешность. Сверяйте описание целиком.",
+          "next": "V3",
+          "free": true
+        },
+        {
+          "id": "owner",
+          "text": "Высокий лысый мужчина в очках, в розовой кофте и камуфляжных штанах, у стойки бистро.",
+          "target": "candidate_owner",
+          "objective": "Найти пассажира по описанию: высокий, лысый, в очках, розовая кофта, камуфляжные штаны",
+          "reference": true,
+          "effects": [
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "flag.owner_found",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 0
+            }
+          ],
+          "feedback": "Все приметы сошлись: это владелец.",
+          "next": "@hub",
+          "free": true
+        }
+      ]
+    },
+    {
+      "id": "V4",
+      "speaker": "passenger_2B",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "flag.away"
+            }
+          ],
+          "text": "<i>Пока вас нет в вагоне, пассажир 2Б встаёт:</i> Да что вы все боитесь, сейчас гляну. <i>И тянется к молнии сумки.</i>"
+        },
+        {
+          "text": "<i>Пассажир 2Б встаёт:</i> Да что вы все боитесь, сейчас гляну. <i>И тянется к молнии.</i>"
+        }
+      ],
+      "timeLimit": 6,
+      "critical": true,
+      "timeoutOption": "timeout",
+      "hints": [
+        {
+          "text": "Твёрдая просьба не приближаться, без предположений о содержимом."
+        }
+      ],
+      "options": [
+        {
+          "id": "firm",
+          "text": "<i>Спокойно и твёрдо:</i> Прошу Вас не приближаться к предмету. Мы уточняем принадлежность.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.away",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.ignored",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.reported",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "lines": [
+            {
+              "text": "<i>Пассажир пожимает плечами и садится на место.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 10
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            },
+            {
+              "key": "flag.curious_done",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Чёткая просьба без догадок о содержимом: пассажир остановлен, вагон спокоен.",
+          "next": "@return"
+        },
+        {
+          "id": "firm_reported",
+          "text": "<i>Спокойно и твёрдо:</i> Прошу Вас не приближаться к предмету. Мы уточняем принадлежность, сотрудники безопасности в курсе.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.away",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.ignored",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.reported"
+            }
+          ],
+          "lines": [
+            {
+              "text": "<i>Пассажир пожимает плечами и садится на место.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 10
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            },
+            {
+              "key": "flag.curious_done",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Чёткая просьба без догадок о содержимом, со ссылкой на службу безопасности: пассажир остановлен, вагон спокоен.",
+          "next": "@return"
+        },
+        {
+          "id": "shout",
+          "text": "<i>Крикнуть:</i> Не трогайте! Там может быть взрывчатка!",
+          "conditions": [
+            {
+              "key": "flag.away",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "lines": [
+            {
+              "text": "<i>Пассажир отдёргивает руку. По вагону проходит волна:</i> Что? Где?"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -15
+            },
+            {
+              "key": "var.panic",
+              "value": 2
+            },
+            {
+              "key": "comp.composure",
+              "value": -1
+            },
+            {
+              "key": "flag.curious_done",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.said_bomb",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Пассажир остановлен, но вагон в панике. Никаких предположений о содержимом вслух.",
+          "next": "@return"
+        },
+        {
+          "id": "grab",
+          "text": "<i>Схватить его за руку.</i>",
+          "conditions": [
+            {
+              "key": "flag.away",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "lines": [
+            {
+              "text": "Руки уберите! <i>Пассажир обижен и ещё минуту спорит с вами.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "safety",
+              "value": -5
+            },
+            {
+              "key": "hub.actions",
+              "value": 1
+            },
+            {
+              "key": "flag.curious_done",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Физический контакт провоцирует конфликт. Достаточно чёткой просьбы. Спор съел одно действие.",
+          "next": "@return"
+        },
+        {
+          "id": "away",
+          "text": "<i>Вы в другом вагоне и не видите этого.</i>",
+          "conditions": [
+            {
+              "key": "flag.away"
+            }
+          ],
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Пассажир 2Б открывает сумку:</i> Да тут бутерброды!"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "<i>Пассажир 2Б открывает сумку:</i> Одежда какая-то, зарядка."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "<i>Пассажир 2Б открывает сумку, смотрит внутрь, молча застёгивает её и что-то шепчет соседям. Те оглядываются на сумку.</i>"
+            },
+            {
+              "text": "<i>Пассажир 2Б открывает сумку:</i> Косметичка, ноутбук… девчачья какая-то."
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -20
+            },
+            {
+              "key": "flag.touched_by_passenger",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.curious_done",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 0
+            },
+            {
+              "key": "var.panic",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ]
+            }
+          ],
+          "feedback": "Вы ушли из вагона, не оградив вещь и не сообщив о ней. Обошлось, но вы не обеспечили безопасность зоны.",
+          "next": "@return"
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: пассажир открыл сумку",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "<i>Пассажир 2Б открывает сумку:</i> Да тут бутерброды!"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "<i>Пассажир 2Б открывает сумку:</i> Одежда какая-то, зарядка."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "<i>Пассажир 2Б открывает сумку, смотрит внутрь, молча застёгивает её и что-то шепчет соседям. Те оглядываются на сумку.</i>"
+            },
+            {
+              "text": "<i>Пассажир 2Б открывает сумку:</i> Косметичка, ноутбук… девчачья какая-то."
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -20
+            },
+            {
+              "key": "flag.touched_by_passenger",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.curious_done",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.away",
+              "op": "set",
+              "value": 0
+            },
+            {
+              "key": "var.panic",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ]
+            }
+          ],
+          "feedback": "Обошлось, но вы не обеспечили безопасность зоны.",
+          "next": "@return"
+        }
+      ]
+    },
+    {
+      "id": "V5",
+      "speaker": "passenger_5B",
+      "emotion": "fear",
+      "lines": [
+        {
+          "text": "Там бомба?! Остановите поезд! Дёрните стоп-кран! <i>Пассажиры оборачиваются.</i>"
+        }
+      ],
+      "timeLimit": 10,
+      "timeoutOption": "timeout",
+      "hints": [
+        {
+          "text": "Спокойная формулировка: стандартная процедура, просьба оставаться на местах."
+        }
+      ],
+      "options": [
+        {
+          "id": "calm",
+          "text": "Пожалуйста, сохраняйте спокойствие и следуйте рекомендациям персонала. Мы уточняем, кому принадлежит вещь, это стандартная процедура.",
+          "reference": true,
+          "lines": [
+            {
+              "text": "<i>Пассажирка садится. Вагон затихает.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "var.panic",
+              "value": -1
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            }
+          ],
+          "feedback": "Эталон №45: спокойствие, ссылка на стандартную процедуру, никаких догадок.",
+          "next": "@return"
+        },
+        {
+          "id": "breathe",
+          "text": "<i>Присесть рядом:</i> Я здесь, всё под контролем. Давайте вместе подышим: вдох на четыре счёта, пауза, выдох, пауза.",
+          "conditions": [
+            {
+              "key": "setting.breathing_game"
+            }
+          ],
+          "lines": [
+            {
+              "text": "Какое ещё дыхание?! <i>Пауза.</i> Ладно… Давайте."
+            }
+          ],
+          "next": "V5_breath_intro"
+        },
+        {
+          "id": "move",
+          "text": "<i>Предложить пассажирке пересесть в соседний вагон и проводить её.</i>",
+          "lines": [
+            {
+              "text": "<i>Пассажирка уходит с вами в соседний вагон.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "var.panic",
+              "value": -1
+            },
+            {
+              "key": "flag.left_unattended",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "flag.zone",
+                  "op": "eq",
+                  "value": 0
+                },
+                {
+                  "key": "flag.reported",
+                  "op": "eq",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "key": "flag.panicker_left",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Пассажирке спокойнее, но вы оставили вещь без присмотра.",
+          "next": "@return"
+        },
+        {
+          "id": "maybe",
+          "text": "Не знаю, может быть. Отойдите на всякий случай.",
+          "lines": [
+            {
+              "text": "<i>Соседи вскакивают с мест.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "var.panic",
+              "value": 1
+            },
+            {
+              "key": "comp.composure",
+              "value": -1
+            }
+          ],
+          "feedback": "Проводник подтвердил худшие опасения: паника растёт.",
+          "next": "@return"
+        },
+        {
+          "id": "stop_crane",
+          "text": "<i>Дёрнуть стоп-кран / потребовать экстренной остановки.</i>",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -25
+            },
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "flag.stop_crane",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Решение об остановке принимают начальник поезда и машинист. Экстренное торможение на высокой скорости само по себе опасно.",
+          "next": "@end"
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: не ответили",
+          "effects": [
+            {
+              "key": "var.panic",
+              "value": 1
+            }
+          ],
+          "feedback": "Пауза проводника пугает сильнее любого ответа.",
+          "next": "@return"
+        }
+      ]
+    },
+    {
+      "id": "V5_breath_intro",
+      "card": {
+        "title": "Дыхание 4-4-4-4",
+        "sections": [
+          {
+            "title": "Зачем",
+            "text": "Техника «дыхание по квадрату» помогает человеку в панике вернуть контроль над дыханием и успокоиться. Проводник спокойно задаёт темп вслух и дышит вместе с пассажиром, пассажир повторяет."
+          },
+          {
+            "title": "Как дышать",
+            "items": [
+              "Вдох носом на 4 счёта.",
+              "Пауза на 4 счёта, дыхание задержано.",
+              "Медленный выдох ртом на 4 счёта.",
+              "Пауза на 4 счёта, затем снова вдох."
+            ]
+          },
+          {
+            "title": "Управление",
+            "text": "На вдохе нажмите пробел, на паузе удерживайте, на выдохе отпустите, на второй паузе не нажимайте. Вместо пробела подойдёт левая кнопка мыши. Точка бежит по сторонам квадрата и показывает фазу. Два цикла, в начале отсчёт 3, 2, 1."
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "understood",
+          "text": "Понятно",
+          "free": true,
+          "next": "V5_breath"
+        }
+      ]
+    },
+    {
+      "id": "V5_breath",
+      "speaker": "passenger_5B",
+      "emotion": "fear",
+      "breathing": {
+        "title": "Дыхание 4-4-4-4",
+        "cycles": 2,
+        "phaseSeconds": 4,
+        "passScore": 0.7,
+        "success": "good",
+        "fail": "poor"
+      },
+      "options": [
+        {
+          "id": "good",
+          "text": "Подышали вместе по квадрату, ритм выдержан.",
+          "lines": [
+            {
+              "text": "<i>Пассажирка дышит ровнее, плечи опускаются.</i> Спасибо… Уже легче."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "var.panic",
+              "value": -1
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            }
+          ],
+          "feedback": "Дыхание 4-4-4-4 быстро снижает тревогу: вы задаёте ровный темп, пассажир подстраивается под него. Успокоив пассажира, возвращайтесь к процедуре с вещью.",
+          "next": "@return"
+        },
+        {
+          "id": "poor",
+          "text": "Попробовали подышать вместе, но сбились с ритма.",
+          "lines": [
+            {
+              "text": "<i>Пассажирка всё ещё дышит часто, но уже не кричит.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            }
+          ],
+          "feedback": "Техника работает, только если темп ровный: вдох, задержка, выдох и пауза по четыре счёта. Сбитый ритм передаётся пассажиру.",
+          "next": "@return"
+        }
+      ]
+    },
+    {
+      "id": "V6A_found",
+      "speaker": "passenger_3B",
+      "lines": [
+        {
+          "text": "<i>Мужчина у стойки оборачивается:</i> Ох, простите! Зашёл в бистро перекусить и совсем забыл про сумку."
+        }
+      ],
+      "options": [
+        {
+          "id": "go_back",
+          "text": "Пройдёмте, пожалуйста, к Вашему месту, там всё и проверим.",
+          "free": true,
+          "next": "V6A"
+        }
+      ]
+    },
+    {
+      "id": "V6A_chief",
+      "speaker": "chief",
+      "lines": [
+        {
+          "text": "<i>По рации:</i> Владельца так и не нашли? Делаю объявление по поезду."
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "safety",
+          "value": -5
+        }
+      ],
+      "feedback": "Владельца не нашли ни поиском, ни объявлением: сам он бы не вернулся, объявление пришлось делать начальнику поезда.",
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "free": true,
+          "next": "V6A"
+        }
+      ]
+    },
+    {
+      "id": "V6A",
+      "speaker": "passenger_3B",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "flag.owner_found"
+            }
+          ],
+          "text": "<i>Вы вместе возвращаетесь в вагон 3. Пассажир садится на своё место 3Б.</i>"
+        },
+        {
+          "text": "<i>Через пару минут в вагон возвращается пассажир с места 3Б и садится на своё место:</i> Что тут такое? Это моя сумка."
+        }
+      ],
+      "options": [
+        {
+          "id": "aside",
+          "text": "<i>Отозвать в сторону, негромко:</i> Простите, что отвлекаю. Вы едете на месте 3Б в третьем вагоне? Опишите, пожалуйста, что внутри. <i>Затем:</i> Благодарю. Обращаю Ваше внимание: личные вещи лучше не оставлять без присмотра, пассажиры забеспокоились. Спасибо за понимание.",
+          "reference": true,
+          "lines": [
+            {
+              "text": "Да, 3Б. Внутри бутерброды и книжка. Простите, больше не оставлю."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "safety",
+              "value": 5
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Принадлежность подтверждена, замечание сделано вежливо и лично (№13).",
+          "next": "V7"
+        },
+        {
+          "id": "public",
+          "text": "<i>При всех:</i> Из-за Вас весь третий вагон на ушах!",
+          "lines": [
+            {
+              "text": "<i>Мужчина краснеет, пассажиры оборачиваются.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -15
+            },
+            {
+              "key": "comp.comm",
+              "value": -1
+            }
+          ],
+          "feedback": "Владелец не нарушитель. Замечание делается вежливо и лично, а не при компании.",
+          "next": "V7"
+        },
+        {
+          "id": "no_check",
+          "text": "Это Ваша сумка? Идите заберите. <i>(без проверки)</i>",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -5
+            }
+          ],
+          "feedback": "В вагоне были люди, похожие по описанию. Принадлежность нужно подтвердить: место по билету, содержимое.",
+          "next": "V7",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "text": "И всё? Вы даже не спросили, что там внутри?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V6D",
+      "speaker": "passenger_1A",
+      "emotion": "surprise",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "flag.owner_found"
+            }
+          ],
+          "text": "<i>Пассажирка 1А со стаканом кофе:</i> Ой, это моя! Я на следующей выхожу, положила на свободное кресло и сходила за кофе."
+        },
+        {
+          "text": "<i>Перед станцией в вагон возвращается пассажирка 1А со стаканом кофе:</i> Я на следующей выхожу… а где моя сумка? Что случилось?"
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "safety",
+          "value": -5,
+          "conditions": [
+            {
+              "key": "flag.owner_found",
+              "op": "eq",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "feedback": "Хозяйка нашлась сама только перед станцией: объявление о сумке нашло бы её сразу.",
+      "options": [
+        {
+          "id": "aside",
+          "text": "<i>Отозвать в сторону, негромко:</i> Простите, что отвлекаю. Где Ваше место? Опишите, пожалуйста, что внутри. <i>Затем:</i> Благодарю. Обращаю Ваше внимание: личные вещи лучше не оставлять без присмотра, пассажиры забеспокоились. Держите сумку при себе, а я предупрежу Вас о подходе к станции.",
+          "reference": true,
+          "lines": [
+            {
+              "text": "Место 1А. Косметичка и ноутбук. Спасибо, буду держать при себе."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "safety",
+              "value": 5
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Принадлежность подтверждена, замечание сделано вежливо (№13), о выходе вы предупредите (№38).",
+          "next": "V7"
+        },
+        {
+          "id": "public",
+          "text": "<i>При всех:</i> Из-за Вас весь вагон на ушах!",
+          "lines": [
+            {
+              "text": "<i>Девушка краснеет, пассажиры оборачиваются.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -15
+            },
+            {
+              "key": "comp.comm",
+              "value": -1
+            }
+          ],
+          "feedback": "Владелица не нарушитель. Замечание делается вежливо и лично.",
+          "next": "V7"
+        },
+        {
+          "id": "no_check",
+          "text": "Это Ваша сумка? Забирайте. <i>(без проверки)</i>",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -5
+            }
+          ],
+          "feedback": "Сумку считали чужой. Принадлежность нужно подтвердить: место по билету, содержимое.",
+          "next": "V7",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "text": "Погодите, это же не её… или её?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V7",
+      "lines": [
+        {
+          "text": "<i>Сумка у владельца. Что дальше?</i>"
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "loyalty",
+          "value": -10,
+          "conditions": [
+            {
+              "key": "flag.opened"
+            }
+          ]
+        }
+      ],
+      "feedback": "Владелец увидел расстёгнутую молнию: «А почему она открыта?» Вскрытие чужой вещи подрывает доверие, даже когда всё обошлось.",
+      "options": [
+        {
+          "id": "close_all",
+          "text": "<i>Сообщить НП и ПТБ «отбой», сказать вагону:</i> Благодарю всех за бдительность и понимание, вещь нашла владельца. <i>Отдельно поблагодарить пассажирку 3Г.</i>",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "comp.escalation",
+              "value": 1
+            }
+          ],
+          "feedback": "Ситуация закрыта для всех: службы отозваны, вагон знает, что всё в порядке.",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.D"
+                }
+              ],
+              "node": "V7_neighbour"
+            }
+          ],
+          "next": "@end",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "Спасибо Вам, я так переживала."
+            }
+          ]
+        },
+        {
+          "id": "back_to_work",
+          "text": "<i>Просто вернуться к работе.</i>",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "safety",
+              "value": -5,
+              "conditions": [
+                {
+                  "key": "flag.reported"
+                }
+              ]
+            }
+          ],
+          "feedback": "Вагон остался без «отбоя», а ПТБ продолжает искать владельца вещи, которая уже нашлась.",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.D"
+                }
+              ],
+              "node": "V7_neighbour"
+            }
+          ],
+          "next": "@end",
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.A"
+                }
+              ],
+              "text": "А нам кто-нибудь скажет, что это было? Все же переволновались."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V7_neighbour",
+      "speaker": "passenger_3G",
+      "emotion": "surprise",
+      "lines": [
+        {
+          "text": "<i>Пассажирка 3Г смущена:</i> Ой, а я думала, это соседа…"
+        }
+      ],
+      "options": [
+        {
+          "id": "reassure",
+          "text": "Вы всё правильно сделали, что сообщили. Спасибо за бдительность.",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Пассажир, сообщивший о вещи, поступил правильно, даже если ошибся с владельцем.",
+          "next": "@end",
+          "lines": [
+            {
+              "text": "Спасибо. Если что, в следующий раз тоже сразу скажу."
+            }
+          ]
+        },
+        {
+          "id": "scold",
+          "text": "Надо было внимательнее смотреть.",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "comp.comm",
+              "value": -1
+            }
+          ],
+          "feedback": "Упрёк отучает сообщать о подозрительных вещах.",
+          "next": "@end",
+          "lines": [
+            {
+              "text": "Извините… Больше не буду ничего говорить. <i>Она краснеет и отворачивается.</i>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V6B",
+      "speaker": "security",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "variant.C"
+            },
+            {
+              "key": "flag.opened"
+            }
+          ],
+          "text": "<i>Сотрудник ПТБ быстро подходит к сумке:</i> Что Вы видели внутри? Что известно о владельце?"
+        },
+        {
+          "conditions": [
+            {
+              "key": "flag.reported"
+            }
+          ],
+          "text": "<i>Сотрудник ПТБ подходит к тамбуру:</i> Что известно о владельце?"
+        },
+        {
+          "text": "<i>Сотрудник ПТБ приходит по звонку пассажира:</i> Почему не доложили? Что известно о владельце?"
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "safety",
+          "value": -15,
+          "conditions": [
+            {
+              "key": "flag.reported",
+              "op": "eq",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "key": "comp.escalation",
+          "value": -1,
+          "conditions": [
+            {
+              "key": "flag.reported",
+              "op": "eq",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "feedback": "ПТБ узнал о вещи от пассажира: о ней должен был доложить проводник.",
+      "hints": [
+        {
+          "text": "Доклад состоит из фактов: что показал билет, что сказали свидетели, что с местом, трогали ли предмет."
+        }
+      ],
+      "options": [
+        {
+          "id": "full",
+          "text": "<i>Полный доклад:</i> Предположительно пассажир с места 3Б: высокий лысый мужчина в очках, в розовой кофте и камуфляжных штанах. По билету следовал до Твери. <i>Добавить, что рассказали соседи и что видно на месте 3Б.</i>",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.ticket_3b",
+              "group": 0
+            },
+            {
+              "key": "flag.description",
+              "group": 0
+            },
+            {
+              "key": "flag.asked_around",
+              "group": 0
+            },
+            {
+              "key": "flag.ticket_3b",
+              "group": 1
+            },
+            {
+              "key": "flag.description",
+              "group": 1
+            },
+            {
+              "key": "flag.seat_checked",
+              "group": 1
+            },
+            {
+              "key": "flag.ticket_3b",
+              "group": 2
+            },
+            {
+              "key": "flag.description",
+              "group": 2
+            },
+            {
+              "key": "flag.saw_placing",
+              "group": 2
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 10
+            },
+            {
+              "key": "comp.escalation",
+              "value": 1
+            }
+          ],
+          "feedback": "ПТБ получает всё, что нужно: кто это, куда ехал по билету, что видели соседи и что на месте.",
+          "next": "V6B_version"
+        },
+        {
+          "id": "partial",
+          "text": "<i>Частичный доклад: то, что успели выяснить.</i>",
+          "conditions": [
+            {
+              "key": "flag.ticket_3b",
+              "group": 0
+            },
+            {
+              "key": "flag.asked_around",
+              "group": 1
+            },
+            {
+              "key": "flag.description",
+              "group": 2
+            },
+            {
+              "key": "flag.seat_checked",
+              "group": 3
+            },
+            {
+              "key": "flag.search_empty",
+              "group": 4
+            },
+            {
+              "key": "flag.saw_placing",
+              "group": 5
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 5
+            }
+          ],
+          "feedback": "Полезно, но неполно: билет плюс свидетели дали бы полную картину.",
+          "next": "V6B_version"
+        },
+        {
+          "id": "unknown",
+          "text": "Не знаю, чья она.",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -5
+            }
+          ],
+          "feedback": "За время ожидания можно было проверить билет и опросить соседей.",
+          "next": "V6B_version",
+          "lines": [
+            {
+              "text": "За всё это время? Ладно, разберёмся сами."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V6B_version",
+      "speaker": "security",
+      "lines": [
+        {
+          "text": "Ваша версия?"
+        }
+      ],
+      "options": [
+        {
+          "id": "forgot",
+          "text": "Похоже, забыл: торопился на выход, сумка лежала с посадки.",
+          "conditions": [
+            {
+              "key": "flag.ticket_3b",
+              "group": 0
+            },
+            {
+              "key": "flag.asked_around",
+              "group": 0
+            },
+            {
+              "key": "flag.ticket_3b",
+              "group": 1
+            },
+            {
+              "key": "flag.saw_placing",
+              "group": 1
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 10,
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ]
+            },
+            {
+              "key": "comp.rules",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ]
+            },
+            {
+              "key": "safety",
+              "value": -5,
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ]
+            }
+          ],
+          "feedback": "Версия проверяется по фактам: свидетель видел, как и когда ставили сумку.",
+          "next": "V6B_touched",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "Похоже на то, сообщу на вокзал Твери."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "Забыл? А свидетели говорят, он сам её переложил. Проверим."
+            }
+          ]
+        },
+        {
+          "id": "deliberate",
+          "text": "Похоже, оставил намеренно: сам переложил сумку на другое кресло и вышел налегке.",
+          "conditions": [
+            {
+              "key": "flag.ticket_3b",
+              "group": 0
+            },
+            {
+              "key": "flag.asked_around",
+              "group": 0
+            },
+            {
+              "key": "flag.ticket_3b",
+              "group": 1
+            },
+            {
+              "key": "flag.saw_placing",
+              "group": 1
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 10,
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ]
+            },
+            {
+              "key": "comp.rules",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ]
+            },
+            {
+              "key": "safety",
+              "value": -5,
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ]
+            },
+            {
+              "key": "flag.version_right",
+              "op": "set",
+              "value": 1,
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ]
+            }
+          ],
+          "feedback": "Версия проверяется по фактам: свидетель видел, как и когда ставили сумку.",
+          "next": "V6B_touched",
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "Понял, это серьёзно."
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.B"
+                }
+              ],
+              "text": "Намеренно? Свидетель говорит, торопился. Не спешите с выводами."
+            }
+          ]
+        },
+        {
+          "id": "facts_only",
+          "text": "Версий не выдвигаю, только факты.",
+          "feedback": "Если зацепок мало, честнее ограничиться фактами.",
+          "next": "V6B_touched",
+          "lines": [
+            {
+              "text": "Правильно, версии оставьте нам."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V6B_touched",
+      "speaker": "security",
+      "lines": [
+        {
+          "text": "Кто-нибудь трогал предмет?"
+        }
+      ],
+      "options": [
+        {
+          "id": "admit",
+          "text": "<i>Признать:</i> Да, я переставлял / открывал.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.touched_by_player"
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.rules",
+              "value": 1
+            }
+          ],
+          "feedback": "ПТБ нужна точная информация. Признать ошибку безопаснее, чем скрыть.",
+          "next": "V6B_announce",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                },
+                {
+                  "key": "flag.version_right"
+                }
+              ],
+              "node": "V9"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "node": "V9_delay"
+            }
+          ],
+          "lines": [
+            {
+              "text": "Хорошо, что сказали. Покажете потом, где и как брали: это важно для проверки."
+            }
+          ]
+        },
+        {
+          "id": "deny",
+          "text": "Нет, никто.",
+          "conditions": [
+            {
+              "key": "flag.touched_by_player"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -20
+            },
+            {
+              "key": "comp.rules",
+              "value": -1
+            }
+          ],
+          "feedback": "Скрывать контакт с вещью опасно: ПТБ работает с неверной картиной.",
+          "next": "V6B_announce",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                },
+                {
+                  "key": "flag.version_right"
+                }
+              ],
+              "node": "V9"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "node": "V9_delay"
+            }
+          ],
+          "speaker": "passenger_3G",
+          "lines": [
+            {
+              "text": "Как же никто? Вы же сами её трогали, я видела!"
+            }
+          ]
+        },
+        {
+          "id": "passenger_touched",
+          "text": "Пассажир 2Б открывал её до вашего прихода.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.touched_by_player",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.touched_by_passenger"
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.rules",
+              "value": 1
+            }
+          ],
+          "feedback": "Точная информация о том, кто и как трогал предмет.",
+          "next": "V6B_announce",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                },
+                {
+                  "key": "flag.version_right"
+                }
+              ],
+              "node": "V9"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "node": "V9_delay"
+            }
+          ],
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "text": "Где он? Пусть пока никуда не уходит, мне нужно с ним поговорить."
+            },
+            {
+              "text": "Понял, поговорю с ним отдельно."
+            }
+          ]
+        },
+        {
+          "id": "nobody",
+          "text": "Нет, к сумке никто не прикасался.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.touched_by_player",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "key": "flag.touched_by_passenger",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "next": "V6B_announce",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                },
+                {
+                  "key": "flag.version_right"
+                }
+              ],
+              "node": "V9"
+            },
+            {
+              "conditions": [
+                {
+                  "key": "variant.C"
+                }
+              ],
+              "node": "V9_delay"
+            }
+          ],
+          "lines": [
+            {
+              "text": "Хорошо. Дальше работаем мы."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V6B_announce",
+      "speaker": "security",
+      "lines": [
+        {
+          "text": "Проинформируйте вагон, мы работаем."
+        }
+      ],
+      "options": [
+        {
+          "id": "calm",
+          "text": "Уважаемые пассажиры, просим оставаться на своих местах. Сотрудники безопасности проводят стандартную проверку. Благодарим за понимание.",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            }
+          ],
+          "feedback": "Вагон знает, что происходит, и что это стандартная процедура.",
+          "next": "V8",
+          "speaker": "passenger_4V",
+          "lines": [
+            {
+              "text": "Понятно, спасибо, что объяснили."
+            }
+          ]
+        },
+        {
+          "id": "alarm",
+          "text": "Внимание, в вагоне обнаружен подозрительный предмет!",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -15
+            },
+            {
+              "key": "var.panic",
+              "value": 2
+            }
+          ],
+          "feedback": "Слово «подозрительный» без объяснений поднимает вагон.",
+          "next": "V8",
+          "speaker": "passenger_4V",
+          "lines": [
+            {
+              "text": "<i>Вскакивает:</i> Какой предмет?! Где? Нас отсюда выпустят?"
+            }
+          ]
+        },
+        {
+          "id": "silent",
+          "text": "<i>Ничего не объяснять.</i>",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "var.panic",
+              "value": 1
+            }
+          ],
+          "feedback": "Без информации вагон додумывает сам.",
+          "next": "V8",
+          "speaker": "passenger_4V",
+          "lines": [
+            {
+              "text": "<i>По вагону шёпот.</i> Почему нам ничего не говорят? Что в этой сумке?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V9_delay",
+      "speaker": "security",
+      "lines": [
+        {
+          "text": "<i>ПТБ сам расспрашивает соседей и осматривает место 3Б. Проходит несколько минут.</i> Выходит, он сам переложил сумку и вышел без неё. Это меняет дело."
+        }
+      ],
+      "onEnter": [
+        {
+          "key": "safety",
+          "value": -5
+        }
+      ],
+      "feedback": "Соседи видели, что сумку переложили нарочно. Без этой версии в докладе ПТБ потратил время, чтобы выяснить это сам.",
+      "options": [
+        {
+          "id": "continue",
+          "text": "Продолжить",
+          "free": true,
+          "next": "V9"
+        }
+      ]
+    },
+    {
+      "id": "V9",
+      "speaker": "security",
+      "lines": [
+        {
+          "text": "Переводим пассажиров вагона 3 в соседние вагоны до следующей станции. Ваша задача: вывести людей. Мы остаёмся у сумки."
+        }
+      ],
+      "timeLimit": 15,
+      "timeoutOption": "timeout",
+      "hints": [
+        {
+          "text": "Сумка у третьего ряда, ближний тамбур ведёт в вагон 2. Никого не вести мимо сумки, говорить спокойно."
+        }
+      ],
+      "options": [
+        {
+          "id": "orderly",
+          "text": "<i>Идти по рядам и спокойно говорить каждому ряду:</i> По указанию службы безопасности просим перейти в соседний вагон, это стандартная мера. Возьмите документы и ценные вещи. <i>Ряды 1 и 2 выводить в вагон 2, остальных в вагон 4, чтобы никто не проходил мимо сумки.</i>",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 10
+            },
+            {
+              "key": "safety",
+              "value": 10
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            },
+            {
+              "key": "comp.rules",
+              "value": 1
+            }
+          ],
+          "feedback": "Спокойно, по рядам, и каждый выходит в сторону от сумки.",
+          "next": "V9_2B",
+          "speaker": "narrator",
+          "lines": [
+            {
+              "text": "<i>Пассажиры встают, берут вещи и по одному выходят: первые ряды в вагон 2, остальные в вагон 4.</i>"
+            }
+          ]
+        },
+        {
+          "id": "alarm",
+          "text": "<i>Объявить:</i> Всем срочно покинуть вагон, возможна угроза!",
+          "lines": [
+            {
+              "text": "<i>В проходе давка.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -15
+            },
+            {
+              "key": "safety",
+              "value": -10
+            },
+            {
+              "key": "var.panic",
+              "value": 2
+            }
+          ],
+          "feedback": "Паническая эвакуация опаснее самой вещи: давка в проходе.",
+          "next": "V9_2B",
+          "speaker": "narrator"
+        },
+        {
+          "id": "past_bag",
+          "text": "<i>Вывести всех через ближний тамбур в вагон 2, мимо сумки: так быстрее.</i>",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -15
+            },
+            {
+              "key": "flag.evac_past_bag",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Маршрут выбирается в сторону от предмета: пассажиры задних рядов прошли в метре от сумки.",
+          "next": "V9_2B",
+          "speaker": "narrator",
+          "lines": [
+            {
+              "text": "<i>Люди идут гуськом через ближний тамбур, кто-то задевает сумку рюкзаком. В проходе затор.</i>"
+            }
+          ]
+        },
+        {
+          "id": "timeout",
+          "hidden": true,
+          "text": "Время вышло: пассажиры пошли сами",
+          "lines": [
+            {
+              "text": "<i>Пассажиры идут кто куда, часть проходит мимо сумки.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "var.panic",
+              "value": 1
+            },
+            {
+              "key": "safety",
+              "value": -10
+            },
+            {
+              "key": "flag.evac_past_bag",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Без команды проводника перевод превращается в хаос.",
+          "next": "V9_2B",
+          "speaker": "narrator"
+        }
+      ]
+    },
+    {
+      "id": "V9_2B",
+      "speaker": "passenger_2B",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "flag.touched_by_passenger"
+            }
+          ],
+          "text": "Никуда не пойду. Я туда заглядывал, ничего страшного. У меня работа, ноутбук."
+        },
+        {
+          "text": "Никуда я не пойду. Ерунда там какая-нибудь, а у меня работа, ноутбук."
+        }
+      ],
+      "options": [
+        {
+          "id": "explain",
+          "text": "Понимаю, что неудобно. Это указание службы безопасности, оно касается всех пассажиров вагона. Возьмите ноутбук с собой: в вагоне 2 найдём Вам место, где можно работать.",
+          "reference": true,
+          "lines": [
+            {
+              "text": "<i>Пассажир вздыхает, берёт ноутбук и идёт в вагон 2.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Признать неудобство, сослаться на правило, предложить решение: пассажир уходит без спора.",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "flag.panicker_left"
+                }
+              ],
+              "node": "V9_help"
+            }
+          ],
+          "next": "V9_5B"
+        },
+        {
+          "id": "let_stay",
+          "text": "Тогда оставайтесь, под Вашу ответственность.",
+          "lines": [
+            {
+              "text": "<i>Пассажир остаётся на месте, в метре от сумки.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -15
+            },
+            {
+              "key": "flag.stayed_2b",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.left_behind",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Указание службы безопасности касается всех. Оставить пассажира рядом с предметом нельзя, даже если он сам этого хочет.",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "flag.panicker_left"
+                }
+              ],
+              "node": "V9_help"
+            }
+          ],
+          "next": "V9_5B"
+        },
+        {
+          "id": "order",
+          "text": "Это не обсуждается! Встаёте и идёте!",
+          "lines": [
+            {
+              "text": "<i>Пассажир уходит, громко возмущаясь. На вас оглядываются.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "comp.composure",
+              "value": -1
+            },
+            {
+              "key": "var.panic",
+              "value": 1
+            }
+          ],
+          "feedback": "Пассажир ушёл, но спор на повышенных тонах нервирует остальных.",
+          "nextRules": [
+            {
+              "conditions": [
+                {
+                  "key": "flag.panicker_left"
+                }
+              ],
+              "node": "V9_help"
+            }
+          ],
+          "next": "V9_5B"
+        }
+      ]
+    },
+    {
+      "id": "V9_5B",
+      "speaker": "passenger_5B",
+      "emotion": "fear",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "visited.V5"
+            }
+          ],
+          "text": "Я же говорила, там бомба! Нас поэтому выводят, да? <i>Она вцепилась в подлокотник и не встаёт.</i>"
+        },
+        {
+          "text": "Нас выводят из-за этой сумки? Там бомба, да?! <i>Она вцепилась в подлокотник и не встаёт.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "calm",
+          "text": "Это стандартная мера предосторожности, так делают при любой оставленной вещи. Пойдёмте со мной, я Вас провожу и помогу найти место.",
+          "reference": true,
+          "lines": [
+            {
+              "text": "<i>Пассажирка кивает, встаёт и идёт за вами к вагону 4.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "var.panic",
+              "value": -1
+            },
+            {
+              "key": "comp.composure",
+              "value": 1
+            }
+          ],
+          "feedback": "Причина для пассажиров одна: стандартная мера. Лучшее, что можно сделать для испуганного человека: проводить его лично.",
+          "next": "V9_help"
+        },
+        {
+          "id": "hurry",
+          "text": "Быстрее, быстрее, не задерживайте!",
+          "lines": [
+            {
+              "text": "<i>Пассажирка вскакивает и почти бежит по проходу, за ней начинают торопиться остальные.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "var.panic",
+              "value": 1
+            },
+            {
+              "key": "comp.composure",
+              "value": -1
+            }
+          ],
+          "feedback": "Спешка проводника передаётся пассажирам: перевод превращается в бегство.",
+          "next": "V9_help"
+        },
+        {
+          "id": "dont_know",
+          "text": "Не знаю, что там. Поэтому и выводим.",
+          "lines": [
+            {
+              "text": "<i>Пассажирка всхлипывает, соседи ускоряют шаг.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "var.panic",
+              "value": 1
+            }
+          ],
+          "feedback": "О содержимом вслух не гадают: ни «бомба», ни «не знаю». Для пассажиров это стандартная мера.",
+          "next": "V9_help"
+        }
+      ]
+    },
+    {
+      "id": "V9_help",
+      "speaker": "passenger_3G",
+      "lines": [
+        {
+          "text": "Мой чемодан на полке, прямо над этой сумкой. Достаньте, пожалуйста, мне самой не дотянуться."
+        }
+      ],
+      "options": [
+        {
+          "id": "leave_case",
+          "text": "Чемодан, пожалуйста, оставьте: рядом с сумкой сейчас ничего трогать нельзя, вагон будет под присмотром. Возьмите документы и ценное, я Вас провожу.",
+          "reference": true,
+          "lines": [
+            {
+              "text": "Да-да, конечно. Паспорт и телефон при мне."
+            }
+          ],
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Над предметом не тянутся и ничего рядом с ним не двигают, даже чужие вещи. Документы и ценное пассажир берёт с собой, остальное подождёт.",
+          "next": "V9_sweep"
+        },
+        {
+          "id": "take_case",
+          "text": "Сейчас достану.",
+          "lines": [
+            {
+              "text": "<i>Вы тянетесь к полке прямо над сумкой и снимаете тяжёлый чемодан.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -20
+            },
+            {
+              "key": "comp.rules",
+              "value": -1
+            }
+          ],
+          "feedback": "Снимать вещи с полки над подозрительным предметом нельзя: сумку легко задеть. Документы и ценное пассажир возьмёт сам, чемодан подождёт.",
+          "next": "V9_sweep",
+          "speaker": "narrator"
+        },
+        {
+          "id": "ignore",
+          "text": "<i>Не заметить.</i>",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "safety",
+              "value": -10
+            }
+          ],
+          "feedback": "Пассажирке ничего не объяснили, и она сама полезла к полке над сумкой. Нужно было сказать, что взять с собой, а что оставить.",
+          "next": "V9_sweep",
+          "lines": [
+            {
+              "text": "Ладно, сама достану… <i>Она встаёт на цыпочки и тянется к полке прямо над сумкой.</i>"
+            }
+          ]
+        }
+      ],
+      "emotion": "fear"
+    },
+    {
+      "id": "V9_sweep",
+      "lines": [
+        {
+          "text": "<i>Пассажиры выходят в соседние вагоны. Салон почти пуст.</i>"
+        }
+      ],
+      "options": [
+        {
+          "id": "check",
+          "text": "<i>Пройти вагон до конца: проверить каждый ряд и туалет.</i>",
+          "reference": true,
+          "lines": [
+            {
+              "conditions": [
+                {
+                  "key": "flag.stayed_2b"
+                }
+              ],
+              "text": "<i>В двенадцатом ряду у окна спит пассажир в наушниках: он ничего не слышал. Вы будите его и провожаете в вагон 4. Туалет свободен. Пассажир 2Б по-прежнему сидит на своём месте.</i>"
+            },
+            {
+              "text": "<i>В двенадцатом ряду у окна спит пассажир в наушниках: он ничего не слышал. Вы будите его и провожаете в вагон 4. Туалет свободен, в вагоне никого.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": 5
+            },
+            {
+              "key": "comp.rules",
+              "value": 1
+            },
+            {
+              "key": "flag.evacuated",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Перевод закончен, только когда вагон проверен: спящие и те, кто в туалете, объявления не слышат.",
+          "next": "V9_report"
+        },
+        {
+          "id": "assume",
+          "text": "<i>Решить, что все вышли, и закрыть вагон.</i>",
+          "lines": [
+            {
+              "text": "<i>Вы закрываете дверь тамбура. В двенадцатом ряду остаётся спящий пассажир в наушниках.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -15
+            },
+            {
+              "key": "flag.left_behind",
+              "op": "set",
+              "value": 1
+            },
+            {
+              "key": "flag.evacuated",
+              "op": "set",
+              "value": 1
+            }
+          ],
+          "feedback": "Спящие и те, кто в туалете, объявления не слышат. Вагон нужно пройти до конца.",
+          "next": "V9_report"
+        }
+      ]
+    },
+    {
+      "id": "V9_report",
+      "speaker": "security",
+      "lines": [
+        {
+          "text": "Что с вагоном?"
+        }
+      ],
+      "options": [
+        {
+          "id": "clear",
+          "text": "Вагон 3 свободен: пассажиры в вагонах 2 и 4, в салоне никого, пострадавших нет.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.left_behind",
+              "op": "eq",
+              "value": 0
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.escalation",
+              "value": 1
+            }
+          ],
+          "feedback": "Короткий доклад по факту: где люди и что вагон пуст.",
+          "next": "V8",
+          "lines": [
+            {
+              "text": "Принял. Спасибо, дальше мы."
+            }
+          ]
+        },
+        {
+          "id": "admit",
+          "text": "Пассажиры в вагонах 2 и 4, но в вагоне ещё остался человек. Нужна помощь, чтобы его вывести.",
+          "reference": true,
+          "conditions": [
+            {
+              "key": "flag.left_behind"
+            }
+          ],
+          "lines": [
+            {
+              "text": "Понял, выведем вместе."
+            }
+          ],
+          "effects": [
+            {
+              "key": "comp.escalation",
+              "value": 1
+            }
+          ],
+          "feedback": "ПТБ должен знать, кто остался рядом с предметом: это важнее, чем хорошо выглядеть в докладе.",
+          "next": "V8"
+        },
+        {
+          "id": "hide",
+          "text": "Вагон 3 свободен.",
+          "conditions": [
+            {
+              "key": "flag.left_behind"
+            }
+          ],
+          "lines": [
+            {
+              "text": "<i>Позже ПТБ находит в вагоне пассажира рядом с сумкой.</i>"
+            }
+          ],
+          "effects": [
+            {
+              "key": "safety",
+              "value": -10
+            },
+            {
+              "key": "comp.rules",
+              "value": -1
+            }
+          ],
+          "feedback": "ПТБ работает у предмета в уверенности, что вагон пуст. Об оставшемся пассажире нужно сказать сразу.",
+          "next": "V8",
+          "speaker": "narrator"
+        }
+      ]
+    },
+    {
+      "id": "V8",
+      "speaker": "chief",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "variant.C"
+            }
+          ],
+          "text": "<i>На станции вагон 3 осматривает полиция с кинологом, сумку забирают на проверку. Стоянка продлевается.</i> Запросов от владельца не поступало. <i>Пассажир в вагоне 4:</i> Сколько ещё стоять? У меня пересадка!"
+        },
+        {
+          "text": "<i>Начальник поезда решает передать вещь службам на станции, стоянка продлевается. Позже он сообщает: пассажир с места 3Б обратился на вокзале, где сошёл, и ищет сумку; вещь вернут ему через службы вокзала. Пассажир из очереди:</i> Сколько ещё стоять? У меня пересадка!"
+        }
+      ],
+      "options": [
+        {
+          "id": "apologize",
+          "text": "Приносим извинения за неудобства. О дальнейшем следовании сообщим сразу после получения информации.",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Эталон №18: извинения и только достоверная информация.",
+          "next": "V8_neighbour",
+          "speaker": "narrator",
+          "lines": [
+            {
+              "text": "<i>Пассажир:</i> Ну хорошо, хоть что-то понятно."
+            }
+          ]
+        },
+        {
+          "id": "ten_minutes",
+          "text": "Минут десять, не больше.",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -5
+            },
+            {
+              "key": "comp.rules",
+              "value": -1
+            }
+          ],
+          "feedback": "Сообщайте только достоверную информацию. Сроки называет начальник поезда.",
+          "next": "V8_neighbour",
+          "speaker": "narrator",
+          "lines": [
+            {
+              "text": "<i>Пассажир:</i> Десять? Засекаю. <i>Через двадцать минут он возвращается с претензией.</i>"
+            }
+          ]
+        },
+        {
+          "id": "blame",
+          "text": "Это всё из-за растяпы, который бросил сумку.",
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": -10
+            },
+            {
+              "key": "comp.comm",
+              "value": -1
+            }
+          ],
+          "feedback": "Обвинения не помогают пассажирам и подрывают доверие к персоналу.",
+          "next": "V8_neighbour",
+          "speaker": "narrator",
+          "lines": [
+            {
+              "text": "<i>Пассажир:</i> Вот именно! Я жалобу напишу, и на него, и на вас."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V8_neighbour",
+      "speaker": "passenger_3G",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "variant.C"
+            }
+          ],
+          "text": "<i>Проверка закончена, пассажиры возвращаются в вагон 3. Пассажирка 3Г:</i> Так что с моим соседом?"
+        },
+        {
+          "text": "Так что с моим соседом?"
+        }
+      ],
+      "options": [
+        {
+          "id": "discreet",
+          "text": "Сотрудники безопасности во всём разберутся. Спасибо, что сообщили.",
+          "reference": true,
+          "effects": [
+            {
+              "key": "loyalty",
+              "value": 5
+            },
+            {
+              "key": "comp.comm",
+              "value": 1
+            }
+          ],
+          "feedback": "Благодарность за бдительность без лишних подробностей.",
+          "next": "@end",
+          "lines": [
+            {
+              "text": "Хорошо, спасибо. Мне так спокойнее."
+            }
+          ]
+        },
+        {
+          "id": "details",
+          "text": "<i>Рассказать, что показал билет, куда он ехал и что думает ПТБ.</i>",
+          "effects": [
+            {
+              "key": "safety",
+              "value": -5
+            },
+            {
+              "key": "comp.rules",
+              "value": -1
+            }
+          ],
+          "feedback": "Данные билета и сведения о другом пассажире не раскрываются посторонним.",
+          "next": "@end",
+          "lines": [
+            {
+              "text": "Ого, до Твери? А сумку, значит, бросил… <i>Она тут же пересказывает всё соседке.</i>"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "id": "curious_early",
+      "conditions": [
+        {
+          "key": "flag.five_minutes"
+        }
+      ],
+      "node": "V4"
+    },
+    {
+      "id": "curious",
+      "hub": "V2",
+      "conditions": [
+        {
+          "key": "flag.left_bag",
+          "group": 0
+        },
+        {
+          "key": "flag.curious_done",
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        },
+        {
+          "key": "flag.away",
+          "group": 1
+        },
+        {
+          "key": "flag.curious_done",
+          "op": "eq",
+          "value": 0,
+          "group": 1
+        },
+        {
+          "key": "flag.left_unattended",
+          "group": 2
+        },
+        {
+          "key": "flag.curious_done",
+          "op": "eq",
+          "value": 0,
+          "group": 2
+        }
+      ],
+      "node": "V4"
+    },
+    {
+      "id": "panic",
+      "hub": "V2",
+      "conditions": [
+        {
+          "key": "flag.said_bomb"
+        },
+        {
+          "key": "flag.near_5b"
+        }
+      ],
+      "node": "V5"
+    }
+  ],
+  "endings": [
+    {
+      "id": "stop_crane",
+      "title": "Стоп-кран",
+      "conditions": [
+        {
+          "key": "flag.stop_crane"
+        }
+      ],
+      "lines": [
+        {
+          "text": "Экстренное торможение на скорости: стоящие пассажиры падают, есть травмы. Решение об остановке принимают начальник поезда и машинист."
+        }
+      ]
+    },
+    {
+      "id": "ignored",
+      "title": "Проигнорировал",
+      "conditions": [
+        {
+          "key": "flag.ignored"
+        }
+      ],
+      "lines": [
+        {
+          "text": "О вещи узнали без вас. В отчёте начальника поезда отмечено бездействие проводника после сообщения пассажира."
+        }
+      ]
+    },
+    {
+      "id": "protocol_violation",
+      "title": "Нарушение протокола",
+      "conditions": [
+        {
+          "key": "flag.touched_by_player",
+          "group": 0
+        },
+        {
+          "key": "flag.opened",
+          "group": 1
+        }
+      ],
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "variant.A"
+            }
+          ],
+          "text": "Обошлось: в сумке были бутерброды. Но вы этого не знали, когда трогали её."
+        },
+        {
+          "conditions": [
+            {
+              "key": "variant.D"
+            }
+          ],
+          "text": "Обошлось: в сумке были косметичка и ноутбук. Но вы этого не знали, когда трогали её."
+        },
+        {
+          "conditions": [
+            {
+              "key": "variant.C"
+            }
+          ],
+          "text": "ПТБ фиксирует нарушение: вещь, оставленную намеренно, трогал проводник."
+        },
+        {
+          "text": "ПТБ фиксирует нарушение: бесхозную вещь трогал проводник."
+        }
+      ]
+    },
+    {
+      "id": "panic",
+      "title": "Паника в вагоне",
+      "conditions": [
+        {
+          "key": "var.panic",
+          "value": 2
+        }
+      ],
+      "lines": [
+        {
+          "text": "С вещью разобрались, но вагон запомнил панику: жалобы и ролики в соцсетях."
+        }
+      ]
+    },
+    {
+      "id": "evacuation_flawed",
+      "title": "Перевод с нарушениями",
+      "conditions": [
+        {
+          "key": "variant.C",
+          "group": 0
+        },
+        {
+          "key": "flag.left_behind",
+          "group": 0
+        },
+        {
+          "key": "variant.C",
+          "group": 1
+        },
+        {
+          "key": "flag.evac_past_bag",
+          "group": 1
+        }
+      ],
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "flag.left_behind"
+            }
+          ],
+          "text": "Вещь у полиции, но рядом с ней в вагоне оставался пассажир. Перевод закончен, только когда в вагоне никого нет."
+        },
+        {
+          "text": "Вещь у полиции, но пассажиров вывели мимо сумки. Маршрут выбирается в сторону от предмета."
+        }
+      ]
+    },
+    {
+      "id": "found_but",
+      "title": "Владелец нашёлся, но…",
+      "conditions": [
+        {
+          "key": "variant.A",
+          "group": 0
+        },
+        {
+          "key": "flag.reported",
+          "op": "eq",
+          "value": 0,
+          "group": 0
+        },
+        {
+          "key": "variant.A",
+          "group": 1
+        },
+        {
+          "key": "flag.zone",
+          "op": "eq",
+          "value": 0,
+          "group": 1
+        },
+        {
+          "key": "variant.D",
+          "group": 2
+        },
+        {
+          "key": "flag.reported",
+          "op": "eq",
+          "value": 0,
+          "group": 2
+        },
+        {
+          "key": "variant.D",
+          "group": 3
+        },
+        {
+          "key": "flag.zone",
+          "op": "eq",
+          "value": 0,
+          "group": 3
+        }
+      ],
+      "lines": [
+        {
+          "text": "Всё закончилось хорошо, но алгоритм пропущен: доклад начальнику и ПТБ и ограждение зоны нужны всегда, даже когда вещь наверняка чья-то."
+        }
+      ]
+    },
+    {
+      "id": "protocol_ok",
+      "title": "Протокол соблюдён",
+      "lines": [
+        {
+          "conditions": [
+            {
+              "key": "variant.A"
+            }
+          ],
+          "text": "Владелец найден по описанию, вагон спокоен, службы отозваны."
+        },
+        {
+          "conditions": [
+            {
+              "key": "variant.B"
+            }
+          ],
+          "text": "Вещь передана по процедуре, владелец получит её через службы вокзала."
+        },
+        {
+          "conditions": [
+            {
+              "key": "variant.C"
+            }
+          ],
+          "text": "Пассажиры спокойно переведены в соседние вагоны, вагон проверен, вещь у полиции. Вы не знали, что её оставили нарочно, и действовали по тому же алгоритму, что и всегда."
+        },
+        {
+          "text": "Хозяйка найдена, соседка поблагодарена за бдительность, вагон спокоен."
+        }
+      ]
+    }
+  ]
+}

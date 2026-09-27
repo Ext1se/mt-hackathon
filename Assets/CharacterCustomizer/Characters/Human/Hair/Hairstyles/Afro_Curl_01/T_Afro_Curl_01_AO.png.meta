@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 49e5b54b9cf582648b25ea3ff51d5db1
+AssetOrigin:
+  serializedVersion: 1
+  productId: 241861
+  packageName: Character Customizer
+  packageVersion: 2.4.1
+  assetPath: Assets/CharacterCustomizer/Characters/Human/Hair/Hairstyles/Afro_Curl_01/T_Afro_Curl_01_AO.png
+  uploadId: 968072
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -119,6 +126,32 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WindowsStoreApps
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites: []
@@ -141,10 +174,3 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 241861
-  packageName: Character Customizer
-  packageVersion: 2.4.1
-  assetPath: Assets/CharacterCustomizer/Characters/Human/Hair/Hairstyles/Afro_Curl_01/T_Afro_Curl_01_AO.png
-  uploadId: 968072

@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 2040565ba6dceff47ae04078c18a8970
+AssetOrigin:
+  serializedVersion: 1
+  productId: 241861
+  packageName: Character Customizer
+  packageVersion: 2.4.1
+  assetPath: Assets/CharacterCustomizer/Characters/Human/Materials/Eyes/T_Eye_Iris2.TGA
+  uploadId: 968072
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -121,6 +128,19 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: WebGL
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 1
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
@@ -133,7 +153,7 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
-    buildTarget: iOS
+    buildTarget: WindowsStoreApps
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
@@ -167,10 +187,3 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 241861
-  packageName: Character Customizer
-  packageVersion: 2.4.1
-  assetPath: Assets/CharacterCustomizer/Characters/Human/Materials/Eyes/T_Eye_Iris2.TGA
-  uploadId: 968072

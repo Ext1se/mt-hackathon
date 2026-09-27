@@ -3,17 +3,22 @@ using System.Collections.Generic;
 using Game.Scenarios.Core;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Game.Scenarios.Presentation.UI
 {
     /// <summary>
-    /// Scenario title, both scales with change popups, the decision timer and an optional segmented meter for one
-    /// scenario variable (e.g. panic in the wagon) that pulses when it grows.
+    /// Scenario title, both scales with change popups, the decision timer, an optional segmented meter for one
+    /// scenario variable (e.g. panic in the wagon) that pulses when it grows, and the devices the conductor carries
+    /// (ticket terminal, radio) with their keys.
     /// </summary>
     public sealed class ScenarioHud : MonoBehaviour
     {
         private const float DeltaVisibleSeconds = 2f;
+        private const string TerminalActionName = "Walk/Terminal";
+        private const string RadioActionName = "Walk/Radio";
 
         [SerializeField] private GameObject _root;
         [SerializeField] private TMP_Text _title;
@@ -24,7 +29,12 @@ namespace Game.Scenarios.Presentation.UI
         [SerializeField] private GameObject _timerRoot;
         [SerializeField] private Image _timerFill;
         [SerializeField] private TMP_Text _timerSeconds;
-        [Tooltip("Optional: the radio, a world target the player carries; shown when the scenario offers it.")]
+        [Header("Devices")]
+        [Tooltip("Walking actions with the device keys (Walk/Terminal, Walk/Radio).")]
+        [SerializeField] private InputActionAsset _actions;
+        [Tooltip("The ticket terminal (MMT); enabled while it can be opened or closed.")]
+        [SerializeField] private Button _terminalButton;
+        [Tooltip("The radio; enabled while the scenario offers it.")]
         [SerializeField] private Button _radioButton;
         [SerializeField] private Color _gainColor = new Color(0.3f, 0.8f, 0.4f);
         [SerializeField] private Color _lossColor = new Color(0.9f, 0.3f, 0.3f);
@@ -48,17 +58,25 @@ namespace Game.Scenarios.Presentation.UI
         private int _meterSteps;
         private int _meterValue;
         private float _meterPulseLeft;
+        private InputAction _terminalAction;
+        private InputAction _radioAction;
+
+        /// <summary>The terminal button or key was used while the terminal can be opened or closed.</summary>
+        public event Action TerminalRequested;
 
         public event Action RadioRequested;
 
         private void Awake()
         {
-            if (_radioButton != null)
+            if (_actions != null)
             {
-                _radioButton.onClick.AddListener(OnRadioClicked);
+                _terminalAction = _actions.FindAction(TerminalActionName, false);
+                _radioAction = _actions.FindAction(RadioActionName, false);
             }
 
-            SetRadioVisible(false);
+            _terminalButton.onClick.AddListener(OnTerminalClicked);
+            _radioButton.onClick.AddListener(OnRadioClicked);
+            SetDevices(false, false);
             _loyalty.minValue = ScenarioKeys.ScaleMin;
             _loyalty.maxValue = ScenarioKeys.ScaleMax;
             _safety.minValue = ScenarioKeys.ScaleMin;
@@ -69,6 +87,18 @@ namespace Game.Scenarios.Presentation.UI
 
         private void Update()
         {
+            if (_root.activeSelf)
+            {
+                if (_terminalAction != null && _terminalAction.WasPressedThisFrame() && _terminalButton.interactable)
+                {
+                    OnTerminalClicked();
+                }
+                else if (_radioAction != null && _radioAction.WasPressedThisFrame() && _radioButton.interactable)
+                {
+                    OnRadioClicked();
+                }
+            }
+
             if (_meterPulseLeft > 0f)
             {
                 _meterPulseLeft = Mathf.Max(0f, _meterPulseLeft - Time.unscaledDeltaTime);
@@ -89,18 +119,15 @@ namespace Game.Scenarios.Presentation.UI
 
         private void OnDestroy()
         {
-            if (_radioButton != null)
-            {
-                _radioButton.onClick.RemoveListener(OnRadioClicked);
-            }
+            _terminalButton.onClick.RemoveListener(OnTerminalClicked);
+            _radioButton.onClick.RemoveListener(OnRadioClicked);
         }
 
-        public void SetRadioVisible(bool isVisible)
+        /// <summary>Both devices stay on screen for the whole scenario; unavailable ones are dimmed and ignore their key.</summary>
+        public void SetDevices(bool isTerminalAvailable, bool isRadioAvailable)
         {
-            if (_radioButton != null)
-            {
-                _radioButton.gameObject.SetActive(isVisible);
-            }
+            _terminalButton.interactable = isTerminalAvailable;
+            _radioButton.interactable = isRadioAvailable;
         }
 
         public void Show(string title)
@@ -223,8 +250,25 @@ namespace Game.Scenarios.Presentation.UI
             }
         }
 
+        // A clicked HUD button would stay selected and answer Space or Enter meant for the dialogue.
+        private static void Deselect()
+        {
+            EventSystem current = EventSystem.current;
+            if (current != null)
+            {
+                current.SetSelectedGameObject(null);
+            }
+        }
+
+        private void OnTerminalClicked()
+        {
+            Deselect();
+            TerminalRequested?.Invoke();
+        }
+
         private void OnRadioClicked()
         {
+            Deselect();
             RadioRequested?.Invoke();
         }
 

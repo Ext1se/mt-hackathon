@@ -26,6 +26,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("hints")] private List<HintData> _hints = new List<HintData>();
         [JsonProperty("look")] private List<LookStepData> _look = new List<LookStepData>();
         [JsonProperty("card")] private CardData _card;
+        [JsonProperty("terminal")] private bool _showsTerminal = false;
 
         public string Id => _id;
         public string Kind => _kind;
@@ -61,5 +62,11 @@ namespace Game.Scenarios.Core.Data
 
         /// <summary>Optional info panel shown instead of the dialogue; null for an ordinary node.</summary>
         public CardData Card => _card;
+
+        /// <summary>
+        /// Shown as the scenario's ticket terminal instead of the dialogue: opening a seat bound to one of the node's
+        /// options chooses it, and the one option not bound to a seat closes the terminal.
+        /// </summary>
+        public bool ShowsTerminal => _showsTerminal;
     }
 }

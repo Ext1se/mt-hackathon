@@ -51,6 +51,7 @@ namespace Game.Scenarios.Core
             ValidateEndings(data, errors);
             ValidateVariants(data, errors);
             ValidateVariables(data, errors);
+            ValidateTerminal(data, errors);
             return errors;
         }
 
@@ -275,6 +276,145 @@ namespace Game.Scenarios.Core
                 if (string.IsNullOrEmpty(section.Title) || (string.IsNullOrEmpty(section.Text) && section.Items.Count == 0))
                 {
                     errors.Add($"{where}: a card section needs a title and a text or items.");
+                }
+            }
+        }
+
+        private static void ValidateTerminal(ScenarioData data, List<string> errors)
+        {
+            TerminalData terminal = data.Terminal;
+            List<NodeData> terminalNodes = new List<NodeData>();
+            foreach (NodeData node in data.Nodes)
+            {
+                if (node.ShowsTerminal)
+                {
+                    terminalNodes.Add(node);
+                }
+            }
+
+            if (terminal == null)
+            {
+                if (terminalNodes.Count > 0)
+                {
+                    errors.Add($"Node '{terminalNodes[0].Id}': shows the terminal, but the scenario has none.");
+                }
+
+                return;
+            }
+
+            const string where = "Terminal";
+            if (terminal.Cars.Count == 0)
+            {
+                errors.Add($"{where}: a terminal needs at least one car.");
+            }
+
+            if (!string.IsNullOrEmpty(terminal.DefaultCarId) && terminal.FindCar(terminal.DefaultCarId) == null)
+            {
+                errors.Add($"{where}: default car '{terminal.DefaultCarId}' does not exist.");
+            }
+
+            HashSet<string> carIds = new HashSet<string>();
+            foreach (TerminalCarData car in terminal.Cars)
+            {
+                if (string.IsNullOrEmpty(car.Id) || !carIds.Add(car.Id))
+                {
+                    errors.Add($"{where}: car id '{car.Id}' is empty or duplicated.");
+                }
+
+                ValidateCar(car, $"{where}, car '{car.Id}'", terminalNodes, errors);
+            }
+
+            if (terminal.Route != null)
+            {
+                if (terminal.Route.Stations.Count < 2)
+                {
+                    errors.Add($"{where}: a route needs at least two stations.");
+                }
+
+                foreach (TerminalStationData station in terminal.Route.Stations)
+                {
+                    if (string.IsNullOrEmpty(station.Name))
+                    {
+                        errors.Add($"{where}: a route station needs a name.");
+                    }
+                }
+            }
+
+            foreach (NodeData node in terminalNodes)
+            {
+                ValidateTerminalNode(node, terminal, errors);
+            }
+        }
+
+        // The terminal's close button chooses the node's one option that no seat is bound to.
+        private static void ValidateTerminalNode(NodeData node, TerminalData terminal, List<string> errors)
+        {
+            string where = $"Node '{node.Id}'";
+            if (node.Kind != NodeKinds.Choice || node.Card != null)
+            {
+                errors.Add($"{where}: the terminal belongs on a choice node without a card.");
+            }
+
+            int unbound = 0;
+            foreach (OptionData option in node.Options)
+            {
+                if (!terminal.IsBoundToSeat(option.Id))
+                {
+                    unbound++;
+                }
+            }
+
+            if (unbound != 1)
+            {
+                errors.Add($"{where}: a terminal node needs exactly one option not bound to a seat, to close it.");
+            }
+        }
+
+        private static bool HasOption(List<NodeData> nodes, string optionId)
+        {
+            foreach (NodeData node in nodes)
+            {
+                foreach (OptionData option in node.Options)
+                {
+                    if (option.Id == optionId)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void ValidateCar(TerminalCarData car, string where, List<NodeData> terminalNodes, List<string> errors)
+        {
+            if (car.Rows <= 0 || car.Columns.Count == 0)
+            {
+                errors.Add($"{where}: a car needs rows and seat columns.");
+            }
+
+            HashSet<string> seatIds = new HashSet<string>();
+            foreach (TerminalSeatData seat in car.Seats)
+            {
+                string seatWhere = $"{where}, seat '{seat.Seat}'";
+                if (!seatIds.Add(seat.Seat) || !car.IsOnMap(seat.Seat))
+                {
+                    errors.Add($"{seatWhere}: seat id is duplicated or not on the map.");
+                }
+
+                if (seat.Records.Count == 0)
+                {
+                    errors.Add($"{seatWhere}: a sold seat needs at least one record.");
+                }
+
+                foreach (TerminalRecordData record in seat.Records)
+                {
+                    ValidateConditions(record.Conditions, seatWhere, errors);
+                }
+
+                if (!string.IsNullOrEmpty(seat.Option) && !HasOption(terminalNodes, seat.Option))
+                {
+                    errors.Add($"{seatWhere}: unknown option '{seat.Option}' (no node showing the terminal has it).");
                 }
             }
         }

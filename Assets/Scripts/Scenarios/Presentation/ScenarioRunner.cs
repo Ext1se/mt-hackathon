@@ -23,8 +23,11 @@ namespace Game.Scenarios.Presentation
         // Closer than this, the player is already on the stand point and is not moved.
         private const float StandTolerance = 0.3f;
 
-        /// <summary>Target id of the radio: a HUD button instead of a scene object.</summary>
+        /// <summary>Target id of the radio: a HUD button and key instead of a scene object.</summary>
         public const string RadioTarget = "radio";
+
+        /// <summary>Target id of the ticket terminal (MMT) the conductor carries: a HUD button and key.</summary>
+        public const string TerminalTarget = "mmt";
 
         [SerializeField] private ScenarioLabels _labels;
         [SerializeField] private DialogueView _dialogue;
@@ -34,6 +37,8 @@ namespace Game.Scenarios.Presentation
         [SerializeField] private DebriefView _debrief;
         [Tooltip("Info panel for nodes with a card (problem, recommended actions).")]
         [SerializeField] private CardView _card;
+        [Tooltip("Ticket terminal (MMT) screen: seat map, passenger records, route.")]
+        [SerializeField] private TerminalView _terminal;
         [Tooltip("Optional: black layer behind the panels for scene changes (ScenarioWorldStates).")]
         [SerializeField] private ScreenFader _fader;
         [Tooltip("Off: decisions are never timed out (for demos and content review).")]
@@ -50,6 +55,7 @@ namespace Game.Scenarios.Presentation
         private readonly List<ScenarioActor> _actors = new List<ScenarioActor>();
         private readonly List<ScenarioInteractable> _targets = new List<ScenarioInteractable>();
         private IScenarioResultSink _resultSink;
+        private Func<TerminalSeatData, TerminalRecordData> _resolveRecord;
         private IViewFocus _viewFocus;
         private IPlayerPlacement _placement;
         private ScenarioWorldStates _world;
@@ -62,6 +68,9 @@ namespace Game.Scenarios.Presentation
         private ScenarioResult _pendingResult;
         private bool _isShowingResponse;
         private bool _isClockRunning;
+        private bool _isTerminalCheck;
+        // The terminal was opened from the HUD outside a terminal node: read-only, closed without a scenario choice.
+        private bool _isBrowsingTerminal;
 
         /// <summary>Raised when a scenario starts and when its debrief is closed.</summary>
         public event Action RunningChanged;
@@ -77,7 +86,8 @@ namespace Game.Scenarios.Presentation
 
         /// <summary>True while the player walks around with world objectives: no dialogue, response or scene change on screen.</summary>
         public bool IsRoaming => _session != null && _session.IsRunning && !_isShowingResponse && _pendingNode == null
-            && _session.Current != null && _session.Current.IsRoam && (_world == null || !_world.IsTransitioning);
+            && !_isBrowsingTerminal && _session.Current != null && _session.Current.IsRoam
+            && (_world == null || !_world.IsTransitioning);
 
         public bool TimersEnabled
         {
@@ -95,11 +105,15 @@ namespace Game.Scenarios.Presentation
         private void Awake()
         {
             _resultSink = new LocalResultSink(Path.Combine(Application.persistentDataPath, ResultsFolder));
+            _resolveRecord = ResolveRecord;
             _dialogue.OptionChosen += OnOptionChosen;
             _dialogue.ContinueRequested += OnContinueRequested;
             _dialogue.HintRequested += OnHintRequested;
             _dialogue.TextRevealed += OnTextRevealed;
             _card.OptionChosen += OnOptionChosen;
+            _terminal.CloseRequested += OnTerminalCloseRequested;
+            _terminal.SeatOpened += OnTerminalSeatOpened;
+            _hud.TerminalRequested += OnTerminalRequested;
             _hud.RadioRequested += OnRadioRequested;
             _debrief.Closed += OnDebriefClosed;
             _viewFocus = FindInScene<IViewFocus>();
@@ -137,6 +151,9 @@ namespace Game.Scenarios.Presentation
             _dialogue.HintRequested -= OnHintRequested;
             _dialogue.TextRevealed -= OnTextRevealed;
             _card.OptionChosen -= OnOptionChosen;
+            _terminal.CloseRequested -= OnTerminalCloseRequested;
+            _terminal.SeatOpened -= OnTerminalSeatOpened;
+            _hud.TerminalRequested -= OnTerminalRequested;
             _hud.RadioRequested -= OnRadioRequested;
             _debrief.Closed -= OnDebriefClosed;
             DetachSession();
@@ -196,7 +213,7 @@ namespace Game.Scenarios.Presentation
         /// <summary>Completes the current roam objective whose target is <paramref name="targetId"/>, if any.</summary>
         public void Interact(string targetId)
         {
-            if (_session == null || !_session.IsRunning || _isShowingResponse || _isApproaching)
+            if (_session == null || !_session.IsRunning || _isShowingResponse || _isApproaching || _isBrowsingTerminal)
             {
                 return;
             }
@@ -256,7 +273,7 @@ namespace Game.Scenarios.Presentation
         public bool TryGetObjective(string targetId, out string objective)
         {
             objective = null;
-            if (_session == null || !_session.IsRunning || _isShowingResponse)
+            if (_session == null || !_session.IsRunning || _isShowingResponse || _isBrowsingTerminal)
             {
                 return false;
             }
@@ -333,8 +350,16 @@ namespace Game.Scenarios.Presentation
             _hud.ShowDeltas(outcome.Effects);
             RefreshMeter();
             _hud.ShowTimer(0f, 0f);
-            _hud.SetRadioVisible(false);
+            _hud.SetDevices(false, false);
             RefreshWorld();
+
+            // A seat checked in the terminal is recorded quietly: the record is already on screen.
+            bool isTerminalCheck = _isTerminalCheck;
+            _isTerminalCheck = false;
+            if (isTerminalCheck)
+            {
+                return;
+            }
 
             // Every choice pauses on a response screen: the NPC's answer, or the player's own line when there is none,
             // so the next node never appears without a button press. Walking up to something is not a choice.
@@ -361,6 +386,8 @@ namespace Game.Scenarios.Presentation
 
             _quest.Clear(_targets);
             _card.Hide();
+            _isBrowsingTerminal = false;
+            _terminal.Hide();
             _dialogue.ShowResponse(speakerName, text);
             SetUiOpen(true);
         }
@@ -404,9 +431,104 @@ namespace Game.Scenarios.Presentation
             }
         }
 
+        // Opening a seat bound to an option (e.g. the ticket of 3B) applies that check once it is available.
+        private void OnTerminalSeatOpened(TerminalSeatData seat)
+        {
+            if (_session == null || !_session.IsRunning || _isShowingResponse || string.IsNullOrEmpty(seat.Option))
+            {
+                return;
+            }
+
+            IReadOnlyList<OptionView> options = _session.Current.Options;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (options[i].Id == seat.Option)
+                {
+                    _isTerminalCheck = true;
+                    _session.Choose(seat.Option);
+                    _isTerminalCheck = false;
+                    return;
+                }
+            }
+        }
+
         private void OnRadioRequested()
         {
-            Interact(RadioTarget);
+            if (IsRoaming)
+            {
+                Interact(RadioTarget);
+            }
+        }
+
+        // Key 1 or the HUD button: opens the terminal while roaming, closes it when open. A hub that offers the terminal
+        // opens it as its node (seat checks count); anywhere else it opens read-only.
+        private void OnTerminalRequested()
+        {
+            if (_session == null || !_session.IsRunning || _isShowingResponse || _isApproaching)
+            {
+                return;
+            }
+
+            if (_terminal.IsShown)
+            {
+                OnTerminalCloseRequested();
+                return;
+            }
+
+            TerminalData terminal = _session.Data.Terminal;
+            if (!IsRoaming || terminal == null)
+            {
+                return;
+            }
+
+            if (HasTarget(_session.Current.Options, TerminalTarget))
+            {
+                Interact(TerminalTarget);
+                return;
+            }
+
+            _isBrowsingTerminal = true;
+            _hint.Hide();
+            _terminal.Show(terminal, _resolveRecord);
+            SetUiOpen(true);
+            RefreshDevices();
+        }
+
+        private void OnTerminalCloseRequested()
+        {
+            if (_session == null || !_session.IsRunning || _isShowingResponse)
+            {
+                return;
+            }
+
+            if (_isBrowsingTerminal)
+            {
+                _isBrowsingTerminal = false;
+                _terminal.Hide();
+                ShowNode(_session.Current);
+                return;
+            }
+
+            // In a terminal node the one option not bound to a seat closes it (the validator guarantees there is one).
+            IReadOnlyList<OptionView> options = _session.Current.Options;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (!_session.Data.Terminal.IsBoundToSeat(options[i].Id))
+                {
+                    OnOptionChosen(options[i].Id);
+                    return;
+                }
+            }
+        }
+
+        // The terminal button works whenever the terminal can be opened (roaming) or is open; the radio only in a hub
+        // that offers it.
+        private void RefreshDevices()
+        {
+            bool isRoaming = IsRoaming;
+            bool hasTerminal = _session != null && _session.IsRunning && _session.Data.Terminal != null;
+            bool canRadio = isRoaming && HasTarget(_session.Current.Options, RadioTarget);
+            _hud.SetDevices(hasTerminal && (isRoaming || _terminal.IsShown), canRadio);
         }
 
         // The decision clock starts once the player has the whole line and the answers in front of them.
@@ -448,6 +570,12 @@ namespace Game.Scenarios.Presentation
 
         private void ShowNode(NodeView view)
         {
+            ShowNodeView(view);
+            RefreshDevices();
+        }
+
+        private void ShowNodeView(NodeView view)
+        {
             ScenarioActor speaker = FindActor(view.Node.Speaker);
             if (speaker != null)
             {
@@ -456,11 +584,12 @@ namespace Game.Scenarios.Presentation
             }
 
             _quest.Show(view.Options, _targets);
-            _hud.SetRadioVisible(view.IsRoam && HasTarget(view.Options, RadioTarget));
+            _isBrowsingTerminal = false;
             if (view.Node.Card != null)
             {
                 _dialogue.Hide();
                 _hint.Hide();
+                _terminal.Hide();
                 _card.Show(view.Node.Card, view.Options);
                 SetUiOpen(true);
                 ClearFocus();
@@ -469,6 +598,19 @@ namespace Game.Scenarios.Presentation
             }
 
             _card.Hide();
+            TerminalData terminal = _session.Data.Terminal;
+            if (view.Node.ShowsTerminal && terminal != null)
+            {
+                _dialogue.Hide();
+                _hint.Hide();
+                _terminal.Show(terminal, _resolveRecord);
+                SetUiOpen(true);
+                ClearFocus();
+                _isClockRunning = true;
+                return;
+            }
+
+            _terminal.Hide();
             if (view.IsRoam)
             {
                 _dialogue.Hide();
@@ -495,15 +637,37 @@ namespace Game.Scenarios.Presentation
             _isClockRunning = view.IsRoam || !_dialogue.IsTyping;
         }
 
+        // The first record of a sold seat whose conditions hold now (the ticket of 3B depends on the variant).
+        private TerminalRecordData ResolveRecord(TerminalSeatData seat)
+        {
+            if (_session == null)
+            {
+                return null;
+            }
+
+            IReadOnlyList<TerminalRecordData> records = seat.Records;
+            for (int i = 0; i < records.Count; i++)
+            {
+                if (ConditionEvaluator.IsMet(records[i].Conditions, _session.State))
+                {
+                    return records[i];
+                }
+            }
+
+            return null;
+        }
+
         private void ShowDebrief(ScenarioResult result)
         {
             _isClockRunning = false;
             _dialogue.Hide();
             _card.Hide();
+            _isBrowsingTerminal = false;
+            _terminal.Hide();
             _hint.Hide();
             _quest.Clear(_targets);
             _hud.ShowTimer(0f, 0f);
-            _hud.SetRadioVisible(false);
+            _hud.SetDevices(false, false);
             _debrief.Show(result, _labels);
             SetUiOpen(true);
             ClearFocus();
@@ -542,6 +706,8 @@ namespace Game.Scenarios.Presentation
             _pendingResult = null;
             _isShowingResponse = false;
             _isClockRunning = false;
+            _isTerminalCheck = false;
+            _isBrowsingTerminal = false;
         }
 
         // Scene changes follow the scenario state: checked after every choice and on every node entry.

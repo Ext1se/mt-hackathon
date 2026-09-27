@@ -27,22 +27,22 @@ namespace Game.Scenarios.Editor
     /// </summary>
     public static class ScenarioSceneBuilder
     {
-        private const string DataFolder = "Assets/Data/Scenarios";
+        internal const string DataFolder = "Assets/Data/Scenarios";
         private const string PrefabsFolder = "Assets/Prefabs/Scenarios";
-        private const string StringsPath = DataFolder + "/Ui/ScenarioUiStrings.json";
+        internal const string StringsPath = DataFolder + "/Ui/ScenarioUiStrings.json";
         private const string LabelsPath = DataFolder + "/ScenarioLabels.asset";
         private const string FontSourcePath = "Assets/Fonts/MoscowSans/MoscowSans-Regular.ttf";
         private const string FontAssetPath = DataFolder + "/MoscowSans-Regular Dynamic SDF.asset";
-        private const string BoldFontSourcePath = "Assets/Fonts/MoscowSans/MoscowSans-ExtraBold.otf";
-        private const string BoldFontAssetPath = DataFolder + "/MoscowSans-ExtraBold Dynamic SDF.asset";
+        internal const string BoldFontSourcePath = "Assets/Fonts/MoscowSans/MoscowSans-ExtraBold.otf";
+        internal const string BoldFontAssetPath = DataFolder + "/MoscowSans-ExtraBold Dynamic SDF.asset";
         private const string OptionButtonPath = PrefabsFolder + "/OptionButton.prefab";
         private const string DecisionRowPath = PrefabsFolder + "/DecisionRow.prefab";
         private const string CanvasName = "ScenarioCanvas";
         private const string SystemName = "ScenarioSystem";
-        private const string BuiltinSprite = "UI/Skin/UISprite.psd";
+        internal const string BuiltinSprite = "UI/Skin/UISprite.psd";
         private const string BuiltinKnob = "UI/Skin/Knob.psd";
         private const string WalkActionsPath = "Assets/VSM/Settings/Input/Walk.inputactions";
-        private const string MaterialsFolder = DataFolder + "/Materials";
+        internal const string MaterialsFolder = DataFolder + "/Materials";
         private const string GuideTexturePath = MaterialsFolder + "/GuideChevron.asset";
         private const string GuideMaterialPath = MaterialsFolder + "/GuideTrail.mat";
         private const string GuideShader = "Game/Scenarios/Guide Trail";
@@ -62,6 +62,10 @@ namespace Game.Scenarios.Editor
         private static readonly Color MutedText = new Color(0.75f, 0.78f, 0.83f, 1f);
         private static readonly Color TrackColor = new Color(0f, 0f, 0f, 0.45f);
         private static readonly Color GuideColor = new Color(0.98f, 0.78f, 0.22f, 1f);
+        private static readonly Color TerminalSoldColor = new Color(0.20f, 0.42f, 0.66f, 1f);
+        private static readonly Color TerminalFreeColor = new Color(0.20f, 0.23f, 0.29f, 1f);
+        private static readonly Color TerminalAlertColor = new Color(0.98f, 0.62f, 0.22f, 1f);
+        private static readonly Color TerminalBodyColor = new Color(0.02f, 0.025f, 0.035f, 1f);
 
         // Walking-mode HUD pieces that would overlap the dialogue panel.
         private static readonly string[] s_walkHudPaths =
@@ -112,6 +116,7 @@ namespace Game.Scenarios.Editor
             QuestTracker quest = BuildQuest(canvas.transform);
             DebriefView debrief = BuildDebrief(canvas.transform, rowPrefab);
             CardView card = BuildCard(canvas.transform, optionPrefab);
+            TerminalView terminal = BuildTerminal(canvas.transform);
 
             GameObject system = new GameObject(SystemName);
             Undo.RegisterCreatedObjectUndo(system, "Build scenario UI");
@@ -124,6 +129,7 @@ namespace Game.Scenarios.Editor
             runnerObject.FindProperty("_quest").objectReferenceValue = quest;
             runnerObject.FindProperty("_debrief").objectReferenceValue = debrief;
             runnerObject.FindProperty("_card").objectReferenceValue = card;
+            runnerObject.FindProperty("_terminal").objectReferenceValue = terminal;
             runnerObject.FindProperty("_fader").objectReferenceValue = BuildFader(canvas.transform);
             runnerObject.FindProperty("_playerName").stringValue = Ui("playerName");
             runnerObject.FindProperty("_timersEnabled").boolValue = timersEnabled;
@@ -406,9 +412,20 @@ namespace Game.Scenarios.Editor
                 segments[i] = segment.GetComponent<Image>();
             }
 
-            Button radio = CreateButton("RadioButton", root, Ui("radioButton"), AccentColor);
-            Place((RectTransform)radio.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -14f), new Vector2(240f, 50f));
-            ((RectTransform)radio.transform).pivot = new Vector2(0.5f, 1f);
+            // The devices the conductor carries, always on screen during a scenario; unavailable ones are dimmed.
+            GameObject devices = new GameObject("Devices", typeof(RectTransform));
+            devices.transform.SetParent(root, false);
+            Place((RectTransform)devices.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -14f), new Vector2(440f, 50f));
+            ((RectTransform)devices.transform).pivot = new Vector2(0.5f, 1f);
+            HorizontalLayoutGroup devicesLayout = devices.AddComponent<HorizontalLayoutGroup>();
+            devicesLayout.spacing = 12f;
+            devicesLayout.childAlignment = TextAnchor.MiddleCenter;
+            devicesLayout.childControlWidth = true;
+            devicesLayout.childControlHeight = true;
+            devicesLayout.childForceExpandWidth = false;
+            devicesLayout.childForceExpandHeight = false;
+            Button terminalButton = CreateDeviceButton("TerminalButton", devices.transform, Ui("terminalButton"), TerminalSoldColor);
+            Button radio = CreateDeviceButton("RadioButton", devices.transform, Ui("radioButton"), AccentColor);
 
             SerializedObject hudObject = new SerializedObject(hud);
             hudObject.FindProperty("_root").objectReferenceValue = root.gameObject;
@@ -421,6 +438,8 @@ namespace Game.Scenarios.Editor
             hudObject.FindProperty("_timerFill").objectReferenceValue = fill;
             hudObject.FindProperty("_timerSeconds").objectReferenceValue = seconds;
             hudObject.FindProperty("_radioButton").objectReferenceValue = radio;
+            hudObject.FindProperty("_terminalButton").objectReferenceValue = terminalButton;
+            hudObject.FindProperty("_actions").objectReferenceValue = AssetDatabase.LoadAssetAtPath<InputActionAsset>(WalkActionsPath);
             hudObject.FindProperty("_meterRoot").objectReferenceValue = meter;
             hudObject.FindProperty("_meterLabel").objectReferenceValue = meterLabel;
             SerializedProperty segmentList = hudObject.FindProperty("_meterSegments");
@@ -771,6 +790,322 @@ namespace Game.Scenarios.Editor
             cardObject.FindProperty("_optionPrefab").objectReferenceValue = optionPrefab;
             cardObject.ApplyModifiedPropertiesWithoutUndo();
             return card;
+        }
+
+        // The ticket terminal as a device: a dark body, a screen with a status bar (title, clock), tabs, the seats page
+        // (map on the left, passenger record on the right), the route page and a close button.
+        private static TerminalView BuildTerminal(Transform canvas)
+        {
+            const float bezel = 14f;
+            const float pad = 32f;
+            const float contentTop = 164f;
+            const float contentBottom = 92f;
+            const float mapWidth = 400f;
+            const float seatWidth = 64f;
+            const float seatHeight = 38f;
+            const float aisleWidth = 44f;
+            const float gap = 6f;
+
+            GameObject holder = CreateHolder("Terminal", canvas);
+            TerminalView terminal = holder.AddComponent<TerminalView>();
+
+            RectTransform root = CreatePanel("Root", holder.transform, new Color(0f, 0f, 0f, 0.55f));
+            Stretch(root, Vector2.zero, Vector2.zero);
+
+            // Stretched with margins rather than a fixed size, so the device fits portrait and narrow screens too;
+            // it starts below the HUD, so the scales (and a seat check's reward) and the device keys stay visible.
+            RectTransform panel = CreatePanel("Panel", root, TerminalBodyColor);
+            Stretch(panel, new Vector2(80f, 36f), new Vector2(-80f, -(HudHeight + 70f)));
+            RectTransform screen = CreatePanel("Screen", panel, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 1f));
+            Stretch(screen, new Vector2(bezel, bezel), new Vector2(-bezel, -bezel));
+
+            Image accent = CreatePanel("Accent", screen, AccentColor).GetComponent<Image>();
+            Place(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f));
+            accent.rectTransform.pivot = new Vector2(0f, 0.5f);
+
+            TMP_Text title = CreateText("Title", screen, 30f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopLeft);
+            StretchTop(title.rectTransform, pad, 200f, 16f, 40f);
+            TMP_Text clock = CreateText("Clock", screen, 28f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopRight);
+            Place(clock.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-pad, -16f), new Vector2(180f, 40f));
+            TMP_Text subtitle = CreateText("Subtitle", screen, 20f, FontStyles.Normal, MutedText, TextAlignmentOptions.TopLeft);
+            StretchTop(subtitle.rectTransform, pad, pad, 58f, 28f);
+            subtitle.enableWordWrapping = false;
+            subtitle.overflowMode = TextOverflowModes.Ellipsis;
+
+            GameObject tabs = new GameObject("Tabs", typeof(RectTransform));
+            tabs.transform.SetParent(screen, false);
+            StretchTop((RectTransform)tabs.transform, pad, pad, 96f, 44f);
+            HorizontalLayoutGroup tabsLayout = tabs.AddComponent<HorizontalLayoutGroup>();
+            tabsLayout.spacing = 8f;
+            tabsLayout.childAlignment = TextAnchor.MiddleLeft;
+            tabsLayout.childControlWidth = true;
+            tabsLayout.childControlHeight = true;
+            tabsLayout.childForceExpandWidth = false;
+            tabsLayout.childForceExpandHeight = false;
+            Button seatsTab = CreateTab(tabs.transform, TerminalText("tabSeats"));
+            Button routeTab = CreateTab(tabs.transform, TerminalText("tabRoute"));
+
+            RectTransform divider = CreatePanel("Divider", screen, new Color(1f, 1f, 1f, 0.08f));
+            StretchTop(divider, pad, pad, 150f, 2f);
+
+            Button close = CreateButton("CloseButton", screen, TerminalText("close"), ButtonColor);
+            Place((RectTransform)close.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-pad, 24f), new Vector2(360f, 52f));
+            close.GetComponentInChildren<TMP_Text>().fontSize = 22f;
+
+            // Seats page: the map on a plate on the left, the passenger record on the right.
+            RectTransform seatsPage = new GameObject("SeatsPage", typeof(RectTransform)).GetComponent<RectTransform>();
+            seatsPage.SetParent(screen, false);
+            Stretch(seatsPage, new Vector2(pad, contentBottom), new Vector2(-pad, -contentTop));
+
+            RectTransform mapPanel = CreatePanel("MapPanel", seatsPage, PlateColor);
+            mapPanel.anchorMin = new Vector2(0f, 0f);
+            mapPanel.anchorMax = new Vector2(0f, 1f);
+            mapPanel.pivot = new Vector2(0f, 0.5f);
+            mapPanel.offsetMin = Vector2.zero;
+            mapPanel.offsetMax = new Vector2(mapWidth, 0f);
+
+            // Car picker over the map: one button per car, the own car picked when the terminal opens.
+            GameObject carPicker = new GameObject("Cars", typeof(RectTransform));
+            carPicker.transform.SetParent(mapPanel, false);
+            StretchTop((RectTransform)carPicker.transform, 8f, 8f, 10f, 40f);
+            HorizontalLayoutGroup carLayout = carPicker.AddComponent<HorizontalLayoutGroup>();
+            carLayout.spacing = 6f;
+            carLayout.childAlignment = TextAnchor.MiddleCenter;
+            carLayout.childControlWidth = true;
+            carLayout.childControlHeight = true;
+            carLayout.childForceExpandWidth = false;
+            carLayout.childForceExpandHeight = false;
+
+            GameObject map = new GameObject("Map", typeof(RectTransform));
+            map.transform.SetParent(mapPanel, false);
+            RectTransform mapRect = (RectTransform)map.transform;
+            mapRect.pivot = new Vector2(0.5f, 1f);
+            Stretch(mapRect, new Vector2(8f, 48f), new Vector2(-8f, -62f));
+            VerticalLayoutGroup mapLayout = map.AddComponent<VerticalLayoutGroup>();
+            mapLayout.spacing = gap;
+            mapLayout.childAlignment = TextAnchor.UpperCenter;
+            mapLayout.childControlWidth = false;
+            mapLayout.childControlHeight = false;
+            mapLayout.childForceExpandWidth = false;
+            mapLayout.childForceExpandHeight = false;
+
+            BuildTerminalLegend(mapPanel);
+
+            RectTransform details = new GameObject("Details", typeof(RectTransform)).GetComponent<RectTransform>();
+            details.SetParent(seatsPage, false);
+            Stretch(details, new Vector2(mapWidth + 40f, 0f), Vector2.zero);
+            RectTransform detailsContent = CreateScrollList("Scroll", details, Vector2.zero, Vector2.zero, 14f);
+            TMP_Text detailsTitle = CreateText("SeatTitle", detailsContent, 30f, FontStyles.Bold, Color.white, TextAlignmentOptions.TopLeft);
+            TMP_Text detailsBody = CreateText("Record", detailsContent, 24f, FontStyles.Normal, Color.white, TextAlignmentOptions.TopLeft);
+            detailsBody.lineSpacing = 10f;
+
+            // Route page: stops with dots, the stretches between them as lines.
+            RectTransform routePage = new GameObject("RoutePage", typeof(RectTransform)).GetComponent<RectTransform>();
+            routePage.SetParent(screen, false);
+            Stretch(routePage, new Vector2(pad, contentBottom), new Vector2(-pad, -contentTop));
+            GameObject stops = new GameObject("Stops", typeof(RectTransform));
+            stops.transform.SetParent(routePage, false);
+            Stretch((RectTransform)stops.transform, new Vector2(24f, 0f), new Vector2(0f, -12f));
+            VerticalLayoutGroup stopsLayout = stops.AddComponent<VerticalLayoutGroup>();
+            stopsLayout.childAlignment = TextAnchor.UpperLeft;
+            stopsLayout.childControlWidth = true;
+            stopsLayout.childControlHeight = true;
+            stopsLayout.childForceExpandWidth = true;
+            stopsLayout.childForceExpandHeight = false;
+
+            // Templates live under an inactive holder, so the view clones them without showing the originals.
+            GameObject templates = new GameObject("Templates", typeof(RectTransform));
+            templates.transform.SetParent(screen, false);
+            templates.SetActive(false);
+
+            GameObject row = new GameObject("Row", typeof(RectTransform));
+            row.transform.SetParent(templates.transform, false);
+            ((RectTransform)row.transform).sizeDelta = new Vector2(4f * seatWidth + aisleWidth + 4f * gap, seatHeight);
+            HorizontalLayoutGroup rowLayout = row.AddComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = gap;
+            rowLayout.childAlignment = TextAnchor.MiddleCenter;
+            rowLayout.childControlWidth = true;
+            rowLayout.childControlHeight = true;
+            rowLayout.childForceExpandWidth = false;
+            rowLayout.childForceExpandHeight = false;
+            // Cars differ in seats per row (1+2 to 2+3); the row takes its content's width so the map fit sees it.
+            row.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            RectTransform seatRect = CreatePanel("Seat", templates.transform, Color.white);
+            Button seat = seatRect.gameObject.AddComponent<Button>();
+            ColorBlock seatColors = seat.colors;
+            seatColors.highlightedColor = new Color(0.82f, 0.86f, 0.92f, 1f);
+            seatColors.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+            seatColors.selectedColor = Color.white;
+            seat.colors = seatColors;
+            LayoutElement seatLayout = seatRect.gameObject.AddComponent<LayoutElement>();
+            seatLayout.preferredWidth = seatWidth;
+            seatLayout.preferredHeight = seatHeight;
+            TMP_Text seatLabel = CreateText("Label", seatRect, 18f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            Stretch(seatLabel.rectTransform, Vector2.zero, Vector2.zero);
+
+            Button carButton = CreateButton("Car", templates.transform, string.Empty, ButtonColor);
+            carButton.GetComponentInChildren<TMP_Text>().fontSize = 20f;
+            LayoutElement carButtonLayout = carButton.gameObject.AddComponent<LayoutElement>();
+            carButtonLayout.preferredWidth = 54f;
+            carButtonLayout.preferredHeight = 40f;
+
+            TMP_Text aisle = CreateText("Aisle", templates.transform, 18f, FontStyles.Normal, MutedText, TextAlignmentOptions.Center);
+            LayoutElement aisleLayout = aisle.gameObject.AddComponent<LayoutElement>();
+            aisleLayout.preferredWidth = aisleWidth;
+            aisleLayout.preferredHeight = seatHeight;
+
+            GameObject station = CreateRouteRow("Station", templates.transform, 44f);
+            Image dot = CreatePanel("Dot", station.transform, Color.white).GetComponent<Image>();
+            dot.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>(BuiltinKnob);
+            dot.type = Image.Type.Simple;
+            LayoutElement dotLayout = dot.gameObject.AddComponent<LayoutElement>();
+            dotLayout.preferredWidth = 26f;
+            dotLayout.preferredHeight = 26f;
+            TMP_Text stationName = CreateText("Name", station.transform, 28f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
+            stationName.gameObject.AddComponent<LayoutElement>().preferredWidth = 460f;
+            TMP_Text stationTime = CreateText("Time", station.transform, 22f, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineLeft);
+            stationTime.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+
+            GameObject stretch = CreateRouteRow("Stretch", templates.transform, 60f);
+            GameObject lineHolder = new GameObject("LineHolder", typeof(RectTransform));
+            lineHolder.transform.SetParent(stretch.transform, false);
+            LayoutElement lineHolderLayout = lineHolder.AddComponent<LayoutElement>();
+            lineHolderLayout.preferredWidth = 26f;
+            lineHolderLayout.preferredHeight = 60f;
+            RectTransform line = CreatePanel("Line", lineHolder.transform, Color.white);
+            Place(line, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(6f, 0f));
+            TMP_Text stretchStatus = CreateText("Status", stretch.transform, 22f, FontStyles.Bold, GuideColor, TextAlignmentOptions.MidlineLeft);
+            stretchStatus.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+
+            SerializedObject terminalObject = new SerializedObject(terminal);
+            terminalObject.FindProperty("_root").objectReferenceValue = root.gameObject;
+            terminalObject.FindProperty("_panel").objectReferenceValue = panel;
+            terminalObject.FindProperty("_title").objectReferenceValue = title;
+            terminalObject.FindProperty("_subtitle").objectReferenceValue = subtitle;
+            terminalObject.FindProperty("_clock").objectReferenceValue = clock;
+            terminalObject.FindProperty("_closeButton").objectReferenceValue = close;
+            terminalObject.FindProperty("_seatsTab").objectReferenceValue = seatsTab;
+            terminalObject.FindProperty("_routeTab").objectReferenceValue = routeTab;
+            terminalObject.FindProperty("_seatsPage").objectReferenceValue = seatsPage.gameObject;
+            terminalObject.FindProperty("_routePage").objectReferenceValue = routePage.gameObject;
+            terminalObject.FindProperty("_activeTabColor").colorValue = AccentColor;
+            terminalObject.FindProperty("_inactiveTabColor").colorValue = ButtonColor;
+            terminalObject.FindProperty("_carPicker").objectReferenceValue = carPicker.transform;
+            terminalObject.FindProperty("_carTemplate").objectReferenceValue = carButton;
+            terminalObject.FindProperty("_map").objectReferenceValue = mapRect;
+            terminalObject.FindProperty("_rowTemplate").objectReferenceValue = row;
+            terminalObject.FindProperty("_seatTemplate").objectReferenceValue = seat;
+            terminalObject.FindProperty("_aisleTemplate").objectReferenceValue = aisle;
+            terminalObject.FindProperty("_detailsTitle").objectReferenceValue = detailsTitle;
+            terminalObject.FindProperty("_detailsBody").objectReferenceValue = detailsBody;
+            terminalObject.FindProperty("_routeList").objectReferenceValue = stops.transform;
+            terminalObject.FindProperty("_stationTemplate").objectReferenceValue = station;
+            terminalObject.FindProperty("_stretchTemplate").objectReferenceValue = stretch;
+            terminalObject.FindProperty("_soldColor").colorValue = TerminalSoldColor;
+            terminalObject.FindProperty("_freeColor").colorValue = TerminalFreeColor;
+            terminalObject.FindProperty("_selectedColor").colorValue = AccentColor;
+            terminalObject.FindProperty("_headingColor").colorValue = AccentColor;
+            terminalObject.FindProperty("_labelColor").colorValue = MutedText;
+            terminalObject.FindProperty("_alertColor").colorValue = TerminalAlertColor;
+            terminalObject.FindProperty("_nowColor").colorValue = GuideColor;
+            terminalObject.FindProperty("_seatFormat").stringValue = TerminalText("seat");
+            terminalObject.FindProperty("_freeText").stringValue = TerminalText("free");
+            string[] fields =
+            {
+                "passenger", "trip", "name", "birthDate", "document", "phone", "ticket", "route", "departure", "arrival",
+                "tariff", "baggage", "status", "note"
+            };
+            foreach (string field in fields)
+            {
+                terminalObject.FindProperty("_" + field + "Label").stringValue = TerminalText(field);
+            }
+
+            terminalObject.ApplyModifiedPropertiesWithoutUndo();
+            return terminal;
+        }
+
+        private static Button CreateDeviceButton(string name, Transform devices, string label, Color color)
+        {
+            Button button = CreateButton(name, devices, label, color);
+            ColorBlock colors = button.colors;
+            colors.disabledColor = new Color(0.45f, 0.45f, 0.45f, 0.45f);
+            button.colors = colors;
+            LayoutElement layout = button.gameObject.AddComponent<LayoutElement>();
+            layout.preferredWidth = 210f;
+            layout.preferredHeight = 50f;
+            return button;
+        }
+
+        private static Button CreateTab(Transform tabs, string label)
+        {
+            Button tab = CreateButton("Tab", tabs, label, ButtonColor);
+            tab.GetComponentInChildren<TMP_Text>().fontSize = 22f;
+            LayoutElement layout = tab.gameObject.AddComponent<LayoutElement>();
+            layout.preferredWidth = 220f;
+            layout.preferredHeight = 44f;
+            return tab;
+        }
+
+        private static GameObject CreateRouteRow(string name, Transform parent, float height)
+        {
+            GameObject row = new GameObject(name, typeof(RectTransform));
+            row.transform.SetParent(parent, false);
+            HorizontalLayoutGroup layout = row.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 18f;
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            row.AddComponent<LayoutElement>().preferredHeight = height;
+            return row;
+        }
+
+        // Full width minus side margins, hanging from the top edge.
+        private static void StretchTop(RectTransform rect, float left, float right, float top, float height)
+        {
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.offsetMin = new Vector2(left, -top - height);
+            rect.offsetMax = new Vector2(-right, -top);
+        }
+
+        // A colour key under the seat map: sold, free, picked.
+        private static void BuildTerminalLegend(RectTransform mapPanel)
+        {
+            GameObject legend = new GameObject("Legend", typeof(RectTransform));
+            legend.transform.SetParent(mapPanel, false);
+            Place((RectTransform)legend.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 16f), new Vector2(-32f, 28f));
+            HorizontalLayoutGroup layout = legend.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 8f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            AddLegendItem(legend.transform, TerminalSoldColor, TerminalText("legendSold"));
+            AddLegendItem(legend.transform, TerminalFreeColor, TerminalText("legendFree"));
+            AddLegendItem(legend.transform, AccentColor, TerminalText("legendSelected"));
+        }
+
+        private static void AddLegendItem(Transform legend, Color color, string text)
+        {
+            RectTransform swatch = CreatePanel("Swatch", legend, color);
+            LayoutElement swatchLayout = swatch.gameObject.AddComponent<LayoutElement>();
+            swatchLayout.preferredWidth = 18f;
+            swatchLayout.preferredHeight = 18f;
+            TMP_Text label = CreateText("Label", legend, 18f, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineLeft);
+            label.text = text;
+            label.enableWordWrapping = false;
+            label.margin = new Vector4(0f, 0f, 10f, 0f);
+        }
+
+        private static string TerminalText(string key)
+        {
+            return (string)s_strings["terminal"][key];
         }
 
         private static DebriefView BuildDebrief(Transform canvas, DecisionRow rowPrefab)

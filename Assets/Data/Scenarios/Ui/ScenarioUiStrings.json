@@ -26,12 +26,40 @@
     "briefingButton": "Сценарий",
     "briefingNotStarted": "Не начат",
     "briefingRunning": "В процессе",
-    "briefingControls": "Tab — описание сценария   ·   Shift — бег   ·   E — действие   ·   G — путь к цели   ·   F / ПКМ — курсор",
+    "briefingControls": "Tab — описание сценария   ·   Shift — бег   ·   E — действие   ·   G — путь к цели   ·   1 — ММТ   ·   2 — рация   ·   F / ПКМ — курсор",
     "questGuideHint": "G — путь к другой цели или выключить",
     "menuButton": "В меню",
     "playerName": "Проводник",
-    "radioButton": "Рация",
+    "radioButton": "2  ·  Рация",
+    "terminalButton": "1  ·  ММТ",
     "lookStart": "Начать сценарий",
     "lookKeyHint": "   ·   E"
+  },
+  "terminal": {
+    "seat": "Место {0}",
+    "free": "Место свободно: билет на этот участок не продан.",
+    "passenger": "Пассажир",
+    "trip": "Поездка",
+    "name": "ФИО",
+    "birthDate": "Дата рождения",
+    "document": "Документ",
+    "phone": "Телефон",
+    "ticket": "Билет",
+    "route": "Маршрут",
+    "departure": "Отправление",
+    "arrival": "Прибытие",
+    "tariff": "Тариф",
+    "baggage": "Багаж",
+    "status": "Статус",
+    "note": "Отметки",
+    "legendSold": "продано",
+    "legendFree": "свободно",
+    "legendSelected": "выбрано",
+    "tabSeats": "Места",
+    "tabRoute": "Маршрут",
+    "close": "Убрать ММТ  ·  1"
+  },
+  "seatNumbers": {
+    "letters": "АБВГДЕ"
   }
 }

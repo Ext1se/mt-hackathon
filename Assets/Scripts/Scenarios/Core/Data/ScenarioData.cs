@@ -18,6 +18,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("nodes")] private List<NodeData> _nodes = new List<NodeData>();
         [JsonProperty("triggers")] private List<TriggerData> _triggers = new List<TriggerData>();
         [JsonProperty("endings")] private List<EndingData> _endings = new List<EndingData>();
+        [JsonProperty("terminal")] private TerminalData _terminal;
 
         public string Id => _id;
         public string Title => _title;
@@ -30,5 +31,11 @@ namespace Game.Scenarios.Core.Data
         public IReadOnlyList<NodeData> Nodes => _nodes;
         public IReadOnlyList<TriggerData> Triggers => _triggers;
         public IReadOnlyList<EndingData> Endings => _endings;
+
+        /// <summary>
+        /// Optional ticket terminal (MMT) the conductor carries: opened from anywhere while roaming, read-only unless
+        /// the current node shows it (<see cref="NodeData.ShowsTerminal"/>). Null when the scenario has none.
+        /// </summary>
+        public TerminalData Terminal => _terminal;
     }
 }

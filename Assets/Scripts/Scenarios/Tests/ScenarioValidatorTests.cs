@@ -51,6 +51,31 @@ namespace Game.Scenarios.Tests
   ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
 }";
 
+        private const string TerminalUnknownOptionJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""terminal"": { ""defaultCar"": ""7"", ""cars"": [ { ""id"": ""7"", ""rows"": 2, ""columns"": [ ""A"", ""B"" ],
+    ""seats"": [ { ""seat"": ""1A"", ""option"": ""missing"", ""records"": [ { ""name"": ""X"" } ] } ] } ] },
+  ""nodes"": [ { ""id"": ""a"", ""terminal"": true,
+    ""options"": [ { ""id"": ""go"", ""text"": ""Go"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
+        private const string TerminalWithoutCloseJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""terminal"": { ""defaultCar"": ""9"", ""cars"": [ { ""id"": ""7"", ""rows"": 2, ""columns"": [ ""A"", ""B"" ],
+    ""seats"": [ { ""seat"": ""3A"", ""option"": ""go"", ""records"": [ { ""name"": ""X"" } ] } ] } ] },
+  ""nodes"": [ { ""id"": ""a"", ""terminal"": true,
+    ""options"": [ { ""id"": ""go"", ""text"": ""Go"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
+        private const string TerminalMissingJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""nodes"": [ { ""id"": ""a"", ""terminal"": true,
+    ""options"": [ { ""id"": ""go"", ""text"": ""Go"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
         private const string LongHudMeterJson = @"{
   ""id"": ""broken"", ""start"": ""a"",
   ""variables"": [ { ""key"": ""var.panic"", ""min"": 0, ""max"": 10, ""hud"": true } ],
@@ -74,6 +99,11 @@ namespace Game.Scenarios.Tests
         [TestCase(HoldNotLastJson, "only the last look step may hold")]
         [TestCase(EmptyCardJson, "a card section needs a title and a text or items")]
         [TestCase(LongHudMeterJson, "HUD meter")]
+        [TestCase(TerminalUnknownOptionJson, "unknown option 'missing'")]
+        [TestCase(TerminalWithoutCloseJson, "not on the map")]
+        [TestCase(TerminalWithoutCloseJson, "not bound to a seat")]
+        [TestCase(TerminalMissingJson, "the scenario has none")]
+        [TestCase(TerminalWithoutCloseJson, "default car '9' does not exist")]
         public void BrokenScenario_IsReported(string json, string expectedFragment)
         {
             List<string> errors = ScenarioValidator.Validate(ScenarioLoader.Deserialize(json));

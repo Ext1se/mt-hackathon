@@ -16,6 +16,7 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("speaker")] private string _speaker = string.Empty;
         [JsonProperty("target")] private string _target = string.Empty;
         [JsonProperty("objective")] private string _objective = string.Empty;
+        [JsonProperty("quiet")] private bool _quiet = false;
         [JsonProperty("conditions")] private List<ConditionData> _conditions = new List<ConditionData>();
         [JsonProperty("effects")] private List<EffectData> _effects = new List<EffectData>();
         [JsonProperty("lines")] private List<LineData> _lines = new List<LineData>();
@@ -45,6 +46,9 @@ namespace Game.Scenarios.Core.Data
         public string Target => _target;
 
         public string Objective => _objective;
+
+        /// <summary>A world option that works but is not listed in the tracker and has no marker (nothing to give away).</summary>
+        public bool Quiet => _quiet;
         public IReadOnlyList<ConditionData> Conditions => _conditions;
         public IReadOnlyList<EffectData> Effects => _effects;
 

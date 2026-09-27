@@ -56,7 +56,7 @@ namespace Game.Scenarios.Presentation.UI
             for (int i = 0; i < options.Count; i++)
             {
                 OptionView option = options[i];
-                if (!option.IsWorld)
+                if (!option.IsWorld || option.IsQuiet)
                 {
                     continue;
                 }

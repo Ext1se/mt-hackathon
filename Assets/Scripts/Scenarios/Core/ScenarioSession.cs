@@ -466,7 +466,7 @@ namespace Game.Scenarios.Core
             {
                 if (IsVisible(node, option))
                 {
-                    options.Add(new OptionView(option.Id, option.Text, option.Target, option.Objective));
+                    options.Add(new OptionView(option.Id, option.Text, option.Target, option.Objective, option.Quiet));
                 }
             }
 

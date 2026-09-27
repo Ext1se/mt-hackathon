@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Game.Scenarios.Core;
 using Game.Scenarios.Presentation;
 using Game.Scenarios.Presentation.UI;
 using Game.Scenarios.Presentation.World;
@@ -47,6 +48,8 @@ namespace Game.Scenarios.Editor
         private const string GuideShader = "Game/Scenarios/Guide Trail";
         private const float GuideScrollSpeed = 1.4f;
         private const int GuideTextureSize = 64;
+        // Title row, variable meter row, scales row; the panels below the HUD are placed relative to it.
+        private const float HudHeight = 124f;
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
         private static readonly Color PanelColor = new Color(0.06f, 0.08f, 0.11f, 0.94f);
@@ -337,7 +340,7 @@ namespace Game.Scenarios.Editor
             root.anchorMax = new Vector2(1f, 1f);
             root.pivot = new Vector2(0.5f, 1f);
             root.anchoredPosition = Vector2.zero;
-            root.sizeDelta = new Vector2(0f, 96f);
+            root.sizeDelta = new Vector2(0f, HudHeight);
 
             TMP_Text title = CreateText("Title", root, 26f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(900f, 34f));
@@ -377,6 +380,32 @@ namespace Game.Scenarios.Editor
             TMP_Text seconds = CreateText("Seconds", timerRoot.transform, 20f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             Stretch(seconds.rectTransform, Vector2.zero, Vector2.zero);
 
+            GameObject meter = new GameObject("Meter", typeof(RectTransform));
+            meter.transform.SetParent(root, false);
+            // Its own row under the title, so it never overlaps the scales on a narrow screen.
+            Place((RectTransform)meter.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -44f), new Vector2(360f, 28f));
+            HorizontalLayoutGroup meterLayout = meter.AddComponent<HorizontalLayoutGroup>();
+            meterLayout.spacing = 6f;
+            meterLayout.childAlignment = TextAnchor.MiddleCenter;
+            meterLayout.childControlWidth = true;
+            meterLayout.childControlHeight = true;
+            meterLayout.childForceExpandWidth = false;
+            meterLayout.childForceExpandHeight = false;
+            TMP_Text meterLabel = CreateText("Label", meter.transform, 20f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineRight);
+            meterLabel.enableWordWrapping = false;
+            LayoutElement meterLabelElement = meterLabel.gameObject.AddComponent<LayoutElement>();
+            meterLabelElement.preferredWidth = 180f;
+            meterLabelElement.preferredHeight = 30f;
+            Image[] segments = new Image[ScenarioValidator.MaxHudSteps];
+            for (int i = 0; i < segments.Length; i++)
+            {
+                RectTransform segment = CreatePanel("Segment" + i, meter.transform, TrackColor);
+                LayoutElement segmentElement = segment.gameObject.AddComponent<LayoutElement>();
+                segmentElement.preferredWidth = 34f;
+                segmentElement.preferredHeight = 14f;
+                segments[i] = segment.GetComponent<Image>();
+            }
+
             Button radio = CreateButton("RadioButton", root, Ui("radioButton"), AccentColor);
             Place((RectTransform)radio.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, -14f), new Vector2(240f, 50f));
             ((RectTransform)radio.transform).pivot = new Vector2(0.5f, 1f);
@@ -392,6 +421,14 @@ namespace Game.Scenarios.Editor
             hudObject.FindProperty("_timerFill").objectReferenceValue = fill;
             hudObject.FindProperty("_timerSeconds").objectReferenceValue = seconds;
             hudObject.FindProperty("_radioButton").objectReferenceValue = radio;
+            hudObject.FindProperty("_meterRoot").objectReferenceValue = meter;
+            hudObject.FindProperty("_meterLabel").objectReferenceValue = meterLabel;
+            SerializedProperty segmentList = hudObject.FindProperty("_meterSegments");
+            segmentList.arraySize = segments.Length;
+            for (int i = 0; i < segments.Length; i++)
+            {
+                segmentList.GetArrayElementAtIndex(i).objectReferenceValue = segments[i];
+            }
             hudObject.ApplyModifiedPropertiesWithoutUndo();
             return hud;
         }
@@ -503,7 +540,7 @@ namespace Game.Scenarios.Editor
             HintView hint = holder.AddComponent<HintView>();
 
             RectTransform root = CreatePanel("Root", holder.transform, PlateColor);
-            Place(root, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -166f), new Vector2(500f, 96f));
+            Place(root, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -HudHeight - 70f), new Vector2(500f, 96f));
             Image stripe = CreatePanel("Stripe", root, AccentColor).GetComponent<Image>();
             Place(stripe.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(8f, 0f));
             stripe.rectTransform.pivot = new Vector2(0f, 0.5f);
@@ -523,7 +560,7 @@ namespace Game.Scenarios.Editor
             QuestTracker quest = holder.AddComponent<QuestTracker>();
 
             RectTransform root = CreatePanel("Root", holder.transform, PlateColor);
-            Place(root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -120f), new Vector2(620f, 300f));
+            Place(root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -HudHeight - 24f), new Vector2(620f, 300f));
             ContentSizeFitter fitter = root.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             VerticalLayoutGroup layout = root.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -783,7 +820,7 @@ namespace Game.Scenarios.Editor
             BriefingView briefing = holder.AddComponent<BriefingView>();
 
             Button toggle = CreateButton("ToggleButton", holder.transform, Ui("briefingButton"), ButtonColor);
-            Place((RectTransform)toggle.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -108f), new Vector2(220f, 44f));
+            Place((RectTransform)toggle.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -HudHeight - 12f), new Vector2(220f, 44f));
 
             RectTransform root = CreatePanel("Root", holder.transform, new Color(PanelColor.r, PanelColor.g, PanelColor.b, 0.97f));
             root.anchorMin = new Vector2(0f, 0.5f);

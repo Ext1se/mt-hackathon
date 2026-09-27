@@ -29,6 +29,7 @@ namespace Game.Scenarios.Presentation.World
         private readonly HashSet<int> _applied = new HashSet<int>();
         private readonly List<int> _pending = new List<int>();
         private readonly Dictionary<GameObject, bool> _originalActive = new Dictionary<GameObject, bool>();
+        private readonly Dictionary<Transform, Transform> _originalParents = new Dictionary<Transform, Transform>();
         private readonly Dictionary<Passenger, (PassengerSpot Spot, PassengerPose Pose, string HeldClip)> _originalSpots =
             new Dictionary<Passenger, (PassengerSpot Spot, PassengerPose Pose, string HeldClip)>();
         private ScreenFader _fader;
@@ -101,6 +102,14 @@ namespace Game.Scenarios.Presentation.World
                 _fader.SetAlpha(0f);
             }
 
+            foreach (KeyValuePair<Transform, Transform> pair in _originalParents)
+            {
+                if (pair.Key != null)
+                {
+                    pair.Key.SetParent(pair.Value, true);
+                }
+            }
+
             foreach (KeyValuePair<Passenger, (PassengerSpot Spot, PassengerPose Pose, string HeldClip)> pair in _originalSpots)
             {
                 if (pair.Key != null && pair.Value.Spot != null)
@@ -118,6 +127,7 @@ namespace Game.Scenarios.Presentation.World
                 }
             }
 
+            _originalParents.Clear();
             _originalSpots.Clear();
             _originalActive.Clear();
             _applied.Clear();
@@ -161,6 +171,13 @@ namespace Game.Scenarios.Presentation.World
                     case WorldActionKind.Move:
                         Move(action);
                         break;
+                    case WorldActionKind.MovePlayer:
+                        if (action.Spot != null && _runner != null)
+                        {
+                            _runner.PlacePlayer(action.Spot.transform.position, action.LookAt);
+                        }
+
+                        break;
                 }
             }
         }
@@ -195,6 +212,17 @@ namespace Game.Scenarios.Presentation.World
             if (!_originalSpots.ContainsKey(passenger))
             {
                 _originalSpots[passenger] = (passenger.Spot, passenger.Pose, passenger.HeldClip);
+            }
+
+            // Into another wagon's actor group, so that wagon's culling shows the passenger, not the old one's.
+            if (action.Group != null && passenger.transform.parent != action.Group)
+            {
+                if (!_originalParents.ContainsKey(passenger.transform))
+                {
+                    _originalParents[passenger.transform] = passenger.transform.parent;
+                }
+
+                passenger.transform.SetParent(action.Group, true);
             }
 
             if (action.SetsHeldClip)

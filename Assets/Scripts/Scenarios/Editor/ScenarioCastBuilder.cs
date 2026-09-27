@@ -98,7 +98,7 @@ namespace Game.Scenarios.Editor
                 else
                 {
                     Transform parent = groups[(string)actor["group"]];
-                    instance = (GameObject)PrefabUtility.InstantiatePrefab(prefabKind == "female" ? female : male, parent);
+                    instance = (GameObject)PrefabUtility.InstantiatePrefab(ResolveActorPrefab(prefabKind, male, female), parent);
                     instance.name = (string)actor["id"];
                 }
 
@@ -166,7 +166,7 @@ namespace Game.Scenarios.Editor
             JArray states = (JArray)cast["states"];
             if (states != null)
             {
-                BuildWorldStates(root, runner, states, actors, marks);
+                BuildWorldStates(root, runner, states, actors, marks, groups);
             }
 
             BriefingView briefing = Object.FindFirstObjectByType<BriefingView>();
@@ -181,6 +181,28 @@ namespace Game.Scenarios.Editor
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Selection.activeGameObject = root;
             Debug.Log($"Scenario cast built from {castPath}.");
+        }
+
+        // "male" / "female" pick a random-looking passenger; a prefab path gives a fixed look (a preset variant).
+        private static GameObject ResolveActorPrefab(string kind, GameObject male, GameObject female)
+        {
+            if (kind == "female")
+            {
+                return female;
+            }
+
+            if (kind.EndsWith(".prefab", System.StringComparison.Ordinal))
+            {
+                GameObject custom = AssetDatabase.LoadAssetAtPath<GameObject>(kind);
+                if (custom != null)
+                {
+                    return custom;
+                }
+
+                Debug.LogWarning($"Actor prefab '{kind}' was not found; a random male passenger is used.");
+            }
+
+            return male;
         }
 
         private static Dictionary<string, Transform> BuildGroups(JObject cast, Transform root)
@@ -462,7 +484,7 @@ namespace Game.Scenarios.Editor
         }
 
         private static void BuildWorldStates(GameObject root, ScenarioRunner runner, JArray states, Dictionary<string, GameObject> actors,
-            Dictionary<string, PassengerSpot> marks)
+            Dictionary<string, PassengerSpot> marks, Dictionary<string, Transform> groups)
         {
             ScenarioWorldStates world = root.AddComponent<ScenarioWorldStates>();
             SerializedObject worldObject = new SerializedObject(world);
@@ -484,7 +506,7 @@ namespace Game.Scenarios.Editor
                 foreach (JObject action in state["actions"])
                 {
                     actionList.InsertArrayElementAtIndex(actionList.arraySize);
-                    FillWorldAction(actionList.GetArrayElementAtIndex(actionList.arraySize - 1), action, actors, marks, stateId);
+                    FillWorldAction(actionList.GetArrayElementAtIndex(actionList.arraySize - 1), action, actors, marks, groups, stateId);
                 }
             }
 
@@ -492,7 +514,7 @@ namespace Game.Scenarios.Editor
         }
 
         private static void FillWorldAction(SerializedProperty property, JObject data, Dictionary<string, GameObject> actors,
-            Dictionary<string, PassengerSpot> marks, string stateId)
+            Dictionary<string, PassengerSpot> marks, Dictionary<string, Transform> groups, string stateId)
         {
             string type = (string)data["type"];
             SerializedProperty objects = property.FindPropertyRelative("_objects");
@@ -527,6 +549,17 @@ namespace Game.Scenarios.Editor
                     JToken clip = data["clip"];
                     property.FindPropertyRelative("_setsHeldClip").boolValue = clip != null;
                     property.FindPropertyRelative("_heldClip").stringValue = clip != null ? (string)clip : string.Empty;
+                    // "group": the passenger joins that wagon's actors, e.g. an owner brought back from the next wagon.
+                    string group = (string)data["group"];
+                    property.FindPropertyRelative("_group").objectReferenceValue =
+                        !string.IsNullOrEmpty(group) && groups.TryGetValue(group, out Transform groupRoot) ? groupRoot : null;
+                    break;
+                case "player":
+                    property.FindPropertyRelative("_kind").enumValueIndex = (int)WorldActionKind.MovePlayer;
+                    property.FindPropertyRelative("_spot").objectReferenceValue = FindSpot((string)data["to"], marks, stateId);
+                    string lookAt = (string)data["lookAt"];
+                    property.FindPropertyRelative("_lookAt").objectReferenceValue =
+                        !string.IsNullOrEmpty(lookAt) && actors.TryGetValue(lookAt, out GameObject lookAtActor) ? lookAtActor.transform : null;
                     break;
                 default:
                     Debug.LogWarning($"World state '{stateId}': unknown action type '{type}'.");
@@ -719,6 +752,32 @@ namespace Game.Scenarios.Editor
             prop.name = "Prop_" + kind;
             Object.DestroyImmediate(prop.GetComponent<Collider>());
             prop.transform.SetParent(actor, false);
+
+            // Cap on the head, scarf round the neck, thermos in the hand: they follow the body in any pose or seat.
+            HumanBodyBones bone;
+            Vector3 offset;
+            switch (kind)
+            {
+                case "cap":
+                    bone = HumanBodyBones.Head;
+                    offset = new Vector3(0f, 0.15f, 0.01f);
+                    break;
+                case "scarf":
+                    bone = HumanBodyBones.Neck;
+                    offset = new Vector3(0f, 0.01f, 0.02f);
+                    break;
+                default:
+                    bone = HumanBodyBones.RightHand;
+                    offset = new Vector3(0f, 0.02f, 0.04f);
+                    break;
+            }
+
+            ScenarioBoneProp follower = prop.AddComponent<ScenarioBoneProp>();
+            SerializedObject followerObject = new SerializedObject(follower);
+            followerObject.FindProperty("_animator").objectReferenceValue = actor.GetComponent<Animator>();
+            followerObject.FindProperty("_bone").enumValueIndex = System.Array.IndexOf(System.Enum.GetValues(typeof(HumanBodyBones)), bone);
+            followerObject.FindProperty("_offset").vector3Value = offset;
+            followerObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static Material EnsureMaterial(string name, Color color)

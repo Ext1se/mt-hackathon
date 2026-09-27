@@ -9,6 +9,9 @@ namespace Game.Scenarios.Core
     /// </summary>
     public static class ScenarioValidator
     {
+        /// <summary>Segments the HUD meter has; a HUD variable may span at most this many steps.</summary>
+        public const int MaxHudSteps = 5;
+
         public static List<string> Validate(ScenarioData data)
         {
             List<string> errors = new List<string>();
@@ -47,6 +50,7 @@ namespace Game.Scenarios.Core
             ValidateTriggers(data, nodes, errors);
             ValidateEndings(data, errors);
             ValidateVariants(data, errors);
+            ValidateVariables(data, errors);
             return errors;
         }
 
@@ -227,6 +231,30 @@ namespace Game.Scenarios.Core
 
                 CheckTarget(rule.Node, nodes, where, errors);
                 ValidateConditions(rule.Conditions, where, errors);
+            }
+        }
+
+        private static void ValidateVariables(ScenarioData data, List<string> errors)
+        {
+            int hudCount = 0;
+            foreach (VariableData variable in data.Variables)
+            {
+                if (!variable.Hud)
+                {
+                    continue;
+                }
+
+                hudCount++;
+                int steps = variable.Max - variable.Min;
+                if (steps < 1 || steps > MaxHudSteps)
+                {
+                    errors.Add($"Variable '{variable.Key}': a HUD meter needs 1 to {MaxHudSteps} steps between min and max.");
+                }
+            }
+
+            if (hudCount > 1)
+            {
+                errors.Add("Only one variable can be shown in the HUD.");
             }
         }
 

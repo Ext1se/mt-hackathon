@@ -51,6 +51,13 @@ namespace Game.Scenarios.Tests
   ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
 }";
 
+        private const string LongHudMeterJson = @"{
+  ""id"": ""broken"", ""start"": ""a"",
+  ""variables"": [ { ""key"": ""var.panic"", ""min"": 0, ""max"": 10, ""hud"": true } ],
+  ""nodes"": [ { ""id"": ""a"", ""options"": [ { ""id"": ""go"", ""text"": ""Go"", ""next"": ""@end"" } ] } ],
+  ""endings"": [ { ""id"": ""end"", ""title"": ""End"" } ]
+}";
+
         [Test]
         public void Fixture_HasNoErrors()
         {
@@ -66,6 +73,7 @@ namespace Game.Scenarios.Tests
         [TestCase(TargetOutsideRoamJson, "roam")]
         [TestCase(HoldNotLastJson, "only the last look step may hold")]
         [TestCase(EmptyCardJson, "a card section needs a title and a text or items")]
+        [TestCase(LongHudMeterJson, "HUD meter")]
         public void BrokenScenario_IsReported(string json, string expectedFragment)
         {
             List<string> errors = ScenarioValidator.Validate(ScenarioLoader.Deserialize(json));

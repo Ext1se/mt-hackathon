@@ -56,6 +56,7 @@ namespace Game.Scenarios.Presentation
         private bool _isApproaching;
         private Coroutine _lookRoutine;
         private ScenarioActor _focusActor;
+        private VariableData _meterVariable;
         private ScenarioSession _session;
         private NodeView _pendingNode;
         private ScenarioResult _pendingResult;
@@ -182,6 +183,7 @@ namespace Game.Scenarios.Presentation
             }
 
             _hud.SetScales(_session.State.Get(ScenarioKeys.Loyalty), _session.State.Get(ScenarioKeys.Safety));
+            ShowMeter(data);
             for (int i = 0; i < _actors.Count; i++)
             {
                 _actors[i].OnScenarioStarted(_session.VariantId);
@@ -230,6 +232,15 @@ namespace Game.Scenarios.Presentation
             }
 
             StartCoroutine(ApproachRoutine(standPoint, LookPointOf(target), action));
+        }
+
+        /// <summary>Puts the player on a spot facing a target (an actor's head, else the object's middle); for scene changes.</summary>
+        public void PlacePlayer(Vector3 feetPosition, Component lookAt)
+        {
+            if (_placement != null)
+            {
+                _placement.PlaceAt(feetPosition, lookAt != null ? LookPointOf(lookAt) : feetPosition + Vector3.forward);
+            }
         }
 
         /// <summary>A world event such as crossing a zone; the scenario decides whether it starts an interrupt now or later.</summary>
@@ -305,6 +316,7 @@ namespace Game.Scenarios.Presentation
         private void OnNodeEntered(NodeView view)
         {
             RefreshWorld();
+            RefreshMeter();
             if (_isShowingResponse)
             {
                 _pendingNode = view;
@@ -319,6 +331,7 @@ namespace Game.Scenarios.Presentation
             _isClockRunning = false;
             _hud.SetScales(_session.State.Get(ScenarioKeys.Loyalty), _session.State.Get(ScenarioKeys.Safety));
             _hud.ShowDeltas(outcome.Effects);
+            RefreshMeter();
             _hud.ShowTimer(0f, 0f);
             _hud.SetRadioVisible(false);
             RefreshWorld();
@@ -524,6 +537,7 @@ namespace Game.Scenarios.Presentation
             _session.HintShown -= _hint.Show;
             _session.Ended -= OnEnded;
             _session = null;
+            _meterVariable = null;
             _pendingNode = null;
             _pendingResult = null;
             _isShowingResponse = false;
@@ -536,6 +550,37 @@ namespace Game.Scenarios.Presentation
             if (_world != null && _session != null)
             {
                 _world.Refresh(_session.State, _fader);
+            }
+        }
+
+        // The scenario marks at most one variable (e.g. panic in the wagon) to be shown in the HUD.
+        private void ShowMeter(ScenarioData data)
+        {
+            _meterVariable = null;
+            foreach (VariableData variable in data.Variables)
+            {
+                if (variable.Hud)
+                {
+                    _meterVariable = variable;
+                    break;
+                }
+            }
+
+            if (_meterVariable == null)
+            {
+                _hud.HideMeter();
+                return;
+            }
+
+            _hud.ShowMeter(_labels.GetLabel(_meterVariable.Key), _meterVariable.Max - _meterVariable.Min);
+            RefreshMeter();
+        }
+
+        private void RefreshMeter()
+        {
+            if (_meterVariable != null && _session != null)
+            {
+                _hud.SetMeter(_session.State.Get(_meterVariable.Key) - _meterVariable.Min);
             }
         }
 
@@ -669,9 +714,11 @@ namespace Game.Scenarios.Presentation
                     _viewFocus.FocusOn(point);
                 }
 
-                // A holding step keeps the camera on its target until the next node focuses elsewhere.
+                // A holding step keeps the camera on its target until the next node focuses elsewhere; the target's
+                // marker lights up, so a small object far away (the ticket terminal) is easy to spot.
                 if (steps[i].Hold)
                 {
+                    HighlightTarget(steps[i].Target);
                     _focusActor = null;
                     _lookRoutine = null;
                     yield break;
@@ -684,6 +731,18 @@ namespace Game.Scenarios.Presentation
             if (speaker != null && speaker.TryGetFocusPoint(out Vector3 back))
             {
                 _viewFocus.FocusOn(back);
+            }
+        }
+
+        // The quest tracker clears every marker when the next node is shown.
+        private void HighlightTarget(string id)
+        {
+            for (int i = 0; i < _targets.Count; i++)
+            {
+                if (_targets[i].TargetId == id)
+                {
+                    _targets[i].SetHighlighted(true);
+                }
             }
         }
 

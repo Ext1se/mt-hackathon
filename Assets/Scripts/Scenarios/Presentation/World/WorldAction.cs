@@ -4,7 +4,10 @@ using UnityEngine;
 
 namespace Game.Scenarios.Presentation.World
 {
-    /// <summary>One change of the wagon: hide or show objects, or put a passenger on another spot in a pose.</summary>
+    /// <summary>
+    /// One change of the wagon: hide or show objects, put a passenger on another spot in a pose (optionally into another
+    /// wagon's actor group, so the wagon's culling shows them), or put the player on a spot facing an actor.
+    /// </summary>
     [Serializable]
     public sealed class WorldAction
     {
@@ -13,8 +16,12 @@ namespace Game.Scenarios.Presentation.World
         [SerializeField] private GameObject[] _objects = new GameObject[0];
         [Tooltip("Move: the passenger to move.")]
         [SerializeField] private Passenger _passenger;
-        [Tooltip("Move: where the passenger goes.")]
+        [Tooltip("Move: where the passenger goes. Move Player: where the player stands.")]
         [SerializeField] private PassengerSpot _spot;
+        [Tooltip("Move: optional new parent, the actors root of the wagon the passenger moves to.")]
+        [SerializeField] private Transform _group;
+        [Tooltip("Move Player: who the player faces.")]
+        [SerializeField] private Transform _lookAt;
         [SerializeField] private PassengerPose _pose = PassengerPose.Sitting;
         [Tooltip("Move: replace the passenger's held clip (empty lets it vary); off keeps the current one.")]
         [SerializeField] private bool _setsHeldClip;
@@ -24,6 +31,8 @@ namespace Game.Scenarios.Presentation.World
         public GameObject[] Objects => _objects;
         public Passenger Passenger => _passenger;
         public PassengerSpot Spot => _spot;
+        public Transform Group => _group;
+        public Transform LookAt => _lookAt;
         public PassengerPose Pose => _pose;
         public bool SetsHeldClip => _setsHeldClip;
         public string HeldClip => _heldClip;

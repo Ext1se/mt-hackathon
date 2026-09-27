@@ -4,6 +4,7 @@ namespace Game.Scenarios.Presentation.World
     {
         Hide,
         Show,
-        Move
+        Move,
+        MovePlayer
     }
 }

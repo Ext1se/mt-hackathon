@@ -10,10 +10,14 @@ namespace Game.Scenarios.Core.Data
         [JsonProperty("initial")] private int _initial = 0;
         [JsonProperty("min")] private int _min = 0;
         [JsonProperty("max")] private int _max = 100;
+        [JsonProperty("hud")] private bool _hud;
 
         public string Key => _key;
         public int Initial => _initial;
         public int Min => _min;
         public int Max => _max;
+
+        /// <summary>Shown in the HUD as a segmented meter (one segment per step from min to max).</summary>
+        public bool Hud => _hud;
     }
 }

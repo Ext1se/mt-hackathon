@@ -49,3 +49,6 @@ Thumbs.db
 
 # Player builds
 /[Bb]uilds/
+
+# Local notes
+/Docs/

@@ -4918,7 +4918,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Scenarios.Presentation::Game.Scenarios.Presentation.UI.ScenarioMenuCard
   _startButton: {fileID: 1035036218}
   _sceneName: VSM_Train_Bag
-  _forcedVariant: 
+  _forcedVariant: A
 --- !u!114 &1726929729
 MonoBehaviour:
   m_ObjectHideFlags: 0
